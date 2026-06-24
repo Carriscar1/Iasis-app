@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "IASIS",
+    "slug": "iasis",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "iasis",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#1C2B4B"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.iasis.app"
+    },
+    "android": {
+      "package": "com.iasis.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1C2B4B"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "color": "#1C2B4B"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
