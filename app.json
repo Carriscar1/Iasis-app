@@ -6,6 +6,9 @@
     "orientation": "portrait",
     "scheme": "iasis",
     "userInterfaceStyle": "light",
+    "updates": {
+      "enabled": false
+    },
     "splash": {
       "resizeMode": "contain",
       "backgroundColor": "#1C2B4B"

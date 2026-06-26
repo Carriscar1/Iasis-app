@@ -1,70 +1,61 @@
-// ─────────────────────────────────────────────
-//  IASIS Design Tokens
-//  Paleta extraída do logo: azul-marinho + azul-claro + verde-saúde
-// ─────────────────────────────────────────────
+import { Dimensions, Platform } from 'react-native';
+
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
+// Breakpoints
+export const isSmall  = SCREEN_W < 375;
+export const isMedium = SCREEN_W >= 375 && SCREEN_W < 768;
+export const isTablet = SCREEN_W >= 768;
+
+// Escala proporcional
+export const scale  = (size: number) => (SCREEN_W / 390) * size;
+export const vscale = (size: number) => (SCREEN_H / 844) * size;
+export const SCREEN_WIDTH  = SCREEN_W;
+export const SCREEN_HEIGHT = SCREEN_H;
 
 export const Colors = {
-  // Primárias
-  navy:       '#1C2B4B',   // navbar, headers
-  navyLight:  '#2E4A7A',   // gradients
-  blue:       '#5B9BD5',   // pulseira / azul claro do coração
-  blueLight:  '#A8CCE8',   // ícones suaves
-
-  // Secundárias
-  green:      '#1D9E75',   // confirmado / tomado
-  greenLight: '#E1F5EE',   // fundo badge sucesso
+  navy:       '#1C2B4B',
+  navyLight:  '#2E4A7A',
+  blue:       '#5B9BD5',
+  blueLight:  '#A8CCE8',
+  green:      '#1D9E75',
+  greenLight: '#E1F5EE',
   greenText:  '#0F6E56',
-
-  amber:      '#F59E0B',   // alerta / pendente
+  amber:      '#F59E0B',
   amberLight: '#FAEEDA',
   amberText:  '#854F0B',
-
-  red:        '#EF4444',   // erro / esquecimento
+  red:        '#EF4444',
   redLight:   '#FCEBEB',
   redText:    '#A32D2D',
-
-  // Neutros
-  bg:         '#F4F6FA',   // fundo geral
-  surface:    '#FFFFFF',   // cards
+  bg:         '#F4F6FA',
+  surface:    '#FFFFFF',
   border:     '#E2E8F0',
   borderSoft: '#F1F5F9',
-
   textPrimary:   '#1C2B4B',
   textSecondary: '#64748B',
   textMuted:     '#94A3B8',
-
-  // Utility
   white:      '#FFFFFF',
   black:      '#000000',
   transparent: 'transparent',
 } as const;
 
 export const Fonts = {
-  // Família
-  regular: 'System',
-  mono: 'Courier New',
-
-  // Pesos
+  sizes: {
+    xs:   scale(11),
+    sm:   scale(13),
+    base: scale(15),
+    md:   scale(17),
+    lg:   scale(20),
+    xl:   scale(24),
+    xxl:  scale(28),
+    hero: scale(36),
+  },
   weights: {
     regular:  '400',
     medium:   '500',
     semibold: '600',
     bold:     '700',
   },
-
-  // Tamanhos
-  sizes: {
-    xs:   11,
-    sm:   13,
-    base: 15,
-    md:   17,
-    lg:   20,
-    xl:   24,
-    xxl:  28,
-    hero: 36,
-  },
-
-  // Line heights
   lineHeights: {
     tight:  1.2,
     normal: 1.5,
@@ -73,14 +64,14 @@ export const Fonts = {
 } as const;
 
 export const Spacing = {
-  xxs: 4,
-  xs:  8,
-  sm:  12,
-  md:  16,
-  lg:  20,
-  xl:  24,
-  xxl: 32,
-  xxxl: 48,
+  xxs: scale(4),
+  xs:  scale(8),
+  sm:  scale(12),
+  md:  scale(16),
+  lg:  scale(20),
+  xl:  scale(24),
+  xxl: scale(32),
+  xxxl: scale(48),
 } as const;
 
 export const Radius = {
@@ -94,21 +85,21 @@ export const Radius = {
 
 export const Shadows = {
   sm: {
-    shadowColor: Colors.navy,
+    shadowColor: '#1C2B4B',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
   },
   md: {
-    shadowColor: Colors.navy,
+    shadowColor: '#1C2B4B',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.10,
     shadowRadius: 12,
     elevation: 5,
   },
   lg: {
-    shadowColor: Colors.navy,
+    shadowColor: '#1C2B4B',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
