@@ -1,13 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 
-const SUPABASE_URL = 
-  process.env.EXPO_PUBLIC_SUPABASE_URL || 
-  'https://qoqlsymvmmmsfsfscpmg.supabase.co';
-
-const SUPABASE_ANON_KEY = 
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcWxzeW12bW1tc2ZzZnNjcG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjg2NzcsImV4cCI6MjA5Nzk0NDY3N30.rzRMUUXXtXG5AWFsX61reOIU1oY-IjmJVvrZCgfTnjk';
+const SUPABASE_URL = 'https://qoqlsymvmmmsfsfscpmg.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcWxzeW12bW1tc2ZzZnNjcG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjg2NzcsImV4cCI6MjA5Nzk0NDY3N30.rzRMUUXXtXG5AWFsX61reOIU1oY-IjmJVvrZCgfTnjk';
 
 const isWeb = Platform.OS === 'web';
 
