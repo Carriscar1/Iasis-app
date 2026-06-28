@@ -26,7 +26,7 @@ export const signUp = async (
 
     if (authError) {
       console.error('ERRO SUPABASE AUTH:', authError);
-      return { user: null, error: `Erro auth: ${authError.message}` };
+      return { user: null, error: authError.message };
     }
 
     const userId = authData.user?.id;
@@ -34,6 +34,7 @@ export const signUp = async (
       return { user: null, error: 'Não foi possível criar o usuário.' };
     }
 
+    // Tenta inserir perfil — o trigger já faz isso, mas garante
     const profile = {
       id:    userId,
       name:  name.trim(),
@@ -42,72 +43,56 @@ export const signUp = async (
       ...(caregiver_id ? { caregiver_id } : {}),
     };
 
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert(profile);
-
-    if (profileError) {
-      console.error('ERRO PROFILE:', profileError);
-      if (!profileError.message.includes('duplicate')) {
-        return { user: null, error: `Erro perfil: ${profileError.message}` };
-      }
-    }
-
-    const needsConfirmation = !authData.session;
+    await supabase.from('profiles').upsert(profile, { onConflict: 'id' });
 
     return {
       user: { ...profile, created_at: new Date().toISOString() },
       error: null,
-      needsConfirmation,
+      needsConfirmation: !authData.session,
     };
   } catch (err: any) {
     console.error('ERRO INESPERADO:', err);
-    return { user: null, error: `Erro inesperado: ${err?.message ?? JSON.stringify(err)}` };
+    return { user: null, error: err?.message ?? 'Erro inesperado.' };
   }
 };
 
 export const signIn = async (
   email: string,
   password: string
-): Promise<{ user: UserProfile | null; error: string | null; needsConfirmation?: boolean }> => {
+): Promise<{ user: UserProfile | null; error: string | null }> => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
       password,
     });
+
     if (error) {
       console.error('ERRO LOGIN:', error.message);
-      // Sinaliza especificamente o caso de e-mail não confirmado para a tela
-      // poder oferecer o botão de reenviar a verificação.
-      const needsConfirmation = /email not confirmed|not confirmed/i.test(error.message);
-      return { user: null, error: translateError(error), needsConfirmation };
+      return { user: null, error: translateError(error) };
     }
-    if (!data.user) return { user: null, error: 'Usuário não encontrado.' };
-    const profile = await getProfile(data.user.id);
+
+    if (!data.user) {
+      return { user: null, error: 'Usuário não encontrado.' };
+    }
+
+    // Busca perfil — se não existir, cria na hora
+    let profile = await getProfile(data.user.id);
+
+    if (!profile) {
+      const newProfile = {
+        id:    data.user.id,
+        name:  data.user.user_metadata?.name ?? email.split('@')[0],
+        email: data.user.email ?? email,
+        role:  (data.user.user_metadata?.role ?? 'independent') as UserProfile['role'],
+      };
+      await supabase.from('profiles').upsert(newProfile, { onConflict: 'id' });
+      profile = { ...newProfile, created_at: new Date().toISOString() };
+    }
+
     return { user: profile, error: null };
   } catch (err: any) {
-    return { user: null, error: `Erro: ${err?.message}` };
+    return { user: null, error: err?.message ?? 'Erro inesperado.' };
   }
-};
-
-// Reenvia o e-mail de confirmação de cadastro.
-export const resendConfirmation = async (
-  email: string
-): Promise<{ error: string | null }> => {
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email: email.trim().toLowerCase(),
-  });
-  if (error) {
-    if (/already confirmed|already been confirmed/i.test(error.message)) {
-      return { error: 'Este e-mail já foi confirmado. Tente entrar normalmente.' };
-    }
-    if (/rate limit|too many|seconds/i.test(error.message)) {
-      return { error: 'Aguarde alguns segundos antes de reenviar.' };
-    }
-    return { error: error.message };
-  }
-  return { error: null };
 };
 
 export const signOut = async (): Promise<void> => {
@@ -120,35 +105,36 @@ export const getSession = async () => {
 };
 
 export const getProfile = async (userId: string): Promise<UserProfile | null> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  if (error) {
-    console.error('ERRO PERFIL:', error.message);
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle(); // usa maybeSingle em vez de single — não dá erro se não achar
+
+    if (error) {
+      console.error('ERRO PERFIL:', error.message);
+      return null;
+    }
+
+    return data as UserProfile | null;
+  } catch (err) {
     return null;
   }
-  return data as UserProfile;
 };
 
-// Busca um cuidador pelo e-mail. Usa a função RPC `find_caregiver_by_email`
-// (SECURITY DEFINER) porque, durante o cadastro, o usuário ainda é anônimo e
-// a RLS de `profiles` só permite ler o próprio perfil — uma consulta direta
-// retornaria vazio. Ver supabase_update2.sql.
 export const findCaregiverByEmail = async (
   email: string
 ): Promise<{ id: string; name: string } | null> => {
-  const { data, error } = await supabase.rpc('find_caregiver_by_email', {
-    p_email: email.trim().toLowerCase(),
-  });
-  if (error) {
-    console.error('ERRO RPC find_caregiver_by_email:', error.message);
-    return null;
-  }
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return null;
-  return { id: row.id, name: row.name };
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .eq('email', email.trim().toLowerCase())
+    .eq('role', 'caregiver')
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
 };
 
 const translateError = (err: any): string => {
