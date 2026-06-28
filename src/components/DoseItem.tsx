@@ -37,7 +37,7 @@ export const DoseItem: React.FC<Props> = ({ dose, onPress }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.container, cfg.highlight && { backgroundColor: cfg.highlight, borderColor: '#93B4DA' }]}
+      style={[styles.container, !!cfg.highlight && { backgroundColor: cfg.highlight, borderColor: '#93B4DA' }]}
       onPress={() => onPress?.(dose)}
       activeOpacity={0.8}
     >

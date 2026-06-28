@@ -1,46 +1,8 @@
-# Dependências do Node (Obrigatório para projetos TSX)
 node_modules/
-/.pnp
-.pnp.js
-
-# Produção / Builds (Arquivos gerados após compilar o TSX)
+.expo/
 dist/
-build/
-out/
-.next/
-.vuepress/dist
-.serverless/
-
-# Logs do NPM / Yarn
+web-build/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# Variáveis de Ambiente e Chaves (Senhas)
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Cache do TypeScript e ferramentas de build (Vite, Next, etc.)
-.eslintcache
-.stylelintcache
-.tsbuildinfo
-.vite/
-.parcel-cache/
-
-# IDEs e Editores
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.swp
-
-# Lixo do Sistema Operacional
 .DS_Store
-Thumbs.db

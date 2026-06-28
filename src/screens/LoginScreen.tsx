@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { signIn } from '../services/auth';
+import { signIn, resendConfirmation } from '../services/auth';
 import { useStore } from '../store';
 import { Colors, Radius, Shadows } from '../theme';
 
@@ -21,6 +21,9 @@ export default function LoginScreen() {
   const [showPass, setShowPass] = useState(false);
   const [error,    setError]    = useState('');
   const [loading,  setLoading]  = useState(false);
+  const [needsConfirm, setNeedsConfirm] = useState(false);
+  const [resending,    setResending]    = useState(false);
+  const [resentMsg,    setResentMsg]     = useState('');
 
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -31,15 +34,18 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setError('');
+    setNeedsConfirm(false);
+    setResentMsg('');
     if (!email.trim()) { setError('Informe seu e-mail.'); return; }
     if (!password)     { setError('Informe sua senha.'); return; }
 
     setLoading(true);
     try {
-      const { user, error: err } = await signIn(email.trim(), password);
+      const { user, error: err, needsConfirmation } = await signIn(email.trim(), password);
 
       if (err) {
         setError(err);
+        setNeedsConfirm(!!needsConfirmation);
         setLoading(false);
         return;
       }
@@ -57,6 +63,15 @@ export default function LoginScreen() {
     }
   };
 
+  const handleResend = async () => {
+    setResending(true);
+    setResentMsg('');
+    const { error: err } = await resendConfirmation(email.trim());
+    setResending(false);
+    if (err) { setResentMsg(err); return; }
+    setResentMsg('✅ E-mail de verificação reenviado! Confira sua caixa de entrada e o spam.');
+  };
+
   return (
     <LinearGradient colors={['#1C2B4B', '#0F1C32']} style={{ flex: 1 }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -69,6 +84,7 @@ export default function LoginScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            {/* Logo */}
             <View style={styles.logoArea}>
               <View style={[styles.logoBox, {
                 width: isDesktop ? 80 : 68,
@@ -81,18 +97,44 @@ export default function LoginScreen() {
               <Text style={[styles.tagline, { fontSize: fs - 2 }]}>Sua saúde em dia</Text>
             </View>
 
+            {/* Card */}
             <View style={[styles.card, { width: cardWidth, padding: isDesktop ? 36 : isTablet ? 28 : 24 }]}>
               <Text style={[styles.cardTitle, { fontSize: titleSize, marginBottom: isTablet ? 22 : 16 }]}>
                 Entrar na conta
               </Text>
 
               {error ? (
-                <View style={styles.errorBox}>
-                  <Ionicons name="alert-circle" size={15} color={Colors.redText} />
-                  <Text style={[styles.errorText, { fontSize: fs - 1 }]}>{error}</Text>
+                <View style={[styles.errorBox, needsConfirm && styles.warnBox]}>
+                  <Ionicons name={needsConfirm ? 'mail-unread' : 'alert-circle'} size={15} color={needsConfirm ? Colors.amberText : Colors.redText} />
+                  <Text style={[styles.errorText, { fontSize: fs - 1 }, needsConfirm && { color: Colors.amberText }]}>{error}</Text>
                 </View>
               ) : null}
 
+              {needsConfirm ? (
+                <View style={styles.confirmBox}>
+                  <Text style={[styles.confirmText, { fontSize: fs - 1 }]}>
+                    Você precisa confirmar seu e-mail antes de entrar. Não recebeu o link?
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.resendBtn, resending && { opacity: 0.7 }]}
+                    onPress={handleResend}
+                    disabled={resending}
+                    activeOpacity={0.85}
+                  >
+                    {resending
+                      ? <ActivityIndicator color={Colors.navy} size="small" />
+                      : (
+                        <>
+                          <Ionicons name="paper-plane-outline" size={15} color={Colors.navy} />
+                          <Text style={[styles.resendText, { fontSize: fs - 1 }]}>Reenviar e-mail de verificação</Text>
+                        </>
+                      )}
+                  </TouchableOpacity>
+                  {resentMsg ? <Text style={[styles.resentMsg, { fontSize: fs - 2 }]}>{resentMsg}</Text> : null}
+                </View>
+              ) : null}
+
+              {/* E-mail */}
               <Text style={[styles.label, { fontSize: fs - 2 }]}>E-mail</Text>
               <View style={[styles.inputWrap, { marginBottom: 14 }]}>
                 <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
@@ -108,6 +150,7 @@ export default function LoginScreen() {
                 />
               </View>
 
+              {/* Senha */}
               <Text style={[styles.label, { fontSize: fs - 2 }]}>Senha</Text>
               <View style={[styles.inputWrap, { marginBottom: isTablet ? 24 : 18 }]}>
                 <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
@@ -125,6 +168,7 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </View>
 
+              {/* Botão */}
               <TouchableOpacity
                 style={[styles.btnPrimary, { paddingVertical: inputPad + 3 }, loading && { opacity: 0.7 }]}
                 onPress={handleLogin}
@@ -163,7 +207,13 @@ const styles = StyleSheet.create({
   card:      { backgroundColor: Colors.surface, borderRadius: Radius.xl, alignSelf: 'center', ...Shadows.lg },
   cardTitle: { fontWeight: '700', color: Colors.textPrimary },
   errorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 8, padding: 10, marginBottom: 14 },
+  warnBox:   { backgroundColor: Colors.amberLight },
   errorText: { color: Colors.redText, flex: 1 },
+  confirmBox:{ backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, padding: 12, marginBottom: 14, gap: 10 },
+  confirmText:{ color: Colors.textSecondary, lineHeight: 19 },
+  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 10, paddingVertical: 11 },
+  resendText:{ color: Colors.navy, fontWeight: '700' },
+  resentMsg: { color: Colors.greenText, textAlign: 'center' },
   label:     { fontWeight: '600', color: Colors.textSecondary, marginBottom: 6 },
   inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, borderRadius: 10, backgroundColor: Colors.bg, paddingHorizontal: 12 },
   input:     { flex: 1, color: Colors.textPrimary },

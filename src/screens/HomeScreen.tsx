@@ -90,6 +90,24 @@ export default function HomeScreen() {
       >
         <View style={{ width: '100%', maxWidth: maxW, paddingHorizontal: padding }}>
 
+          {/* Banner do cuidador */}
+          {user?.role === 'caregiver' && (
+            <TouchableOpacity
+              style={styles.caregiverBanner}
+              onPress={() => router.push('/patients')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.caregiverIcon}>
+                <Ionicons name="people" size={isTablet ? 26 : 22} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.caregiverTitle, { fontSize: fs }]}>Meus pacientes</Text>
+                <Text style={[styles.caregiverSub, { fontSize: fs - 3 }]}>Acompanhe doses e adesão de quem você cuida</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,.7)" />
+            </TouchableOpacity>
+          )}
+
           {/* Grid de atalhos */}
           <Text style={[styles.sectionTitle, { fontSize: fs - 2, marginTop: 20 }]}>Acesso rápido</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
@@ -140,6 +158,10 @@ const styles = StyleSheet.create({
   dot:         { width: 8, height: 8, borderRadius: 4 },
   statusText:  { color: 'rgba(255,255,255,.7)' },
   sectionTitle:{ fontWeight: '700', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  caregiverBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#1C2B4B', borderRadius: Radius.md, padding: 14, marginTop: 20, ...Shadows.md },
+  caregiverIcon:   { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
+  caregiverTitle:  { fontWeight: '700', color: '#fff' },
+  caregiverSub:    { color: 'rgba(255,255,255,.65)', marginTop: 2 },
   gridCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
   gridIcon:    { alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   gridLabel:   { fontWeight: '700', color: Colors.textPrimary },

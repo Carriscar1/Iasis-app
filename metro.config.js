@@ -2,15 +2,9 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Resolve problemas de módulos ESM do Supabase no React Native
+// Mantem package exports desligado: evita o bug do "import.meta" / resolucao
+// quebrada do @supabase/supabase-js no Metro/Expo Web.
 config.resolver.unstable_enablePackageExports = false;
-
-// Garante que o Supabase resolve corretamente no metro
-config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === '@opentelemetry/api') {
-    return { type: 'empty' };
-  }
-  return context.resolveRequest(context, moduleName, platform);
-};
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'mjs', 'cjs'];
 
 module.exports = config;

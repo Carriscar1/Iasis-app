@@ -1,0 +1,78 @@
+<!--
+  IASIS — Template de e-mail: Confirmação de cadastro (Confirm signup)
+  Cole este conteúdo em: Supabase → Authentication → Emails → Templates → "Confirm signup"
+  Variável obrigatória do Supabase: {{ .ConfirmationURL }}
+  (HTML table-based + estilos inline para compatibilidade com clientes de e-mail.)
+-->
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirme seu e-mail · IASIS</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#F4F6FA; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F4F6FA; padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <!-- Cartão -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:480px; background-color:#FFFFFF; border-radius:20px; overflow:hidden; box-shadow:0 8px 24px rgba(28,43,75,0.08);">
+
+            <!-- Cabeçalho navy -->
+            <tr>
+              <td style="background:linear-gradient(135deg,#1C2B4B,#2E4A7A); padding:36px 32px; text-align:center;">
+                <div style="font-size:34px; font-weight:800; color:#FFFFFF; letter-spacing:-1px;">iasis</div>
+                <div style="font-size:13px; color:rgba(255,255,255,0.65); margin-top:4px;">Sua saúde em dia</div>
+              </td>
+            </tr>
+
+            <!-- Corpo -->
+            <tr>
+              <td style="padding:36px 32px;">
+                <div style="font-size:22px; font-weight:800; color:#1C2B4B; margin-bottom:12px;">Confirme seu e-mail 💙</div>
+                <p style="font-size:15px; line-height:24px; color:#64748B; margin:0 0 24px 0;">
+                  Olá! Falta só um passo para ativar sua conta no IASIS. Clique no botão abaixo para confirmar seu e-mail e começar a cuidar dos seus medicamentos com a gente.
+                </p>
+
+                <!-- Botão -->
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                  <tr>
+                    <td align="center" style="padding:8px 0 24px 0;">
+                      <a href="{{ .ConfirmationURL }}"
+                         style="display:inline-block; background-color:#1D9E75; color:#FFFFFF; font-size:16px; font-weight:700; text-decoration:none; padding:16px 40px; border-radius:12px;">
+                        Confirmar meu e-mail
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="font-size:13px; line-height:20px; color:#94A3B8; margin:0 0 8px 0;">
+                  Se o botão não funcionar, copie e cole este link no seu navegador:
+                </p>
+                <p style="font-size:13px; line-height:20px; margin:0; word-break:break-all;">
+                  <a href="{{ .ConfirmationURL }}" style="color:#185FA5; text-decoration:underline;">{{ .ConfirmationURL }}</a>
+                </p>
+
+                <!-- Divisória -->
+                <div style="height:1px; background-color:#E2E8F0; margin:28px 0;"></div>
+
+                <p style="font-size:12px; line-height:18px; color:#94A3B8; margin:0;">
+                  Se você não criou uma conta no IASIS, pode ignorar este e-mail com segurança.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Rodapé -->
+            <tr>
+              <td style="background-color:#F4F6FA; padding:20px 32px; text-align:center;">
+                <div style="font-size:12px; color:#94A3B8;">IASIS · Ecossistema IoT de saúde</div>
+                <div style="font-size:11px; color:#CBD5E1; margin-top:4px;">TCC · ETEC Bento Quirino</div>
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
