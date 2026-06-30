@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useStore } from '../../src/store';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -23,11 +24,16 @@ const TABS: TabItem[] = [
 function TabBar({ state, descriptors, navigation }: any) {
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
+  const role      = useStore((s) => s.user?.role);
+
+  // Paciente (idoso) não controla o dispenser — escondemos essa aba para ele.
+  const hidden = role === 'patient' ? ['device'] : [];
 
   return (
     <View style={[styles.wrapper, isTablet && styles.wrapperTablet]}>
       <View style={styles.container}>
         {state.routes.map((route: any, index: number) => {
+          if (hidden.includes(route.name)) return null;
           const tab       = TABS.find(t => t.name === route.name)!;
           const isFocused = state.index === index;
 

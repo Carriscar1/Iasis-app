@@ -1,23 +1,25 @@
 import React from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  Alert, ScrollView, useWindowDimensions,
+  ScrollView, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
-import { signOut } from '../services/auth';
-import { requestPermission } from '../services/notifications';
 import { Colors, Radius, Shadows } from '../theme';
+import { FOOTER_LABEL } from '../config/app';
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
-  const { user, mqttConnected, logout } = useStore();
+  const { user, mqttConnected } = useStore();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
+  // Paciente = perfil idoso: fontes e alvos de toque maiores.
+  const isElderly = user?.role === 'patient';
   const maxW      = isDesktop ? 720 : isTablet ? 560 : undefined;
-  const fs        = isDesktop ? 15 : isTablet ? 14 : 13;
+  const baseFs    = isDesktop ? 15 : isTablet ? 14 : 13;
+  const fs        = isElderly ? baseFs + 3 : baseFs;
   const avatarSize = isDesktop ? 90 : isTablet ? 80 : 70;
 
   const roleLabel = () => {
@@ -26,43 +28,12 @@ export default function ProfileScreen() {
     return '🧑 Usuário independente';
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Sair da conta',
-      'Tem certeza que deseja sair?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            logout();
-            router.replace('/(auth)/login');
-          },
-        },
-      ]
-    );
-  };
-
   const items = [
     { icon: 'person-outline',           label: 'Nome',          value: user?.name  ?? '—'              },
     { icon: 'mail-outline',             label: 'E-mail',        value: user?.email ?? '—'              },
     { icon: 'shield-checkmark-outline', label: 'Tipo de conta', value: roleLabel()                     },
     { icon: 'watch-outline',            label: 'Pulseira RFID', value: user?.rfid_tag ?? 'Não cadastrada' },
   ];
-
-  const handleNotifications = async () => {
-    const result = await requestPermission();
-    if (result === 'granted') {
-      Alert.alert('Notificações ativadas', 'Você receberá um lembrete no horário de cada dose.');
-    } else {
-      Alert.alert(
-        'Notificações indisponíveis',
-        'Ative as notificações nas configurações do aparelho. No navegador (Expo Web) os lembretes locais não são suportados — use o app no celular.'
-      );
-    }
-  };
 
   const menuItems = [
     ...(user?.role === 'caregiver'
@@ -79,12 +50,13 @@ export default function ProfileScreen() {
       desc:  'Ver e gerenciar doses',
       onPress: () => router.push('/(tabs)/schedule'),
     },
-    {
+    // Paciente (idoso) não controla o dispenser — quem cuida disso é o cuidador.
+    ...(isElderly ? [] : [{
       icon:  'hardware-chip-outline',
       label: 'Dispenser',
       desc:  'Controlar dispositivo IoT',
       onPress: () => router.push('/(tabs)/device'),
-    },
+    }]),
     {
       icon:  'bar-chart-outline',
       label: 'Histórico',
@@ -94,14 +66,14 @@ export default function ProfileScreen() {
     {
       icon:  'notifications-outline',
       label: 'Notificações',
-      desc:  'Ativar lembretes de dose',
-      onPress: handleNotifications,
+      desc:  'Lembretes de dose',
+      onPress: () => router.push('/notifications'),
     },
     {
-      icon:  'help-circle-outline',
-      label: 'Ajuda',
-      desc:  'Como usar o IASIS',
-      onPress: () => Alert.alert('IASIS', 'Para dúvidas, acesse o guia completo no README do projeto.'),
+      icon:  'information-circle-outline',
+      label: 'Sobre',
+      desc:  'O que é o IASIS',
+      onPress: () => router.push('/about'),
     },
   ];
 
@@ -177,13 +149,13 @@ export default function ProfileScreen() {
             ))}
           </View>
 
-          {/* Botão sair */}
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+          {/* Botão sair → tela de confirmação dedicada (sem pop-up) */}
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => router.push('/logout')} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={isTablet ? 22 : 19} color='#A32D2D' />
             <Text style={[styles.logoutText, { fontSize: fs + 1 }]}>Sair da conta</Text>
           </TouchableOpacity>
 
-          <Text style={[styles.version, { fontSize: fs - 3 }]}>IASIS v1.0.0 · TCC 2025</Text>
+          <Text style={[styles.version, { fontSize: fs - 3 }]}>{FOOTER_LABEL}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

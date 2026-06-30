@@ -59,7 +59,7 @@ export const signUp = async (
 export const signIn = async (
   email: string,
   password: string
-): Promise<{ user: UserProfile | null; error: string | null }> => {
+): Promise<{ user: UserProfile | null; error: string | null; needsConfirmation?: boolean }> => {
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: email.trim().toLowerCase(),
@@ -68,7 +68,9 @@ export const signIn = async (
 
     if (error) {
       console.error('ERRO LOGIN:', error.message);
-      return { user: null, error: translateError(error) };
+      // Sinaliza para a tela mostrar o botão de reenviar verificação.
+      const needsConfirmation = (error.message ?? '').includes('Email not confirmed');
+      return { user: null, error: translateError(error), needsConfirmation };
     }
 
     if (!data.user) {
@@ -97,6 +99,22 @@ export const signIn = async (
 
 export const signOut = async (): Promise<void> => {
   await supabase.auth.signOut();
+};
+
+// Reenvia o e-mail de confirmação de cadastro (link de verificação).
+export const resendConfirmation = async (
+  email: string
+): Promise<{ error: string | null }> => {
+  try {
+    const { error } = await supabase.auth.resend({
+      type:  'signup',
+      email: email.trim().toLowerCase(),
+    });
+    if (error) return { error: translateError(error) };
+    return { error: null };
+  } catch (err: any) {
+    return { error: err?.message ?? 'Não foi possível reenviar o e-mail.' };
+  }
 };
 
 export const getSession = async () => {

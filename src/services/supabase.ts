@@ -14,9 +14,14 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: isWeb && typeof window !== 'undefined' ? window.localStorage : undefined,
   },
   global: {
+    // IMPORTANTE: NÃO fixar 'Authorization' aqui. O supabase-js só injeta o
+    // token do usuário logado se a requisição ainda não tiver um Authorization
+    // (ver fetchWithAuth). Se fixarmos o Bearer da anon key, todo acesso ao
+    // banco vira "anônimo" e a RLS (auth.uid() = user_id) bloqueia gravações.
+    // Mantemos só o apikey; o Authorization correto (anon quando deslogado,
+    // token do usuário quando logado) é gerenciado pela própria lib.
     headers: {
-      'apikey':        SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      apikey: SUPABASE_ANON_KEY,
     },
   },
 });

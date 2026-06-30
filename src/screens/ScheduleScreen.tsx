@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Modal, useWindowDimensions, TextInput, ActivityIndicator,
-  RefreshControl, Alert as RNAlert, Platform,
+  RefreshControl, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -13,10 +13,12 @@ import {
   listDosesForDay, createMedication, createDose, markDoseTaken,
   deleteDose, computeLiveStatus,
 } from '../services/data';
-import { searchMedications, type CatalogMed } from '../data/medications';
+import { searchMedications, MEDICATIONS_ALPHABETICAL, type CatalogMed } from '../data/medications';
 import {
   requestPermission, scheduleDoseReminder, cancelDoseReminder,
 } from '../services/notifications';
+import AlarmTimePicker from '../components/AlarmTimePicker';
+import DateStrip from '../components/DateStrip';
 import type { Dose, DoseStatus, MedForm } from '../types';
 
 const CFG: Record<DoseStatus, { label: string; bg: string; tc: string; icon: string }> = {
@@ -39,17 +41,20 @@ export default function ScheduleScreen() {
   const fs        = isDesktop ? 15 : isTablet ? 14 : 13;
 
   const user = useStore((s) => s.user);
+  const isElderly = user?.role === 'patient';
 
   const [doses, setDoses]     = useState<Dose[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sel, setSel]         = useState<Dose | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [screenError, setScreenError] = useState('');
+  const [screenSuccess, setScreenSuccess] = useState('');
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
     const { data, error } = await listDosesForDay(user.id);
-    if (error) RNAlert.alert('Erro', error);
+    setScreenError(error ?? '');
     // aplica status "ao vivo" (due/upcoming/missed) sem gravar ainda
     setDoses(data.map((d) => ({ ...d, status: computeLiveStatus(d) })));
     setLoading(false);
@@ -65,7 +70,7 @@ export default function ScheduleScreen() {
 
   const handleTake = async (dose: Dose) => {
     const { error } = await markDoseTaken(dose.id, 'manual', dose.scheduledAt);
-    if (error) { RNAlert.alert('Erro', error); return; }
+    if (error) { setScreenError(error); setSel(null); return; }
     await cancelDoseReminder(dose.id); // já tomou: não precisa mais lembrar
     setSel(null);
     load();
@@ -73,7 +78,7 @@ export default function ScheduleScreen() {
 
   const handleDelete = async (dose: Dose) => {
     const { error } = await deleteDose(dose.id);
-    if (error) { RNAlert.alert('Erro', error); return; }
+    if (error) { setScreenError(error); setSel(null); return; }
     await cancelDoseReminder(dose.id);
     setSel(null);
     load();
@@ -108,6 +113,22 @@ export default function ScheduleScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <View style={{ width: '100%', maxWidth: maxW, paddingHorizontal: 16 }}>
+
+            {!!screenError && (
+              <TouchableOpacity style={styles.errorBanner} onPress={() => setScreenError('')} activeOpacity={0.8}>
+                <Ionicons name="alert-circle" size={18} color={Colors.redText} />
+                <Text style={[styles.errorBannerText, { fontSize: fs - 1 }]}>{screenError}</Text>
+                <Ionicons name="close" size={16} color={Colors.redText} />
+              </TouchableOpacity>
+            )}
+
+            {!!screenSuccess && (
+              <TouchableOpacity style={styles.successBanner} onPress={() => setScreenSuccess('')} activeOpacity={0.8}>
+                <Ionicons name="checkmark-circle" size={18} color={Colors.greenText} />
+                <Text style={[styles.successBannerText, { fontSize: fs - 1 }]}>{screenSuccess}</Text>
+                <Ionicons name="close" size={16} color={Colors.greenText} />
+              </TouchableOpacity>
+            )}
 
             <View style={styles.summaryCard}>
               {[
@@ -213,10 +234,11 @@ export default function ScheduleScreen() {
         visible={formOpen}
         onClose={() => setFormOpen(false)}
         userId={user?.id ?? null}
-        onSaved={() => { setFormOpen(false); load(); }}
+        onSaved={(msg) => { setFormOpen(false); setScreenError(''); setScreenSuccess(msg ?? 'Remédio salvo!'); load(); }}
         isTablet={isTablet}
         maxW={maxW}
         fs={fs}
+        isElderly={isElderly}
       />
     </SafeAreaView>
   );
@@ -226,11 +248,13 @@ export default function ScheduleScreen() {
 //  Modal: adicionar medicamento + dose de hoje
 // ─────────────────────────────────────────────
 function AddMedicationModal({
-  visible, onClose, userId, onSaved, isTablet, maxW, fs,
+  visible, onClose, userId, onSaved, isTablet, maxW, fs, isElderly,
 }: {
   visible: boolean; onClose: () => void; userId: string | null;
-  onSaved: () => void; isTablet: boolean; maxW?: number; fs: number;
+  onSaved: (msg?: string) => void; isTablet: boolean; maxW?: number; fs: number; isElderly: boolean;
 }) {
+  const midnight = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+
   const [query, setQuery]       = useState('');
   const [selected, setSelected] = useState<CatalogMed | null>(null);
   const [customMode, setCustom] = useState(false);
@@ -238,17 +262,24 @@ function AddMedicationModal({
   const [form, setForm]         = useState<MedForm>('comprimido');
   const [dosage, setDosage]     = useState('');
   const [time, setTime]         = useState('08:00');
+  const [startDate, setStart]   = useState<Date>(midnight());
   const [compartment, setComp]  = useState(1);
   const [instr, setInstr]       = useState('');
   const [saving, setSaving]     = useState(false);
+  const [formError, setFormError] = useState('');
 
   const reset = () => {
     setQuery(''); setSelected(null); setCustom(false); setName('');
-    setForm('comprimido'); setDosage(''); setTime('08:00'); setComp(1); setInstr('');
+    setForm('comprimido'); setDosage(''); setTime('08:00'); setStart(midnight());
+    setComp(1); setInstr(''); setFormError('');
   };
 
   const validTime = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(time);
-  const results = visible && !selected && !customMode ? searchMedications(query, 8) : [];
+  // Com busca: melhores resultados. Sem busca: catálogo inteiro de A a Z para rolar.
+  const showList = visible && !selected && !customMode;
+  const results  = showList
+    ? (query.trim() ? searchMedications(query, 40) : MEDICATIONS_ALPHABETICAL)
+    : [];
 
   const pickFromCatalog = (m: CatalogMed) => {
     setSelected(m);
@@ -263,19 +294,30 @@ function AddMedicationModal({
   };
 
   const handleSave = async () => {
-    if (!userId) { RNAlert.alert('Erro', 'Sessão expirada. Entre novamente.'); return; }
-    if (!name.trim() || !dosage.trim()) { RNAlert.alert('Atenção', 'Escolha um remédio e a dosagem.'); return; }
-    if (!validTime) { RNAlert.alert('Atenção', 'Horário inválido. Use HH:MM (ex: 08:30).'); return; }
+    setFormError('');
+    if (!userId) { setFormError('Sessão expirada. Entre novamente.'); return; }
+    if (!name.trim() || !dosage.trim()) { setFormError('Escolha um remédio e a dosagem.'); return; }
+    if (!validTime) { setFormError('Horário inválido.'); return; }
 
     setSaving(true);
     const med = await createMedication(userId, { name, dosage, form, compartment, instructions: instr });
-    if (med.error || !med.data) { setSaving(false); RNAlert.alert('Erro', med.error ?? 'Falha ao salvar.'); return; }
+    if (med.error || !med.data) {
+      setSaving(false);
+      console.error('IASIS salvar (medicamento):', med.error);
+      setFormError(med.error ?? 'Falha ao salvar.');
+      return;
+    }
 
+    // Usa o dia de início escolhido (não necessariamente hoje) + o horário.
     const [h, m] = time.split(':').map(Number);
-    const when = new Date(); when.setHours(h, m, 0, 0);
+    const when = new Date(startDate); when.setHours(h, m, 0, 0);
     const dose = await createDose(userId, { medicationId: med.data.id, scheduledAt: when.toISOString() });
     setSaving(false);
-    if (dose.error || !dose.data) { RNAlert.alert('Erro', dose.error ?? 'Falha ao salvar.'); return; }
+    if (dose.error || !dose.data) {
+      console.error('IASIS salvar (dose):', dose.error);
+      setFormError(dose.error ?? 'Falha ao salvar.');
+      return;
+    }
 
     // Agenda o lembrete local no horário da dose (no-op na web / sem permissão).
     await scheduleDoseReminder({
@@ -285,8 +327,15 @@ function AddMedicationModal({
       date:   when,
     });
 
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const isToday = startDate.getTime() === today.getTime();
+    const dia = startDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const msg = isToday
+      ? `${name} ${dosage} salvo para hoje às ${time}.`
+      : `${name} ${dosage} salvo! O tratamento começa em ${dia} às ${time} — por isso ainda não aparece na lista de hoje.`;
+
     reset();
-    onSaved();
+    onSaved(msg);
   };
 
   const hasMed = !!selected || customMode;
@@ -299,23 +348,39 @@ function AddMedicationModal({
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <Text style={[styles.sheetTitle, { fontSize: isTablet ? 22 : 19, marginBottom: 16 }]}>Novo medicamento</Text>
 
-            {/* Busca no catálogo */}
+            {/* Busca + lista completa A–Z */}
             {!hasMed && (
-              <Field label="Buscar remédio" fs={fs}>
+              <Field label="Escolher remédio" fs={fs}>
                 <View style={[styles.inputWrap]}>
                   <Ionicons name="search" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.inputFlex, { fontSize: fs }]}
                     value={query}
                     onChangeText={setQuery}
-                    placeholder="Nome ou marca (ex: Losartana, Tylenol)"
+                    placeholder="Buscar por nome ou marca…"
                     placeholderTextColor={Colors.textMuted}
-                    autoFocus
                   />
+                  {query.length > 0 && (
+                    <TouchableOpacity onPress={() => setQuery('')} style={{ padding: 4 }}>
+                      <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View style={styles.resultsBox}>
+
+                <Text style={[styles.listHint, { fontSize: fs - 3 }]}>
+                  {query.trim()
+                    ? `${results.length} resultado(s)`
+                    : `Todos os remédios · A a Z (${results.length}) — role para ver`}
+                </Text>
+
+                <ScrollView
+                  style={styles.resultsScroll}
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator
+                >
                   {results.map((m) => (
-                    <TouchableOpacity key={m.name} style={styles.resultRow} onPress={() => pickFromCatalog(m)} activeOpacity={0.7}>
+                    <TouchableOpacity key={`${m.name}-${m.brand ?? ''}`} style={styles.resultRow} onPress={() => pickFromCatalog(m)} activeOpacity={0.7}>
                       <View style={styles.pillIcon}>
                         <Ionicons name="medkit-outline" size={16} color={Colors.navy} />
                       </View>
@@ -327,10 +392,11 @@ function AddMedicationModal({
                     </TouchableOpacity>
                   ))}
                   {query.length > 0 && results.length === 0 && (
-                    <Text style={{ padding: 12, color: Colors.textSecondary, fontSize: fs - 1 }}>Nenhum remédio encontrado no catálogo.</Text>
+                    <Text style={{ padding: 12, color: Colors.textSecondary, fontSize: fs - 1 }}>Nenhum remédio encontrado.</Text>
                   )}
-                </View>
-                <TouchableOpacity style={{ marginTop: 10, alignItems: 'center' }} onPress={() => { setCustom(true); setName(query); setQuery(''); }}>
+                </ScrollView>
+
+                <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => { setCustom(true); setName(query); setQuery(''); }}>
                   <Text style={{ fontSize: fs - 1, color: Colors.navy, fontWeight: '600' }}>Não encontrou? Digitar manualmente</Text>
                 </TouchableOpacity>
               </Field>
@@ -373,9 +439,14 @@ function AddMedicationModal({
                     placeholder="Ex: 50mg" placeholderTextColor={Colors.textMuted} />
                 </Field>
 
-                <Field label="Horário" fs={fs}>
-                  <TextInput style={[styles.input, { fontSize: fs }]} value={time} onChangeText={setTime}
-                    placeholder="08:00" placeholderTextColor={Colors.textMuted} keyboardType="numbers-and-punctuation" maxLength={5} />
+                <Field label="Horário da dose" fs={fs}>
+                  <View style={styles.pickerCard}>
+                    <AlarmTimePicker value={time} onChange={setTime} isElderly={isElderly} />
+                  </View>
+                </Field>
+
+                <Field label="Início do tratamento" fs={fs}>
+                  <DateStrip value={startDate} onChange={setStart} isElderly={isElderly} />
                 </Field>
 
                 <Field label="Compartimento" fs={fs}>
@@ -395,6 +466,13 @@ function AddMedicationModal({
                   <TextInput style={[styles.input, { fontSize: fs }]} value={instr} onChangeText={setInstr}
                     placeholder="Ex: Tomar com água" placeholderTextColor={Colors.textMuted} />
                 </Field>
+
+                {!!formError && (
+                  <View style={styles.formError}>
+                    <Ionicons name="alert-circle" size={16} color={Colors.redText} />
+                    <Text style={[styles.formErrorText, { fontSize: fs - 1 }]}>{formError}</Text>
+                  </View>
+                )}
 
                 <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: isTablet ? 16 : 14, marginTop: 8 }]} onPress={handleSave} disabled={saving}>
                   {saving ? <ActivityIndicator color="#fff" /> : (
@@ -432,6 +510,13 @@ const styles = StyleSheet.create({
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4, textTransform: 'capitalize' },
   addBtn:   { width: 44, height: 44, borderRadius: 14, backgroundColor: '#2E4A7A', alignItems: 'center', justifyContent: 'center' },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  errorBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
+  errorBannerText:{ flex: 1, color: Colors.redText },
+  successBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.greenLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
+  successBannerText:{ flex: 1, color: Colors.greenText },
+  pickerCard:     { backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12 },
+  formError:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 10, padding: 12, marginTop: 8 },
+  formErrorText:  { flex: 1, color: Colors.redText },
   summaryCard:    { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 16, marginTop: 16, ...Shadows.md },
   summaryItem:    { flex: 1, alignItems: 'center' },
   summaryNum:     { fontWeight: '700' },
@@ -466,7 +551,8 @@ const styles = StyleSheet.create({
   inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14 },
   inputFlex: { flex: 1, color: Colors.textPrimary, paddingVertical: Platform.OS === 'web' ? 12 : 11 },
   stepper: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  resultsBox: { marginTop: 8, borderRadius: 10, overflow: 'hidden' },
+  listHint:    { color: Colors.textMuted, marginTop: 10, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
+  resultsScroll: { maxHeight: 280, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, backgroundColor: Colors.surface },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: Colors.border },
   resultName: { fontWeight: '600', color: Colors.textPrimary },
   resultMeta: { color: Colors.textSecondary, marginTop: 2 },

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert, Switch, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Switch, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../store';
 import { Colors, Radius, Shadows } from '../theme';
+import ConfirmAction from '../components/ConfirmAction';
 
 export default function DeviceScreen() {
   const { width } = useWindowDimensions();
@@ -91,36 +92,34 @@ export default function DeviceScreen() {
             </Row>
           </View>
 
-          {/* Controles */}
+          {/* Controles — confirmação inline (sem pop-up de janela) */}
           <Text style={[styles.section, { fontSize: fs - 2 }]}>Controles remotos</Text>
           <View style={styles.card}>
-            {[
-              { label: 'Motor NEMA 17', btnLabel: 'Dispensar teste', btnColor: '#E1F5EE', txtColor: '#0F6E56',
-                onPress: () => Alert.alert('Dispensar','Aciona o motor NEMA 17 no slot 1. Confirma?',[
-                  { text:'Cancelar', style:'cancel' },
-                  { text:'Dispensar', onPress: () => sendCmd('DISPENSE slot:1') },
-                ]) },
-              { label: 'Sensores', btnLabel: 'Atualizar', btnColor: '#F1F5F9', txtColor: '#64748B',
-                onPress: () => sendCmd('STATUS_REQ') },
-              { label: 'ESP32', btnLabel: 'Reiniciar', btnColor: '#FCEBEB', txtColor: '#A32D2D',
-                onPress: () => Alert.alert('Reiniciar','O dispenser reinicia em ~10s.',[
-                  { text:'Cancelar', style:'cancel' },
-                  { text:'Reiniciar', style:'destructive', onPress: () => sendCmd('RESTART') },
-                ]) },
-            ].map((item, idx, arr) => (
-              <View key={item.label}>
-                <Row label={item.label}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: item.btnColor }]}
-                    onPress={item.onPress}
-                    disabled={!mqttConnected}
-                  >
-                    <Text style={[styles.actionBtnText, { color: item.txtColor, fontSize: fs - 2 }]}>{item.btnLabel}</Text>
-                  </TouchableOpacity>
-                </Row>
-                {idx < arr.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
+            <Row label="Motor NEMA 17">
+              <ConfirmAction
+                label="Dispensar teste" confirmLabel="Dispensar"
+                onConfirm={() => sendCmd('DISPENSE slot:1')}
+                bg="#E1F5EE" txtColor="#0F6E56" disabled={!mqttConnected} fs={fs - 2}
+              />
+            </Row>
+            <View style={styles.divider} />
+            <Row label="Sensores">
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: '#F1F5F9' }]}
+                onPress={() => sendCmd('STATUS_REQ')}
+                disabled={!mqttConnected}
+              >
+                <Text style={[styles.actionBtnText, { color: '#64748B', fontSize: fs - 2 }]}>Atualizar</Text>
+              </TouchableOpacity>
+            </Row>
+            <View style={styles.divider} />
+            <Row label="ESP32">
+              <ConfirmAction
+                label="Reiniciar" confirmLabel="Reiniciar"
+                onConfirm={() => sendCmd('RESTART')}
+                bg="#FCEBEB" txtColor="#A32D2D" disabled={!mqttConnected} fs={fs - 2}
+              />
+            </Row>
           </View>
 
           {/* Log MQTT */}

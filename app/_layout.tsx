@@ -18,6 +18,9 @@ export default function RootLayout() {
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="patients" />
+          <Stack.Screen name="about" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="logout" />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
