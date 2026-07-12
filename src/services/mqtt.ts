@@ -14,12 +14,13 @@ import {
   MqttDispensePayload,
   MqttVibratePayload,
 } from '../types';
+import { MQTT_CONFIG } from '../config/app';
 
 // ─── Configuração ─────────────────────────────
-// ⚠️ Substitua pelo seu broker (HiveMQ / Mosquitto)
-const BROKER_URL    = 'wss://SEU_BROKER.hivemq.cloud:8884/mqtt';
-const MQTT_USERNAME = 'iasis_app';
-const MQTT_PASSWORD = 'SUA_SENHA_MQTT';
+// Broker configurado em src/config/app.ts (MQTT_CONFIG).
+const BROKER_URL    = MQTT_CONFIG.brokerUrl;
+const MQTT_USERNAME = MQTT_CONFIG.username;
+const MQTT_PASSWORD = MQTT_CONFIG.password;
 
 // Tópicos do ecossistema IASIS
 const TOPICS = {

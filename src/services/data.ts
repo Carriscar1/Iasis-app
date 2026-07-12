@@ -74,9 +74,39 @@ export const createMedication = async (
   return { data: rowToMedication(data), error: null };
 };
 
+export const updateMedication = async (
+  id: string,
+  patch: Partial<NewMedication>
+): Promise<{ data: Medication | null; error: string | null }> => {
+  const row: Record<string, unknown> = {};
+  if (patch.name !== undefined)         row.name         = patch.name.trim();
+  if (patch.dosage !== undefined)       row.dosage       = patch.dosage.trim();
+  if (patch.form !== undefined)         row.form         = patch.form;
+  if (patch.compartment !== undefined)  row.compartment  = patch.compartment;
+  if (patch.instructions !== undefined) row.instructions = patch.instructions?.trim() || null;
+  if (patch.color !== undefined)        row.color        = patch.color ?? null;
+
+  const { data, error } = await supabase
+    .from('medications')
+    .update(row)
+    .eq('id', id)
+    .select('*')
+    .single();
+  if (error) return { data: null, error: error.message };
+  return { data: rowToMedication(data), error: null };
+};
+
+// Exclui o medicamento limpando antes as doses FUTURAS ainda não tomadas.
+// O histórico (doses já tomadas/perdidas) é preservado.
 export const deleteMedication = async (
   id: string
 ): Promise<{ error: string | null }> => {
+  await supabase
+    .from('doses')
+    .delete()
+    .eq('medication_id', id)
+    .eq('status', 'pending')
+    .gte('scheduled_at', new Date().toISOString());
   const { error } = await supabase.from('medications').delete().eq('id', id);
   return { error: error?.message ?? null };
 };
@@ -105,6 +135,69 @@ export const createDose = async (
     .single();
   if (error) return { data: null, error: error.message };
   return { data: rowToDose(data), error: null };
+};
+
+// Cria várias doses de uma vez (tratamento recorrente: N dias × M horários).
+// Retorna as doses criadas em ordem cronológica.
+export const createDosesBulk = async (
+  userId: string,
+  medicationId: string,
+  scheduledAtList: string[], // ISO strings
+  notes?: string
+): Promise<{ data: Dose[]; error: string | null }> => {
+  if (scheduledAtList.length === 0) return { data: [], error: null };
+  const rows = scheduledAtList.map((iso) => ({
+    user_id:       userId,
+    medication_id: medicationId,
+    scheduled_at:  iso,
+    status:        'pending',
+    notes:         notes?.trim() || null,
+  }));
+  const { data, error } = await supabase
+    .from('doses')
+    .insert(rows)
+    .select('*, medications(*)');
+  if (error) return { data: [], error: error.message };
+  const doses = (data ?? []).map(rowToDose)
+    .sort((a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+  return { data: doses, error: null };
+};
+
+// Persiste como "missed" as doses pendentes vencidas há mais de 60 min.
+// Antes esse status era só visual (computeLiveStatus) e o banco continuava
+// "pending" para sempre — histórico e tela do cuidador ficavam errados.
+export const syncOverdueDoses = async (
+  userId: string
+): Promise<{ error: string | null }> => {
+  const cutoff = new Date(Date.now() - 60 * 60000).toISOString();
+  const { error } = await supabase
+    .from('doses')
+    .update({ status: 'missed' })
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .lt('scheduled_at', cutoff);
+  return { error: error?.message ?? null };
+};
+
+// Dose "da vez" para validação por RFID: a mais antiga entre as que estão
+// no horário (janela de -60min a +15min). É ela que o dispenser libera.
+export const findDoseAwaitingValidation = async (
+  userId: string
+): Promise<{ data: Dose | null; error: string | null }> => {
+  const from = new Date(Date.now() - 60 * 60000).toISOString();
+  const to   = new Date(Date.now() + 15 * 60000).toISOString();
+  const { data, error } = await supabase
+    .from('doses')
+    .select('*, medications(*)')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .gte('scheduled_at', from)
+    .lte('scheduled_at', to)
+    .order('scheduled_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) return { data: null, error: error.message };
+  return { data: data ? rowToDose(data) : null, error: null };
 };
 
 // Lista doses de um dia (00:00 a 23:59 local) com o medicamento embutido.
@@ -246,6 +339,22 @@ export const getAdherence = async (
     },
     error: null,
   };
+};
+
+// Sequência de dias seguidos com 100% das doses tomadas (para a Home).
+// Dias sem nenhuma dose não quebram nem contam. Hoje, se ainda estiver em
+// andamento (sem perdidas), não quebra a sequência — só ainda não soma.
+export const computeStreak = (byDay: AdherenceSummary['byDay']): number => {
+  let streak = 0;
+  const todayKey = new Date().toISOString().slice(0, 10);
+  for (let i = byDay.length - 1; i >= 0; i--) {
+    const d = byDay[i];
+    if (d.total === 0) continue;               // dia vazio: neutro
+    if (d.taken === d.total) { streak++; continue; }
+    if (d.date === todayKey && d.missed === 0) continue; // hoje em andamento
+    break;
+  }
+  return streak;
 };
 
 // ── Cuidador: pacientes vinculados ────────────

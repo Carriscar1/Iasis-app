@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, TouchableOpacity,
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform,
   useWindowDimensions, ActivityIndicator, RefreshControl, Alert as RNAlert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,8 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
-import { getAdherence, listRecentDoses, type AdherenceSummary } from '../services/data';
+import { getAdherence, listRecentDoses, syncOverdueDoses, type AdherenceSummary } from '../services/data';
+import { exportAdherenceReport } from '../services/report';
 import type { Dose } from '../types';
 
 type Period = '7d' | '30d' | '3m';
@@ -42,9 +43,28 @@ export default function HistoryScreen() {
   const [recent, setRecent] = useState<Dose[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const periodLabel =
+    period === '7d' ? 'últimos 7 dias' : period === '30d' ? 'últimos 30 dias' : 'últimos 3 meses';
+
+  const handleExport = async () => {
+    if (!adh || exporting) return;
+    setExporting(true);
+    const res = await exportAdherenceReport({
+      userName:    user?.name ?? 'Paciente',
+      periodLabel,
+      adherence:   adh,
+      recent,
+    });
+    setExporting(false);
+    if (!res.ok && res.error) RNAlert.alert('Exportar', res.error);
+  };
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
+    // Grava como "missed" as doses vencidas antes de calcular a adesão.
+    await syncOverdueDoses(user.id);
     const [a, r] = await Promise.all([
       getAdherence(user.id, DAYS[period]),
       listRecentDoses(user.id, 30),
@@ -164,9 +184,13 @@ export default function HistoryScreen() {
                 })}
               </View>
 
-              <TouchableOpacity style={styles.exportBtn}>
-                <Ionicons name="download-outline" size={isTablet ? 20 : 17} color="#fff" />
-                <Text style={[styles.exportText, { fontSize: fs }]}>Exportar relatório PDF</Text>
+              <TouchableOpacity style={[styles.exportBtn, exporting && { opacity: 0.7 }]} onPress={handleExport} disabled={exporting} activeOpacity={0.85}>
+                {exporting
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Ionicons name="download-outline" size={isTablet ? 20 : 17} color="#fff" />}
+                <Text style={[styles.exportText, { fontSize: fs }]}>
+                  {Platform.OS === 'web' ? 'Exportar relatório PDF' : 'Compartilhar relatório'}
+                </Text>
               </TouchableOpacity>
             </>
           )}

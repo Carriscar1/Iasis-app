@@ -1,8 +1,9 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../../src/store';
+import { useDevice } from '../../src/hooks/useDevice';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -45,25 +46,26 @@ function TabBar({ state, descriptors, navigation }: any) {
           };
 
           return (
-            <View key={route.key} style={styles.tabItem}>
-              <View
-                style={[styles.tabBtn, isFocused && styles.tabBtnActive]}
-              >
-                <Text
-                  onPress={onPress}
-                  style={styles.tabBtnInner}
-                >
-                  <Ionicons
-                    name={isFocused ? tab.iconActive : tab.icon}
-                    size={isTablet ? 24 : 22}
-                    color={isFocused ? '#fff' : 'rgba(255,255,255,0.5)'}
-                  />
-                </Text>
+            <TouchableOpacity
+              key={route.key}
+              style={styles.tabItem}
+              onPress={onPress}
+              activeOpacity={0.7}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={tab.title}
+            >
+              <View style={[styles.tabBtn, isFocused && styles.tabBtnActive]}>
+                <Ionicons
+                  name={isFocused ? tab.iconActive : tab.icon}
+                  size={isTablet ? 24 : 22}
+                  color={isFocused ? '#fff' : 'rgba(255,255,255,0.5)'}
+                />
               </View>
               <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>
                 {tab.title}
               </Text>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -72,6 +74,10 @@ function TabBar({ state, descriptors, navigation }: any) {
 }
 
 export default function TabsLayout() {
+  // Conecta ao dispenser (ESP32 real ou simulador) enquanto logado e
+  // mantém o fluxo de segurança fechado ativo em qualquer aba.
+  useDevice();
+
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}
@@ -120,9 +126,6 @@ const styles = StyleSheet.create({
   tabBtnActive: {
     backgroundColor: 'rgba(255,255,255,0.18)',
     width:           56,
-  },
-  tabBtnInner: {
-    lineHeight: 32,
   },
   tabLabel: {
     fontSize:   10,

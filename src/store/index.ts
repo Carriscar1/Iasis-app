@@ -8,6 +8,15 @@ export interface MqttLog {
   payload:   string;
 }
 
+// Etapas do fluxo de segurança fechado (alerta → RFID → dispensa → confirmado)
+export type FlowStep = 'idle' | 'alerting' | 'validating' | 'dispensing' | 'done';
+
+export interface DoseFlow {
+  step:     FlowStep;
+  doseId?:  string;
+  medName?: string;
+}
+
 interface AppStore {
   // Auth
   user:        UserProfile | null;
@@ -17,9 +26,23 @@ interface AppStore {
   setLoading:  (v: boolean) => void;
   logout:      () => void;
 
-  // MQTT
+  // Dispositivo (dispenser + pulseira)
   mqttConnected:    boolean;
   setMqttConnected: (v: boolean) => void;
+  deviceMode:       'mqtt' | 'demo';
+  setDeviceMode:    (m: 'mqtt' | 'demo') => void;
+  wristbandVibrating:    boolean;
+  setWristbandVibrating: (v: boolean) => void;
+  lastRfid:         { tag: string; valid: boolean; at: string } | null;
+  setLastRfid:      (r: { tag: string; valid: boolean; at: string } | null) => void;
+  firmware:         string;
+  setFirmware:      (v: string) => void;
+
+  // Fluxo de segurança fechado (demonstração/execução ao vivo)
+  doseFlow:    DoseFlow;
+  setDoseFlow: (f: DoseFlow) => void;
+
+  // Log de mensagens (MQTT real ou simulador)
   mqttLog:          MqttLog[];
   addMqttLog:       (entry: Omit<MqttLog, 'id' | 'ts'>) => void;
   clearMqttLog:     () => void;
@@ -29,6 +52,8 @@ interface AppStore {
   temperature: number;
   setSensors:  (h: number, t: number) => void;
 }
+
+let logSeq = 0;
 
 export const useStore = create<AppStore>((set) => ({
   user:       null,
@@ -40,11 +65,23 @@ export const useStore = create<AppStore>((set) => ({
 
   mqttConnected:    false,
   setMqttConnected: (mqttConnected) => set({ mqttConnected }),
+  deviceMode:       'demo',
+  setDeviceMode:    (deviceMode) => set({ deviceMode }),
+  wristbandVibrating:    false,
+  setWristbandVibrating: (wristbandVibrating) => set({ wristbandVibrating }),
+  lastRfid:         null,
+  setLastRfid:      (lastRfid) => set({ lastRfid }),
+  firmware:         '—',
+  setFirmware:      (firmware) => set({ firmware }),
+
+  doseFlow:    { step: 'idle' },
+  setDoseFlow: (doseFlow) => set({ doseFlow }),
+
   mqttLog:          [],
   addMqttLog: (entry) =>
     set((s) => ({
       mqttLog: [
-        { id: Date.now().toString(), ts: new Date().toLocaleTimeString('pt-BR'), ...entry },
+        { id: `${Date.now()}-${logSeq++}`, ts: new Date().toLocaleTimeString('pt-BR'), ...entry },
         ...s.mqttLog,
       ].slice(0, 80),
     })),

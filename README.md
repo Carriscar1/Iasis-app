@@ -1,6 +1,21 @@
 # 💙 IASIS — Guia de Instalação e Execução
 
-Ecossistema IoT para adesão a medicamentos: ESP32 + pulseira RFID + app mobile.
+Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vibratória + app mobile.
+
+**Fluxo de segurança fechado:** o alerta na pulseira só cessa quando o paciente valida a identidade por RFID fisicamente no dispenser — e aí o motor libera a dose exata.
+
+---
+
+## ✨ Novidades da versão 2.0
+
+- **Tratamentos recorrentes** — vários horários por dia + duração (hoje / 7 / 14 / 30 dias); o app gera todas as doses de uma vez e agenda os lembretes
+- **Agenda com navegação por dia** — veja doses passadas e futuras deslizando a faixa de datas
+- **Meus remédios** — edite e exclua medicamentos (doses futuras são limpas, histórico preservado)
+- **Modo demonstração do dispenser** — um simulador fiel do ESP32 (sensores, RFID, motor) roda dentro do app quando o broker MQTT não está configurado. **Dá para demonstrar o fluxo fechado inteiro na feira sem o hardware!**
+- **Validação por RFID de verdade** — leitura da tag → dose validada (`validated_by = 'rfid'`) → comando DISPENSE → vibração cessa → app confirma
+- **Streak de adesão** 🔥 na Home + **exportar relatório** (PDF na web, compartilhar no celular)
+- **Lembrete de atraso** — se a dose não for tomada em 10 min, um segundo aviso é disparado
+- Correções: sessão persistente no celular, vínculo de cuidador no cadastro (RPC), doses perdidas agora são gravadas no banco
 
 ---
 
@@ -9,137 +24,73 @@ Ecossistema IoT para adesão a medicamentos: ESP32 + pulseira RFID + app mobile.
 | Ferramenta | Versão mínima | Instalar |
 |---|---|---|
 | Node.js | 18+ | nodejs.org |
-| npm ou yarn | — | (vem com Node) |
-| Expo CLI | — | `npm i -g expo-cli` |
-| Arduino IDE | 2.x | arduino.cc |
-| Conta Firebase | — | firebase.google.com |
-| Conta HiveMQ Cloud | — | hivemq.com/cloud (grátis) |
+| npm | — | (vem com Node) |
+| Conta Supabase | — | supabase.com (grátis) |
+| Arduino IDE *(só p/ hardware)* | 2.x | arduino.cc |
+| Conta HiveMQ Cloud *(só p/ hardware)* | — | hivemq.com/cloud (grátis) |
 
 ---
 
-## 1. Clonar / abrir o projeto
-
-```bash
-# Se ainda não está na pasta do projeto:
-cd iasis
-```
-
----
-
-## 2. Instalar dependências do app
+## 1. Instalar dependências
 
 ```bash
 npm install
 ```
 
----
+## 2. Configurar Supabase (banco + login)
 
-## 3. Configurar Firebase
+1. Crie um projeto em [supabase.com](https://supabase.com)
+2. No **SQL Editor**, execute na ordem:
+   - `supabase_setup.sql` (tabelas + RLS)
+   - `supabase_update.sql` (papel "independente" + vínculo de cuidador)
+   - `supabase_update2.sql` (RPC de busca de cuidador + policies de leitura)
+3. Copie a **URL** e a **anon key** (Settings → API) para:
+   - `src/services/supabase.ts`
+   - `app.json` (campo `extra`)
+4. Em **Authentication → Email Templates**, use `email_templates/confirm_signup.html`
 
-1. Acesse [console.firebase.google.com](https://console.firebase.google.com)
-2. Crie um projeto chamado `iasis`
-3. Vá em **Authentication → Sign-in method** → ative **Email/Senha**
-4. Vá em **Firestore Database** → crie em modo de produção
-5. Vá em **Configurações do projeto → Seus apps** → adicione um app **Web**
-6. Copie as credenciais e cole em `src/services/firebase.ts`:
+## 3. Rodar o app
+
+```bash
+# Navegador (mais rápido para desenvolver):
+npx expo start --web
+
+# Celular com Expo Go (demo na feira):
+npx expo start          # escaneie o QR code
+npx expo start --tunnel # se o celular não estiver na mesma rede
+```
+
+> 🎬 **Demonstração sem hardware:** o app já abre em **modo demonstração** — a aba *Dispenser* tem o fluxo de segurança fechado completo (alerta → vibração → RFID → dispensa) com um simulador do ESP32. Se não houver dose no horário, o botão **"Criar dose de teste para agora"** prepara tudo com um toque.
+
+## 4. Conectar o dispenser físico (opcional)
+
+1. Crie um cluster grátis no [HiveMQ Cloud](https://www.hivemq.com/cloud) e dois usuários (`iasis_app` e `iasis_esp32`)
+2. Edite `src/config/app.ts`:
 
 ```ts
-const firebaseConfig = {
-  apiKey:            'SUA_API_KEY',
-  authDomain:        'seu-projeto.firebaseapp.com',
-  projectId:         'seu-projeto',
-  storageBucket:     'seu-projeto.appspot.com',
-  messagingSenderId: 'SEU_SENDER_ID',
-  appId:             'SEU_APP_ID',
+export const MQTT_CONFIG = {
+  brokerUrl: 'wss://SEU_CLUSTER.hivemq.cloud:8884/mqtt',
+  username:  'iasis_app',
+  password:  'sua_senha',
+  dispenserId: '01',
 };
 ```
 
-7. Aplique as regras do Firestore:
-```bash
-npm install -g firebase-tools
-firebase login
-firebase init firestore
-# copie o conteúdo de firestore.rules para o arquivo gerado
-firebase deploy --only firestore:rules
-```
-
----
-
-## 4. Configurar Broker MQTT (HiveMQ Cloud)
-
-1. Crie uma conta em [hivemq.com/cloud](https://www.hivemq.com/cloud)
-2. Crie um cluster gratuito
-3. Em **Access Management**, crie um usuário:
-   - Username: `iasis_app`
-   - Password: `sua_senha` (anote)
-   - Crie outro: `iasis_esp32` / `sua_senha_esp32`
-4. Copie a URL do broker (formato: `xxxxx.hivemq.cloud`)
-5. Edite `src/services/mqtt.ts`:
-
-```ts
-const BROKER_URL    = 'wss://xxxxx.hivemq.cloud:8884/mqtt';
-const MQTT_USERNAME = 'iasis_app';
-const MQTT_PASSWORD = 'sua_senha';
-```
-
----
-
-## 5. Rodar o app
-
-```bash
-# Com Expo Go (mais fácil para TCC):
-npx expo start
-
-# Ou direto no dispositivo:
-npx expo start --tunnel   # usa ngrok para conexão externa
-```
-
-Escaneie o QR code com o **Expo Go** no celular (iOS ou Android).
-
-> Para build nativo (APK/IPA final):
-> ```bash
-> npx eas build --platform android
-> npx eas build --platform ios
-> ```
-
----
-
-## 6. Configurar e gravar firmware ESP32
-
-### Instalar bibliotecas no Arduino IDE
-
-Vá em **Sketch → Include Library → Manage Libraries** e instale:
-
-| Biblioteca | Autor |
-|---|---|
-| PubSubClient | Nick O'Leary |
-| DHT sensor library | Adafruit |
-| MFRC522 | GithubCommunity |
-| ArduinoJson | Benoit Blanchon |
-
-### Configurar o firmware
-
-Abra `firmware/esp32/iasis_dispenser.ino` e edite:
+3. Configure e grave o firmware (`firmware/esp32/iasis_dispenser.ino`):
 
 ```cpp
 const char* WIFI_SSID     = "NOME_DA_SUA_REDE";
 const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
-const char* MQTT_BROKER   = "xxxxx.hivemq.cloud";
+const char* MQTT_BROKER   = "SEU_CLUSTER.hivemq.cloud";
 const char* MQTT_USER     = "iasis_esp32";
 const char* MQTT_PASS     = "sua_senha_esp32";
-const char* DISPENSER_ID  = "01";
 ```
 
-### Gravar no ESP32
+Bibliotecas (Arduino Library Manager): **PubSubClient**, **DHT sensor library** (Adafruit), **MFRC522**, **ArduinoJson**.
 
-1. Selecione a placa: **Tools → Board → ESP32 Dev Module**
-2. Selecione a porta COM correta
-3. Clique em **Upload**
-4. Abra o **Serial Monitor** (115200 baud) para ver os logs
+Com o broker configurado, o app troca o simulador pelo hardware real automaticamente — mesma interface, mesmas telas.
 
----
-
-## 7. Diagrama de pinos ESP32
+## 5. Diagrama de pinos ESP32
 
 ```
 ESP32          →  Componente
@@ -161,102 +112,75 @@ GND            →  Todos os GNDs
 
 ---
 
-## 8. Estrutura de pastas
+## Estrutura de pastas
 
 ```
 iasis/
-├── app/                    # Expo Router (rotas)
-│   ├── _layout.tsx         # Root layout
-│   ├── index.tsx           # Redirect inicial
-│   ├── auth/               # Telas de autenticação
-│   │   ├── _layout.tsx
-│   │   ├── login.tsx
-│   │   └── register.tsx
-│   └── tabs/               # Navegação por abas
-│       ├── _layout.tsx
-│       ├── home.tsx
-│       ├── schedule.tsx
-│       ├── device.tsx
-│       ├── history.tsx
-│       └── profile.tsx
+├── app/                        # Expo Router (rotas)
+│   ├── _layout.tsx             # Root layout + listener de sessão
+│   ├── index.tsx               # Restaura sessão / redireciona
+│   ├── (auth)/                 # Login e cadastro
+│   └── (tabs)/                 # Home, Agenda, Dispenser, Histórico, Perfil
 │
 ├── src/
-│   ├── screens/            # Telas (lógica + UI)
-│   │   ├── HomeScreen.tsx
-│   │   ├── ScheduleScreen.tsx
-│   │   ├── DeviceScreen.tsx
-│   │   ├── HistoryScreen.tsx
-│   │   ├── LoginScreen.tsx
-│   │   ├── RegisterScreen.tsx
-│   │   └── ProfileScreen.tsx
-│   │
-│   ├── components/
-│   │   ├── ui/index.tsx    # Card, Button, Pill, MetricCard...
-│   │   └── DoseItem.tsx    # Componente de dose
-│   │
+│   ├── screens/                # Telas (lógica + UI)
+│   ├── components/             # AlarmTimePicker, DateStrip, ConfirmAction, ui/
 │   ├── services/
-│   │   ├── firebase.ts     # Auth + Firestore
-│   │   ├── mqtt.ts         # Comunicação ESP32
-│   │   └── notifications.ts # Push + agendamento
-│   │
-│   ├── store/index.ts      # Zustand (estado global)
-│   ├── hooks/
-│   │   ├── useAuth.ts      # Auth lifecycle
-│   │   ├── useMqtt.ts      # MQTT + store sync
-│   │   └── useDoses.ts     # Doses em tempo real
-│   │
-│   ├── types/index.ts      # TypeScript types
-│   ├── theme/index.ts      # Cores, fontes, espaçamentos
-│   └── navigation/
-│       └── TabsLayout.tsx
+│   │   ├── supabase.ts         # Cliente (sessão persistente em todas plataformas)
+│   │   ├── auth.ts             # Login, cadastro, vínculo de cuidador
+│   │   ├── data.ts             # CRUD: medicamentos, doses, adesão, streak
+│   │   ├── device.ts           # Canal unificado: MQTT real OU simulador
+│   │   ├── dispenserSim.ts     # Simulador fiel do ESP32 (modo demo)
+│   │   ├── mqtt.ts             # Comunicação com o ESP32 real
+│   │   ├── notifications.ts    # Lembretes locais + aviso de atraso
+│   │   └── report.ts           # Relatório de adesão exportável
+│   ├── hooks/useDevice.ts      # Fluxo de segurança fechado (global)
+│   ├── store/index.ts          # Zustand (usuário, dispositivo, fluxo)
+│   ├── config/app.ts           # Versão, MQTT_CONFIG, modo demo
+│   ├── data/medications.ts     # Catálogo de remédios comuns no Brasil
+│   ├── types/index.ts          # Tipos globais
+│   └── theme/index.ts          # Cores, fontes, espaçamentos
 │
-├── firmware/
-│   └── esp32/
-│       └── iasis_dispenser.ino  # Firmware completo
-│
-├── firestore.rules         # Regras de segurança
-├── app.json                # Config Expo
-├── package.json
-└── tsconfig.json
+├── firmware/esp32/iasis_dispenser.ino
+├── supabase_setup.sql          # + supabase_update.sql / update2.sql
+├── email_templates/
+└── app.json
 ```
 
 ---
 
-## 9. Fluxo de funcionamento
+## Fluxo de segurança fechado
 
 ```
-1. Horário de dose chega
+1. Horário da dose chega
         ↓
-2. Firebase Cloud Function dispara notificação push → celular
+2. Alerta disparado → CMD VIBRATE_ON → pulseira vibra continuamente
         ↓
-3. App recebe → publica MQTT: VIBRATE_ON → ESP32
+3. Paciente aproxima a pulseira do leitor RC522 no dispenser
         ↓
-4. Pulseira vibra continuamente
+4. ESP32 lê a tag → publica RFID_READ em iasis/dispenser/01/rfid
         ↓
-5. Paciente aproxima pulseira do leitor RC522
+5. App valida: dose marcada como tomada (validated_by = 'rfid')
         ↓
-6. ESP32 lê tag RFID → publica em iasis/dispenser/01/rfid
+6. App publica CMD DISPENSE slot:N → motor NEMA 17 libera a dose
         ↓
-7. App recebe → publica MQTT: DISPENSE slot:N doseId:XXX
+7. ESP32 responde DISPENSE_ACK → CMD VIBRATE_OFF → vibração cessa
         ↓
-8. Motor NEMA 17 gira → libera dose do compartimento
-        ↓
-9. ESP32 publica DISPENSE_ACK → app confirma no Firebase
-        ↓
-10. Vibração cessa → status da dose muda para "taken"
-        ↓
-11. Notificação de confirmação chega no celular
+8. App confirma: notificação "✅ Dose liberada" + histórico atualizado
 ```
+
+*(No modo demonstração, os passos 3–7 são executados pelo simulador — visíveis no log da aba Dispenser.)*
 
 ---
 
-## Dicas para o TCC
+## Dicas para a feira
 
-- Use **Expo Go** para demos ao vivo na feira (sem precisar de build nativo)
-- O **Serial Monitor** do Arduino IDE mostra todos os logs do ESP32 em tempo real
-- O broker HiveMQ tem um painel web onde você vê as mensagens trafegando
-- Para simular o dispenser sem o hardware: use o painel HiveMQ para publicar mensagens manualmente nos tópicos
+- A aba **Dispenser** foi feita para a demo: mostre as 4 etapas acendendo em tempo real
+- Sem dose agendada? Use **"Criar dose de teste para agora"** e rode o ciclo na hora
+- O **log do simulador** (embaixo da tela) mostra as mensagens MQTT como no hardware real — ótimo para explicar a arquitetura à banca
+- No Histórico, o botão **Exportar relatório** gera um PDF apresentável com a adesão
+- Com o ESP32 montado, basta preencher `MQTT_CONFIG` — as telas são as mesmas
 
 ---
 
-*IASIS — Sua saúde em dia 💙*
+*IASIS — Sua saúde em dia 💙 · TCC 2026*

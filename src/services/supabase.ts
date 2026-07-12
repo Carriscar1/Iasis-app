@@ -1,17 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SUPABASE_URL = 'https://qoqlsymvmmmsfsfscpmg.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFvcWxzeW12bW1tc2ZzZnNjcG1nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjg2NzcsImV4cCI6MjA5Nzk0NDY3N30.rzRMUUXXtXG5AWFsX61reOIU1oY-IjmJVvrZCgfTnjk';
 
 const isWeb = Platform.OS === 'web';
 
+// Storage da sessão por plataforma:
+//  - Web:    localStorage (mantém login entre abas/recargas)
+//  - Nativo: AsyncStorage (sem ele a sessão morria ao fechar o app!)
+const sessionStorage = isWeb
+  ? (typeof window !== 'undefined' ? window.localStorage : undefined)
+  : AsyncStorage;
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     autoRefreshToken:   true,
     persistSession:     true,
     detectSessionInUrl: isWeb,
-    storage: isWeb && typeof window !== 'undefined' ? window.localStorage : undefined,
+    storage: sessionStorage,
   },
   global: {
     // IMPORTANTE: NÃO fixar 'Authorization' aqui. O supabase-js só injeta o

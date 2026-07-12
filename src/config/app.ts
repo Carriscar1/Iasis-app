@@ -14,3 +14,23 @@ export const APP_META = {
 
 // Texto pronto do rodapé: "IASIS v1.0.0 · TCC 2026"
 export const FOOTER_LABEL = `${APP_META.name} v${APP_META.version} · TCC ${APP_META.year}`;
+
+// ─────────────────────────────────────────────
+//  Conexão com o dispenser físico (ESP32 via MQTT)
+//  Preencha com os dados do seu broker (HiveMQ Cloud / Mosquitto).
+//  Enquanto o broker não estiver configurado, o app entra automaticamente
+//  em MODO DEMONSTRAÇÃO: um simulador fiel do ESP32 responde aos comandos
+//  (sensores, RFID, dispensa) — perfeito para apresentar na feira sem
+//  depender do hardware montado.
+// ─────────────────────────────────────────────
+export const MQTT_CONFIG = {
+  brokerUrl: 'wss://SEU_BROKER.hivemq.cloud:8884/mqtt', // ⚠️ substitua
+  username:  'iasis_app',
+  password:  'SUA_SENHA_MQTT',
+  dispenserId: '01',
+} as const;
+
+// true quando o broker real foi configurado (deixa de usar o simulador).
+export const isMqttConfigured = () =>
+  !MQTT_CONFIG.brokerUrl.includes('SEU_BROKER') &&
+  MQTT_CONFIG.password !== 'SUA_SENHA_MQTT';

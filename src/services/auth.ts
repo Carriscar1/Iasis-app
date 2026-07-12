@@ -141,18 +141,19 @@ export const getProfile = async (userId: string): Promise<UserProfile | null> =>
   }
 };
 
+// Busca cuidador por e-mail via RPC SECURITY DEFINER (supabase_update2.sql).
+// Consulta direta na tabela não funciona: durante o cadastro o usuário ainda
+// é anônimo e a RLS de `profiles` bloqueia a leitura de perfis alheios.
 export const findCaregiverByEmail = async (
   email: string
 ): Promise<{ id: string; name: string } | null> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, name')
-    .eq('email', email.trim().toLowerCase())
-    .eq('role', 'caregiver')
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('find_caregiver_by_email', {
+    p_email: email.trim().toLowerCase(),
+  });
 
   if (error || !data) return null;
-  return data;
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? { id: row.id, name: row.name } : null;
 };
 
 const translateError = (err: any): string => {

@@ -10,7 +10,10 @@ import { router, useFocusEffect } from 'expo-router';
 import { useStore } from '../store';
 import { Colors, Radius, Shadows } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
-import { listDosesForDay, computeLiveStatus } from '../services/data';
+import {
+  listDosesForDay, computeLiveStatus, syncOverdueDoses,
+  getAdherence, computeStreak,
+} from '../services/data';
 import type { Dose } from '../types';
 import type { UserProfile } from '../services/auth';
 
@@ -46,6 +49,7 @@ export default function HomeScreen() {
   const user = useStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
   const [doses, setDoses] = useState<Dose[]>([]);
+  const [streak, setStreak] = useState(0);
 
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -67,8 +71,14 @@ export default function HomeScreen() {
 
   const loadDoses = useCallback(async () => {
     if (!user || user.role === 'caregiver') { setDoses([]); return; }
-    const { data } = await listDosesForDay(user.id);
+    // Persiste doses vencidas como "missed" antes de mostrar o resumo.
+    await syncOverdueDoses(user.id);
+    const [{ data }, adh] = await Promise.all([
+      listDosesForDay(user.id),
+      getAdherence(user.id, 30),
+    ]);
     setDoses(data.map((d) => ({ ...d, status: computeLiveStatus(d) })));
+    setStreak(computeStreak(adh.data.byDay));
   }, [user]);
 
   useFocusEffect(useCallback(() => { loadDoses(); }, [loadDoses]));
@@ -123,8 +133,17 @@ export default function HomeScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-        <View style={[styles.statusPill, maxW ? { alignSelf: 'flex-start' } : {}]}>
-          <Text style={[styles.statusPillText, { fontSize: fs - 2 }]}>{headlineStatus}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: maxW ? 'flex-start' : 'auto' }}>
+          <View style={styles.statusPill}>
+            <Text style={[styles.statusPillText, { fontSize: fs - 2 }]}>{headlineStatus}</Text>
+          </View>
+          {showsDoses && streak >= 2 && (
+            <View style={[styles.statusPill, { backgroundColor: 'rgba(250,199,117,.22)' }]}>
+              <Text style={[styles.statusPillText, { fontSize: fs - 2, color: '#FAC775' }]}>
+                🔥 {streak} dias seguidos
+              </Text>
+            </View>
+          )}
         </View>
       </LinearGradient>
 
@@ -156,7 +175,13 @@ export default function HomeScreen() {
               {nextDose ? (
                 <TouchableOpacity
                   style={[styles.nextCard, nextDose.status === 'due' && styles.nextCardDue]}
-                  onPress={() => router.push('/(tabs)/schedule')}
+                  // Dose "na hora": leva ao dispenser para validar com a pulseira
+                  // (paciente idoso não controla o aparelho — segue para a agenda).
+                  onPress={() => router.push(
+                    nextDose.status === 'due' && user?.role !== 'patient'
+                      ? '/(tabs)/device'
+                      : '/(tabs)/schedule'
+                  )}
                   activeOpacity={0.85}
                 >
                   <View style={[styles.nextIcon, { backgroundColor: nextDose.status === 'due' ? '#FFFFFF' : Colors.greenLight }]}>

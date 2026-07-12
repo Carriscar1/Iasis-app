@@ -10,16 +10,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
 import {
-  listDosesForDay, createMedication, createDose, markDoseTaken,
-  deleteDose, computeLiveStatus,
+  listDosesForDay, listMedications, createMedication, updateMedication,
+  deleteMedication, createDosesBulk, markDoseTaken, deleteDose,
+  computeLiveStatus, syncOverdueDoses,
 } from '../services/data';
 import { searchMedications, MEDICATIONS_ALPHABETICAL, type CatalogMed } from '../data/medications';
 import {
-  requestPermission, scheduleDoseReminder, cancelDoseReminder,
+  requestPermission, scheduleRemindersForDoses, cancelDoseReminder,
 } from '../services/notifications';
 import AlarmTimePicker from '../components/AlarmTimePicker';
 import DateStrip from '../components/DateStrip';
-import type { Dose, DoseStatus, MedForm } from '../types';
+import ConfirmAction from '../components/ConfirmAction';
+import type { Dose, DoseStatus, Medication, MedForm } from '../types';
 
 const CFG: Record<DoseStatus, { label: string; bg: string; tc: string; icon: string }> = {
   taken:    { label: 'Tomada',   bg: '#E1F5EE', tc: '#0F6E56', icon: 'checkmark-circle' },
@@ -30,8 +32,32 @@ const CFG: Record<DoseStatus, { label: string; bg: string; tc: string; icon: str
   pending:  { label: 'Aguarda',  bg: '#F1F5F9', tc: '#64748B', icon: 'ellipse-outline' },
 };
 
+// Presets de frequência (horários típicos de tratamento).
+const FREQ_PRESETS = [
+  { label: '1×/dia', times: ['08:00'] },
+  { label: '2×/dia', times: ['08:00', '20:00'] },
+  { label: '3×/dia', times: ['08:00', '14:00', '20:00'] },
+] as const;
+
+const DURATIONS = [
+  { label: 'Só hoje', days: 1  },
+  { label: '7 dias',  days: 7  },
+  { label: '14 dias', days: 14 },
+  { label: '30 dias', days: 30 },
+] as const;
+
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+const atMidnight = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const isToday = (d: Date) => atMidnight(d).getTime() === atMidnight(new Date()).getTime();
+
+const FORM_ICON: Record<MedForm, string> = {
+  comprimido: 'tablet-portrait-outline',
+  'cápsula':  'ellipse-outline',
+  'líquido':  'water-outline',
+  outro:      'medkit-outline',
+};
 
 export default function ScheduleScreen() {
   const { width } = useWindowDimensions();
@@ -43,25 +69,36 @@ export default function ScheduleScreen() {
   const user = useStore((s) => s.user);
   const isElderly = user?.role === 'patient';
 
+  const [view, setView]       = useState<'doses' | 'meds'>('doses');
+  const [selDay, setSelDay]   = useState<Date>(atMidnight(new Date()));
   const [doses, setDoses]     = useState<Dose[]>([]);
+  const [meds, setMeds]       = useState<Medication[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sel, setSel]         = useState<Dose | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [editMed, setEditMed]   = useState<Medication | null>(null);
   const [screenError, setScreenError] = useState('');
   const [screenSuccess, setScreenSuccess] = useState('');
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
-    const { data, error } = await listDosesForDay(user.id);
-    setScreenError(error ?? '');
-    // aplica status "ao vivo" (due/upcoming/missed) sem gravar ainda
-    setDoses(data.map((d) => ({ ...d, status: computeLiveStatus(d) })));
+    // Persiste como "missed" as doses vencidas antes de listar, para o banco
+    // (e a tela do cuidador) ficarem consistentes com o que o app mostra.
+    await syncOverdueDoses(user.id);
+    const [dRes, mRes] = await Promise.all([
+      listDosesForDay(user.id, selDay),
+      listMedications(user.id),
+    ]);
+    setScreenError(dRes.error ?? mRes.error ?? '');
+    setDoses(dRes.data.map((d) => ({ ...d, status: computeLiveStatus(d) })));
+    setMeds(mRes.data);
     setLoading(false);
     setRefreshing(false);
-  }, [user]);
+  }, [user, selDay]);
 
-  useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+  useEffect(() => { setLoading(true); load(); }, [selDay]);
 
   // Pede permissão de notificação uma vez ao abrir a agenda (no-op na web).
   useEffect(() => { requestPermission(); }, []);
@@ -84,16 +121,27 @@ export default function ScheduleScreen() {
     load();
   };
 
+  const handleDeleteMed = async (med: Medication) => {
+    const { error } = await deleteMedication(med.id);
+    if (error) { setScreenError(error); return; }
+    setScreenSuccess(`${med.name} excluído. Doses futuras foram removidas; o histórico foi mantido.`);
+    load();
+  };
+
   const taken   = doses.filter((d) => d.status === 'taken' || d.status === 'late').length;
   const pending = doses.filter((d) => ['pending', 'upcoming', 'due'].includes(d.status)).length;
   const missed  = doses.filter((d) => d.status === 'missed').length;
+
+  const dayLabel = isToday(selDay)
+    ? 'Doses de hoje'
+    : `Doses de ${selDay.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Agenda de Doses</Text>
+            <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Agenda</Text>
             <Text style={[styles.subtitle, { fontSize: fs - 1 }]}>
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}
             </Text>
@@ -101,6 +149,26 @@ export default function ScheduleScreen() {
           <TouchableOpacity style={styles.addBtn} onPress={() => setFormOpen(true)} activeOpacity={0.85}>
             <Ionicons name="add" size={22} color="#fff" />
           </TouchableOpacity>
+        </View>
+
+        {/* Alternância Doses / Meus remédios */}
+        <View style={styles.segment}>
+          {([
+            { key: 'doses', label: 'Doses',         icon: 'calendar'  },
+            { key: 'meds',  label: 'Meus remédios', icon: 'medkit' },
+          ] as const).map((s) => (
+            <TouchableOpacity
+              key={s.key}
+              style={[styles.segmentBtn, view === s.key && styles.segmentActive]}
+              onPress={() => setView(s.key)}
+              activeOpacity={0.85}
+            >
+              <Ionicons name={s.icon as any} size={14} color={view === s.key ? Colors.navy : 'rgba(255,255,255,.7)'} />
+              <Text style={[styles.segmentLabel, { fontSize: fs - 2 }, view === s.key && styles.segmentLabelActive]}>
+                {s.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
 
@@ -130,55 +198,109 @@ export default function ScheduleScreen() {
               </TouchableOpacity>
             )}
 
-            <View style={styles.summaryCard}>
-              {[
-                { val: taken,   label: 'Tomadas',  color: '#0F6E56' },
-                { val: pending, label: 'Pendentes', color: '#185FA5' },
-                { val: missed,  label: 'Perdidas',  color: '#A32D2D' },
-              ].map((s, i) => (
-                <React.Fragment key={s.label}>
-                  {i > 0 && <View style={styles.summaryDivider} />}
-                  <View style={styles.summaryItem}>
-                    <Text style={[styles.summaryNum, { color: s.color, fontSize: isTablet ? 28 : 24 }]}>{s.val}</Text>
-                    <Text style={[styles.summaryLabel, { fontSize: fs - 2 }]}>{s.label}</Text>
+            {view === 'doses' ? (
+              <>
+                {/* Navegação por dia */}
+                <View style={{ marginTop: 14 }}>
+                  <DateStrip value={selDay} onChange={setSelDay} pastDays={14} days={30} isElderly={isElderly} />
+                </View>
+
+                <View style={styles.summaryCard}>
+                  {[
+                    { val: taken,   label: 'Tomadas',  color: '#0F6E56' },
+                    { val: pending, label: 'Pendentes', color: '#185FA5' },
+                    { val: missed,  label: 'Perdidas',  color: '#A32D2D' },
+                  ].map((s, i) => (
+                    <React.Fragment key={s.label}>
+                      {i > 0 && <View style={styles.summaryDivider} />}
+                      <View style={styles.summaryItem}>
+                        <Text style={[styles.summaryNum, { color: s.color, fontSize: isTablet ? 28 : 24 }]}>{s.val}</Text>
+                        <Text style={[styles.summaryLabel, { fontSize: fs - 2 }]}>{s.label}</Text>
+                      </View>
+                    </React.Fragment>
+                  ))}
+                </View>
+
+                <Text style={[styles.sectionTitle, { fontSize: fs - 2, marginTop: 20 }]}>{dayLabel}</Text>
+
+                {doses.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
+                    <Text style={[styles.emptyTitle, { fontSize: fs }]}>
+                      {isToday(selDay) ? 'Nenhuma dose para hoje' : 'Nenhuma dose neste dia'}
+                    </Text>
+                    <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar um medicamento.</Text>
                   </View>
-                </React.Fragment>
-              ))}
-            </View>
-
-            <Text style={[styles.sectionTitle, { fontSize: fs - 2, marginTop: 20 }]}>Doses de hoje</Text>
-
-            {doses.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
-                <Text style={[styles.emptyTitle, { fontSize: fs }]}>Nenhuma dose para hoje</Text>
-                <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar um medicamento.</Text>
-              </View>
+                ) : (
+                  doses.map((dose) => {
+                    const cfg = CFG[dose.status];
+                    const med = dose.medication;
+                    return (
+                      <TouchableOpacity
+                        key={dose.id}
+                        style={[styles.doseCard, (dose.status === 'upcoming' || dose.status === 'due') && { borderColor: '#93B4DA', backgroundColor: '#F0F6FF' }]}
+                        onPress={() => setSel(dose)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[styles.doseIcon, { backgroundColor: cfg.bg, width: isTablet ? 50 : 44, height: isTablet ? 50 : 44, borderRadius: isTablet ? 15 : 12 }]}>
+                          <Ionicons name={cfg.icon as any} size={isTablet ? 24 : 20} color={cfg.tc} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.doseTime, { fontSize: fs - 2 }]}>{fmtTime(dose.scheduledAt)}</Text>
+                          <Text style={[styles.doseName, { fontSize: fs + 1 }]}>{med ? `${med.name} ${med.dosage}` : 'Medicamento'}</Text>
+                          {!!med?.instructions && <Text style={[styles.doseInstr, { fontSize: fs - 2 }]}>{med.instructions}</Text>}
+                        </View>
+                        <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
+                          <Text style={[styles.badgeText, { color: cfg.tc, fontSize: fs - 3 }]}>{cfg.label}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </>
             ) : (
-              doses.map((dose) => {
-                const cfg = CFG[dose.status];
-                const med = dose.medication;
-                return (
-                  <TouchableOpacity
-                    key={dose.id}
-                    style={[styles.doseCard, (dose.status === 'upcoming' || dose.status === 'due') && { borderColor: '#93B4DA', backgroundColor: '#F0F6FF' }]}
-                    onPress={() => setSel(dose)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.doseIcon, { backgroundColor: cfg.bg, width: isTablet ? 50 : 44, height: isTablet ? 50 : 44, borderRadius: isTablet ? 15 : 12 }]}>
-                      <Ionicons name={cfg.icon as any} size={isTablet ? 24 : 20} color={cfg.tc} />
+              <>
+                {/* Meus remédios */}
+                <Text style={[styles.sectionTitle, { fontSize: fs - 2, marginTop: 20 }]}>
+                  Medicamentos cadastrados ({meds.length})
+                </Text>
+
+                {meds.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Ionicons name="medkit-outline" size={40} color={Colors.textMuted} />
+                    <Text style={[styles.emptyTitle, { fontSize: fs }]}>Nenhum remédio cadastrado</Text>
+                    <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar seu primeiro medicamento.</Text>
+                  </View>
+                ) : (
+                  meds.map((med) => (
+                    <View key={med.id} style={styles.medCard}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                        <View style={styles.medIcon}>
+                          <Ionicons name={(FORM_ICON[med.form] ?? 'medkit-outline') as any} size={20} color={Colors.navy} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.medName, { fontSize: fs + 1 }]}>{med.name} {med.dosage}</Text>
+                          <Text style={[styles.medMeta, { fontSize: fs - 2 }]}>
+                            {med.form} · compartimento {med.compartment}
+                            {med.instructions ? ` · ${med.instructions}` : ''}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.medActions}>
+                        <TouchableOpacity style={styles.medEditBtn} onPress={() => setEditMed(med)} activeOpacity={0.8}>
+                          <Ionicons name="pencil" size={14} color={Colors.navy} />
+                          <Text style={[styles.medEditText, { fontSize: fs - 2 }]}>Editar</Text>
+                        </TouchableOpacity>
+                        <ConfirmAction
+                          label="Excluir" confirmLabel="Excluir"
+                          onConfirm={() => handleDeleteMed(med)}
+                          bg={Colors.redLight} txtColor={Colors.redText} fs={fs - 2}
+                        />
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.doseTime, { fontSize: fs - 2 }]}>{fmtTime(dose.scheduledAt)}</Text>
-                      <Text style={[styles.doseName, { fontSize: fs + 1 }]}>{med ? `${med.name} ${med.dosage}` : 'Medicamento'}</Text>
-                      {!!med?.instructions && <Text style={[styles.doseInstr, { fontSize: fs - 2 }]}>{med.instructions}</Text>}
-                    </View>
-                    <View style={[styles.badge, { backgroundColor: cfg.bg }]}>
-                      <Text style={[styles.badgeText, { color: cfg.tc, fontSize: fs - 3 }]}>{cfg.label}</Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })
+                  ))
+                )}
+              </>
             )}
           </View>
         </ScrollView>
@@ -229,7 +351,7 @@ export default function ScheduleScreen() {
         </View>
       </Modal>
 
-      {/* Formulário de novo medicamento */}
+      {/* Formulário de novo tratamento */}
       <AddMedicationModal
         visible={formOpen}
         onClose={() => setFormOpen(false)}
@@ -240,12 +362,22 @@ export default function ScheduleScreen() {
         fs={fs}
         isElderly={isElderly}
       />
+
+      {/* Edição de medicamento */}
+      <EditMedicationModal
+        med={editMed}
+        onClose={() => setEditMed(null)}
+        onSaved={(msg) => { setEditMed(null); setScreenError(''); setScreenSuccess(msg); load(); }}
+        isTablet={isTablet}
+        maxW={maxW}
+        fs={fs}
+      />
     </SafeAreaView>
   );
 }
 
 // ─────────────────────────────────────────────
-//  Modal: adicionar medicamento + dose de hoje
+//  Modal: novo tratamento (medicamento + doses recorrentes)
 // ─────────────────────────────────────────────
 function AddMedicationModal({
   visible, onClose, userId, onSaved, isTablet, maxW, fs, isElderly,
@@ -261,7 +393,9 @@ function AddMedicationModal({
   const [name, setName]         = useState('');
   const [form, setForm]         = useState<MedForm>('comprimido');
   const [dosage, setDosage]     = useState('');
-  const [time, setTime]         = useState('08:00');
+  const [times, setTimes]       = useState<string[]>(['08:00']);
+  const [timeDraft, setTimeDraft] = useState('08:00');
+  const [duration, setDuration] = useState(7);
   const [startDate, setStart]   = useState<Date>(midnight());
   const [compartment, setComp]  = useState(1);
   const [instr, setInstr]       = useState('');
@@ -270,11 +404,10 @@ function AddMedicationModal({
 
   const reset = () => {
     setQuery(''); setSelected(null); setCustom(false); setName('');
-    setForm('comprimido'); setDosage(''); setTime('08:00'); setStart(midnight());
-    setComp(1); setInstr(''); setFormError('');
+    setForm('comprimido'); setDosage(''); setTimes(['08:00']); setTimeDraft('08:00');
+    setDuration(7); setStart(midnight()); setComp(1); setInstr(''); setFormError('');
   };
 
-  const validTime = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(time);
   // Com busca: melhores resultados. Sem busca: catálogo inteiro de A a Z para rolar.
   const showList = visible && !selected && !customMode;
   const results  = showList
@@ -293,11 +426,18 @@ function AddMedicationModal({
     setSelected(null); setCustom(false); setName(''); setDosage(''); setQuery('');
   };
 
+  const addTime = () => {
+    if (times.includes(timeDraft)) return;
+    setTimes((t) => [...t, timeDraft].sort());
+  };
+  const removeTime = (t: string) => setTimes((arr) => arr.filter((x) => x !== t));
+  const applyPreset = (preset: readonly string[]) => setTimes([...preset]);
+
   const handleSave = async () => {
     setFormError('');
     if (!userId) { setFormError('Sessão expirada. Entre novamente.'); return; }
     if (!name.trim() || !dosage.trim()) { setFormError('Escolha um remédio e a dosagem.'); return; }
-    if (!validTime) { setFormError('Horário inválido.'); return; }
+    if (times.length === 0) { setFormError('Adicione pelo menos um horário.'); return; }
 
     setSaving(true);
     const med = await createMedication(userId, { name, dosage, form, compartment, instructions: instr });
@@ -308,31 +448,50 @@ function AddMedicationModal({
       return;
     }
 
-    // Usa o dia de início escolhido (não necessariamente hoje) + o horário.
-    const [h, m] = time.split(':').map(Number);
-    const when = new Date(startDate); when.setHours(h, m, 0, 0);
-    const dose = await createDose(userId, { medicationId: med.data.id, scheduledAt: when.toISOString() });
-    setSaving(false);
-    if (dose.error || !dose.data) {
-      console.error('IASIS salvar (dose):', dose.error);
-      setFormError(dose.error ?? 'Falha ao salvar.');
+    // Gera todas as doses do tratamento: N dias × M horários.
+    // No primeiro dia, horários que já passaram há mais de 15 min são pulados
+    // (senão nasceriam "perdidas").
+    const isoList: string[] = [];
+    const cutoff = Date.now() - 15 * 60000;
+    for (let d = 0; d < duration; d++) {
+      for (const t of times) {
+        const [h, m] = t.split(':').map(Number);
+        const when = new Date(startDate);
+        when.setDate(when.getDate() + d);
+        when.setHours(h, m, 0, 0);
+        if (when.getTime() < cutoff) continue;
+        isoList.push(when.toISOString());
+      }
+    }
+
+    if (isoList.length === 0) {
+      setSaving(false);
+      setFormError('Todos os horários escolhidos já passaram. Ajuste o horário ou o dia de início.');
       return;
     }
 
-    // Agenda o lembrete local no horário da dose (no-op na web / sem permissão).
-    await scheduleDoseReminder({
-      doseId: dose.data.id,
-      title:  '💊 Hora do remédio',
-      body:   `${name} ${dosage}${instr ? ` · ${instr}` : ''}`,
-      date:   when,
-    });
+    const dosesRes = await createDosesBulk(userId, med.data.id, isoList);
+    setSaving(false);
+    if (dosesRes.error) {
+      console.error('IASIS salvar (doses):', dosesRes.error);
+      setFormError(dosesRes.error);
+      return;
+    }
 
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const isToday = startDate.getTime() === today.getTime();
-    const dia = startDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const msg = isToday
-      ? `${name} ${dosage} salvo para hoje às ${time}.`
-      : `${name} ${dosage} salvo! O tratamento começa em ${dia} às ${time} — por isso ainda não aparece na lista de hoje.`;
+    // Lembretes locais para as próximas doses (no-op na web / sem permissão).
+    await scheduleRemindersForDoses(
+      dosesRes.data.map((dose) => ({
+        doseId: dose.id,
+        title:  '💊 Hora do remédio',
+        body:   `${name} ${dosage}${instr ? ` · ${instr}` : ''}`,
+        date:   new Date(dose.scheduledAt),
+      }))
+    );
+
+    const n = dosesRes.data.length;
+    const freq = `${times.length}×/dia`;
+    const durLabel = duration === 1 ? 'hoje' : `por ${duration} dias`;
+    const msg = `${name} ${dosage}: ${n} ${n === 1 ? 'dose agendada' : 'doses agendadas'} (${freq} ${durLabel}).`;
 
     reset();
     onSaved(msg);
@@ -346,7 +505,7 @@ function AddMedicationModal({
         <View style={[styles.sheet, { padding: isTablet ? 32 : 24, maxWidth: maxW ?? '100%', width: '100%', maxHeight: '90%' }]}>
           <View style={styles.handle} />
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <Text style={[styles.sheetTitle, { fontSize: isTablet ? 22 : 19, marginBottom: 16 }]}>Novo medicamento</Text>
+            <Text style={[styles.sheetTitle, { fontSize: isTablet ? 22 : 19, marginBottom: 16 }]}>Novo tratamento</Text>
 
             {/* Busca + lista completa A–Z */}
             {!hasMed && (
@@ -439,9 +598,45 @@ function AddMedicationModal({
                     placeholder="Ex: 50mg" placeholderTextColor={Colors.textMuted} />
                 </Field>
 
-                <Field label="Horário da dose" fs={fs}>
+                <Field label="Quantas vezes por dia" fs={fs}>
+                  <View style={styles.chipRow}>
+                    {FREQ_PRESETS.map((p) => {
+                      const active = times.length === p.times.length && p.times.every((t) => times.includes(t));
+                      return (
+                        <TouchableOpacity key={p.label} style={[styles.chip, active && styles.chipActive]} onPress={() => applyPreset(p.times)}>
+                          <Text style={[styles.chipText, { fontSize: fs - 2 }, active && styles.chipTextActive]}>{p.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Field>
+
+                <Field label={`Horários (${times.length})`} fs={fs}>
+                  <View style={[styles.chipRow, { marginBottom: 10 }]}>
+                    {times.map((t) => (
+                      <TouchableOpacity key={t} style={styles.timeChip} onPress={() => removeTime(t)} activeOpacity={0.7}>
+                        <Ionicons name="alarm-outline" size={14} color={Colors.greenText} />
+                        <Text style={[styles.timeChipText, { fontSize: fs - 1 }]}>{t}</Text>
+                        {times.length > 1 && <Ionicons name="close-circle" size={15} color={Colors.greenText} />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                   <View style={styles.pickerCard}>
-                    <AlarmTimePicker value={time} onChange={setTime} isElderly={isElderly} />
+                    <AlarmTimePicker value={timeDraft} onChange={setTimeDraft} isElderly={isElderly} />
+                    <TouchableOpacity style={styles.addTimeBtn} onPress={addTime} activeOpacity={0.85}>
+                      <Ionicons name="add" size={16} color={Colors.navy} />
+                      <Text style={[styles.addTimeText, { fontSize: fs - 1 }]}>Adicionar este horário</Text>
+                    </TouchableOpacity>
+                  </View>
+                </Field>
+
+                <Field label="Duração do tratamento" fs={fs}>
+                  <View style={styles.chipRow}>
+                    {DURATIONS.map((d) => (
+                      <TouchableOpacity key={d.label} style={[styles.chip, duration === d.days && styles.chipActive]} onPress={() => setDuration(d.days)}>
+                        <Text style={[styles.chipText, { fontSize: fs - 2 }, duration === d.days && styles.chipTextActive]}>{d.label}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </View>
                 </Field>
 
@@ -467,6 +662,14 @@ function AddMedicationModal({
                     placeholder="Ex: Tomar com água" placeholderTextColor={Colors.textMuted} />
                 </Field>
 
+                {/* Resumo do que será criado */}
+                <View style={styles.previewBox}>
+                  <Ionicons name="information-circle" size={16} color="#185FA5" />
+                  <Text style={[styles.previewText, { fontSize: fs - 2 }]}>
+                    Serão agendadas {times.length * duration} doses: {times.join(', ')} · {duration === 1 ? 'só hoje' : `${duration} dias`}
+                  </Text>
+                </View>
+
                 {!!formError && (
                   <View style={styles.formError}>
                     <Ionicons name="alert-circle" size={16} color={Colors.redText} />
@@ -478,7 +681,7 @@ function AddMedicationModal({
                   {saving ? <ActivityIndicator color="#fff" /> : (
                     <>
                       <Ionicons name="save-outline" size={20} color="#fff" />
-                      <Text style={[styles.primaryBtnText, { fontSize: fs }]}>Salvar</Text>
+                      <Text style={[styles.primaryBtnText, { fontSize: fs }]}>Salvar tratamento</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -486,6 +689,108 @@ function AddMedicationModal({
             )}
 
             <TouchableOpacity style={[styles.closeBtn, { paddingVertical: isTablet ? 16 : 13, marginTop: 10 }]} onPress={() => { reset(); onClose(); }}>
+              <Text style={[styles.closeBtnText, { fontSize: fs }]}>Cancelar</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─────────────────────────────────────────────
+//  Modal: editar medicamento existente
+// ─────────────────────────────────────────────
+function EditMedicationModal({
+  med, onClose, onSaved, isTablet, maxW, fs,
+}: {
+  med: Medication | null; onClose: () => void;
+  onSaved: (msg: string) => void; isTablet: boolean; maxW?: number; fs: number;
+}) {
+  const [name, setName]         = useState('');
+  const [dosage, setDosage]     = useState('');
+  const [compartment, setComp]  = useState(1);
+  const [instr, setInstr]       = useState('');
+  const [saving, setSaving]     = useState(false);
+  const [formError, setFormError] = useState('');
+
+  // Preenche o formulário quando um medicamento é selecionado.
+  useEffect(() => {
+    if (med) {
+      setName(med.name);
+      setDosage(med.dosage);
+      setComp(med.compartment);
+      setInstr(med.instructions ?? '');
+      setFormError('');
+    }
+  }, [med]);
+
+  const handleSave = async () => {
+    if (!med) return;
+    setFormError('');
+    if (!name.trim() || !dosage.trim()) { setFormError('Nome e dosagem são obrigatórios.'); return; }
+    setSaving(true);
+    const { error } = await updateMedication(med.id, {
+      name, dosage, compartment, instructions: instr,
+    });
+    setSaving(false);
+    if (error) { setFormError(error); return; }
+    onSaved(`${name.trim()} ${dosage.trim()} atualizado.`);
+  };
+
+  return (
+    <Modal visible={!!med} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={[styles.sheet, { padding: isTablet ? 32 : 24, maxWidth: maxW ?? '100%', width: '100%', maxHeight: '85%' }]}>
+          <View style={styles.handle} />
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            <Text style={[styles.sheetTitle, { fontSize: isTablet ? 22 : 19, marginBottom: 16 }]}>Editar medicamento</Text>
+
+            <Field label="Nome" fs={fs}>
+              <TextInput style={[styles.input, { fontSize: fs }]} value={name} onChangeText={setName}
+                placeholder="Ex: Losartana" placeholderTextColor={Colors.textMuted} />
+            </Field>
+
+            <Field label="Dosagem" fs={fs}>
+              <TextInput style={[styles.input, { fontSize: fs }]} value={dosage} onChangeText={setDosage}
+                placeholder="Ex: 50mg" placeholderTextColor={Colors.textMuted} />
+            </Field>
+
+            <Field label="Compartimento" fs={fs}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.max(1, c - 1))}>
+                  <Ionicons name="remove" size={18} color={Colors.navy} />
+                </TouchableOpacity>
+                <Text style={{ fontSize: fs + 2, fontWeight: '700', color: Colors.textPrimary, minWidth: 24, textAlign: 'center' }}>{compartment}</Text>
+                <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.min(8, c + 1))}>
+                  <Ionicons name="add" size={18} color={Colors.navy} />
+                </TouchableOpacity>
+                <Text style={{ fontSize: fs - 2, color: Colors.textMuted, marginLeft: 4 }}>slot físico (1–8)</Text>
+              </View>
+            </Field>
+
+            <Field label="Instruções (opcional)" fs={fs}>
+              <TextInput style={[styles.input, { fontSize: fs }]} value={instr} onChangeText={setInstr}
+                placeholder="Ex: Tomar com água" placeholderTextColor={Colors.textMuted} />
+            </Field>
+
+            {!!formError && (
+              <View style={styles.formError}>
+                <Ionicons name="alert-circle" size={16} color={Colors.redText} />
+                <Text style={[styles.formErrorText, { fontSize: fs - 1 }]}>{formError}</Text>
+              </View>
+            )}
+
+            <TouchableOpacity style={[styles.primaryBtn, { paddingVertical: isTablet ? 16 : 14, marginTop: 8 }]} onPress={handleSave} disabled={saving}>
+              {saving ? <ActivityIndicator color="#fff" /> : (
+                <>
+                  <Ionicons name="save-outline" size={20} color="#fff" />
+                  <Text style={[styles.primaryBtnText, { fontSize: fs }]}>Salvar alterações</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.closeBtn, { paddingVertical: isTablet ? 16 : 13, marginTop: 10 }]} onPress={onClose}>
               <Text style={[styles.closeBtnText, { fontSize: fs }]}>Cancelar</Text>
             </TouchableOpacity>
           </ScrollView>
@@ -505,19 +810,30 @@ function Field({ label, children, fs, style }: { label: string; children: React.
 }
 
 const styles = StyleSheet.create({
-  header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
+  header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
   title:    { fontWeight: '700', color: '#fff' },
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4, textTransform: 'capitalize' },
   addBtn:   { width: 44, height: 44, borderRadius: 14, backgroundColor: '#2E4A7A', alignItems: 'center', justifyContent: 'center' },
   center:   { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  segment:       { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,.12)', borderRadius: 12, padding: 3, marginTop: 14 },
+  segmentBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10 },
+  segmentActive: { backgroundColor: '#fff' },
+  segmentLabel:  { color: 'rgba(255,255,255,.7)', fontWeight: '600' },
+  segmentLabelActive: { color: Colors.navy },
   errorBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
   errorBannerText:{ flex: 1, color: Colors.redText },
   successBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.greenLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
   successBannerText:{ flex: 1, color: Colors.greenText },
   pickerCard:     { backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12 },
+  addTimeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 10, paddingVertical: 10 },
+  addTimeText:    { color: Colors.navy, fontWeight: '700' },
+  timeChip:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.greenLight, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  timeChipText:   { color: Colors.greenText, fontWeight: '700' },
+  previewBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E6F1FB', borderRadius: 10, padding: 12, marginBottom: 8 },
+  previewText:    { flex: 1, color: '#185FA5', fontWeight: '500' },
   formError:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 10, padding: 12, marginTop: 8 },
   formErrorText:  { flex: 1, color: Colors.redText },
-  summaryCard:    { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 16, marginTop: 16, ...Shadows.md },
+  summaryCard:    { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 16, marginTop: 14, ...Shadows.md },
   summaryItem:    { flex: 1, alignItems: 'center' },
   summaryNum:     { fontWeight: '700' },
   summaryLabel:   { color: Colors.textSecondary, marginTop: 3 },
@@ -533,6 +849,13 @@ const styles = StyleSheet.create({
   doseInstr: { color: Colors.textSecondary, marginTop: 2 },
   badge:     { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontWeight: '600' },
+  medCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  medIcon:    { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  medName:    { fontWeight: '700', color: Colors.textPrimary },
+  medMeta:    { color: Colors.textSecondary, marginTop: 2 },
+  medActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: Colors.border },
+  medEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E6F1FB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  medEditText:{ color: Colors.navy, fontWeight: '700' },
   overlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,.5)', justifyContent: 'flex-end' },
   sheet:     { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, alignSelf: 'center' },
   handle:    { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
