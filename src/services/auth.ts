@@ -15,7 +15,8 @@ export const signUp = async (
   password: string,
   name: string,
   role: UserProfile['role'] = 'independent',
-  caregiver_id?: string
+  caregiver_id?: string,
+  activationCode?: string
 ): Promise<{ user: UserProfile | null; error: string | null; needsConfirmation?: boolean }> => {
   try {
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -32,6 +33,12 @@ export const signUp = async (
     const userId = authData.user?.id;
     if (!userId) {
       return { user: null, error: 'Não foi possível criar o usuário.' };
+    }
+
+    // Resgata o código de ativação (marca como usado). É atômico no banco:
+    // só um cadastro consegue queimar cada código.
+    if (activationCode) {
+      await redeemAccessCode(activationCode, userId);
     }
 
     // Tenta inserir perfil — o trigger já faz isso, mas garante
@@ -154,6 +161,42 @@ export const findCaregiverByEmail = async (
   if (error || !data) return null;
   const row = Array.isArray(data) ? data[0] : data;
   return row ? { id: row.id, name: row.name } : null;
+};
+
+// ── Código de ativação (loja) ────────────────────────────────
+// O app só é liberado para quem comprou o dispenser: a compra no site gera
+// um código único que é validado aqui, no cadastro (RPCs SECURITY DEFINER).
+
+// Valida um código antes do cadastro. Retorna motivo em caso de falha.
+export const checkAccessCode = async (
+  code: string
+): Promise<{ valid: boolean; reason: string }> => {
+  const { data, error } = await supabase.rpc('check_access_code', {
+    p_code: code.trim(),
+  });
+  if (error) return { valid: false, reason: 'error' };
+  const row = Array.isArray(data) ? data[0] : data;
+  return { valid: !!row?.valid, reason: row?.reason ?? 'error' };
+};
+
+// Marca o código como usado, ligando-o ao usuário recém-criado.
+export const redeemAccessCode = async (
+  code: string,
+  userId: string
+): Promise<boolean> => {
+  const { data, error } = await supabase.rpc('redeem_access_code', {
+    p_code:    code.trim(),
+    p_user_id: userId,
+  });
+  if (error) return false;
+  return data === true;
+};
+
+// Traduz o motivo de um código inválido para uma mensagem amigável.
+export const activationCodeError = (reason: string): string => {
+  if (reason === 'not_found')     return 'Código de ativação não encontrado. Confira as letras e números.';
+  if (reason === 'already_used')  return 'Este código já foi usado em outra conta.';
+  return 'Não foi possível validar o código. Tente novamente.';
 };
 
 const translateError = (err: any): string => {

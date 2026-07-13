@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { signIn, resendConfirmation } from '../services/auth';
 import { useStore } from '../store';
 import { Colors, Radius, Shadows } from '../theme';
+import { LogoMark } from '../components/Logo';
 
 export default function LoginScreen() {
   const { width } = useWindowDimensions();
@@ -86,14 +87,10 @@ export default function LoginScreen() {
           >
             {/* Logo */}
             <View style={styles.logoArea}>
-              <View style={[styles.logoBox, {
-                width: isDesktop ? 80 : 68,
-                height: isDesktop ? 80 : 68,
-                borderRadius: isDesktop ? 24 : 20,
-              }]}>
-                <Text style={{ fontSize: isDesktop ? 42 : 36 }}>💙</Text>
+              <View style={{ marginBottom: 14 }}>
+                <LogoMark size={isDesktop ? 88 : 76} />
               </View>
-              <Text style={[styles.appName, { fontSize: isDesktop ? 52 : isTablet ? 44 : 38 }]}>iasis</Text>
+              <Text style={[styles.appName, { fontSize: isDesktop ? 52 : isTablet ? 44 : 38 }]}>Iasis</Text>
               <Text style={[styles.tagline, { fontSize: fs - 2 }]}>Sua saúde em dia</Text>
             </View>
 

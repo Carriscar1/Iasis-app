@@ -8,8 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { signUp, findCaregiverByEmail, resendConfirmation, UserProfile } from '../services/auth';
+import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, UserProfile } from '../services/auth';
 import { Colors, Radius, Shadows } from '../theme';
+import { LogoMark } from '../components/Logo';
 
 type Step = 'role' | 'form' | 'link' | 'success';
 type Role = UserProfile['role'];
@@ -57,6 +58,7 @@ export default function RegisterScreen() {
   const [email,          setEmail]          = useState('');
   const [password,       setPassword]       = useState('');
   const [confirm,        setConfirm]        = useState('');
+  const [activationCode, setActivationCode] = useState('');
   const [showPass,       setShowPass]       = useState(false);
   const [caregiverEmail, setCaregiverEmail] = useState('');
   const [caregiverId,    setCaregiverId]    = useState<string | undefined>();
@@ -71,6 +73,10 @@ export default function RegisterScreen() {
   const isElderly  = role === 'patient';
   const elderlyFs  = isElderly ? fs + 4 : fs;
   const elderlyPad = isElderly ? 18 : 13;
+
+  // Quem "possui" o dispenser (independente/cuidador) precisa do código de
+  // ativação da compra. Paciente entra vinculado ao cuidador que já comprou.
+  const requiresCode = role !== 'patient';
 
   const handleRoleSelect = (r: Role) => {
     setRole(r);
@@ -104,9 +110,27 @@ export default function RegisterScreen() {
     if (!email.trim())       { setError('Informe seu e-mail.');                  return; }
     if (password.length < 6) { setError('Senha deve ter pelo menos 6 dígitos.'); return; }
     if (password !== confirm){ setError('As senhas não coincidem.');             return; }
+    if (requiresCode && !activationCode.trim()) {
+      setError('Informe o código de ativação que você recebeu ao comprar o dispenser.');
+      return;
+    }
 
     setLoading(true);
-    const { error: err, needsConfirmation } = await signUp(email, password, name, role, caregiverId);
+
+    // Valida o código antes de criar a conta, para não gerar conta órfã.
+    if (requiresCode) {
+      const check = await checkAccessCode(activationCode);
+      if (!check.valid) {
+        setLoading(false);
+        setError(activationCodeError(check.reason));
+        return;
+      }
+    }
+
+    const { error: err, needsConfirmation } = await signUp(
+      email, password, name, role, caregiverId,
+      requiresCode ? activationCode.trim() : undefined,
+    );
     setLoading(false);
 
     if (err) { setError(err); return; }
@@ -213,7 +237,10 @@ export default function RegisterScreen() {
         <SafeAreaView style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <View style={{ alignItems: 'center', marginBottom: 32 }}>
-              <Text style={{ fontSize: isDesktop ? 44 : 36, fontWeight: '800', color: '#fff', letterSpacing: -1 }}>iasis</Text>
+              <View style={{ marginBottom: 12 }}>
+                <LogoMark size={64} />
+              </View>
+              <Text style={{ fontSize: isDesktop ? 44 : 36, fontWeight: '800', color: '#fff', letterSpacing: -1 }}>Iasis</Text>
               <Text style={{ fontSize: fs, color: 'rgba(255,255,255,.6)', marginTop: 6 }}>Como você vai usar o IASIS?</Text>
             </View>
 
@@ -422,6 +449,29 @@ export default function RegisterScreen() {
                   )}
                 </View>
               </View>
+
+              {requiresCode ? (
+                <View style={{ marginBottom: 24 }}>
+                  <Text style={[styles.label, { fontSize: isElderly ? fs + 2 : fs - 2 }]}>
+                    Código de ativação
+                  </Text>
+                  <View style={styles.inputWrap}>
+                    <Ionicons name="key-outline" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                    <TextInput
+                      style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad, letterSpacing: 1 }]}
+                      value={activationCode}
+                      onChangeText={t => setActivationCode(t.toUpperCase())}
+                      placeholder="IASIS-XXXX-XXXX"
+                      placeholderTextColor={Colors.textMuted}
+                      autoCapitalize="characters"
+                      autoCorrect={false}
+                    />
+                  </View>
+                  <Text style={{ fontSize: fs - 3, color: Colors.textMuted, marginTop: 6 }}>
+                    Você recebe este código ao comprar o dispenser no site.
+                  </Text>
+                </View>
+              ) : null}
 
               <TouchableOpacity
                 style={[styles.btn, { paddingVertical: elderlyPad + 4 }, loading && { opacity: 0.7 }]}
