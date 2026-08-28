@@ -163,19 +163,14 @@ export const createDosesBulk = async (
   return { data: doses, error: null };
 };
 
-// Persiste como "missed" as doses pendentes vencidas há mais de 60 min.
-// Antes esse status era só visual (computeLiveStatus) e o banco continuava
-// "pending" para sempre — histórico e tela do cuidador ficavam errados.
+// Marca como 'missed' as doses pendentes vencidas há mais de 60 min.
+// Usa a RPC `sync_overdue_doses` (SECURITY DEFINER) para cobrir também os
+// pacientes vinculados — o cuidador não tem permissão de escrita direta nas
+// doses deles. Ao marcar, o gatilho do banco cria o alerta para o cuidador.
 export const syncOverdueDoses = async (
-  userId: string
+  _userId?: string
 ): Promise<{ error: string | null }> => {
-  const cutoff = new Date(Date.now() - 60 * 60000).toISOString();
-  const { error } = await supabase
-    .from('doses')
-    .update({ status: 'missed' })
-    .eq('user_id', userId)
-    .eq('status', 'pending')
-    .lt('scheduled_at', cutoff);
+  const { error } = await supabase.rpc('sync_overdue_doses');
   return { error: error?.message ?? null };
 };
 

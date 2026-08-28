@@ -13,6 +13,7 @@ import { FOOTER_LABEL } from '../config/app';
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const { user, mqttConnected } = useStore();
+  const unreadAlerts = useStore((s) => s.unreadAlerts);
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
   // Paciente = perfil idoso: fontes e alvos de toque maiores.
@@ -81,6 +82,15 @@ export default function ProfileScreen() {
       label: 'Meu telefone',
       desc:  user?.phone ? user.phone : 'Cadastrar para usar o WhatsApp',
       onPress: () => router.push('/edit-phone'),
+    },
+    {
+      icon:  'alert-circle-outline',
+      label: 'Alertas',
+      desc:  unreadAlerts > 0
+        ? `${unreadAlerts} não ${unreadAlerts === 1 ? 'lido' : 'lidos'}`
+        : 'Avisos de doses perdidas',
+      badge: unreadAlerts,
+      onPress: () => router.push('/alerts'),
     },
     {
       icon:  'notifications-outline',
@@ -161,6 +171,11 @@ export default function ProfileScreen() {
                     <Text style={[styles.menuLabel, { fontSize: fs }]}>{item.label}</Text>
                     <Text style={[styles.menuDesc, { fontSize: fs - 2 }]}>{item.desc}</Text>
                   </View>
+                  {((item as any).badge ?? 0) > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{(item as any).badge}</Text>
+                    </View>
+                  )}
                   <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
                 </TouchableOpacity>
                 {idx < menuItems.length - 1 && <View style={styles.divider} />}
@@ -202,6 +217,12 @@ const styles = StyleSheet.create({
   menuIcon:     { backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
   menuLabel:    { fontWeight: '600', color: Colors.textPrimary },
   menuDesc:     { color: Colors.textSecondary, marginTop: 2 },
+  badge: {
+    minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
+    backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center',
+    marginRight: 6,
+  },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
   divider:      { height: 0.5, backgroundColor: Colors.border, marginLeft: 14 },
   logoutBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#F09595', backgroundColor: '#FCEBEB', marginBottom: 16 },
   logoutText:   { fontWeight: '700', color: '#A32D2D' },

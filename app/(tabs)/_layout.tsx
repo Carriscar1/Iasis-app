@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, Platform, TouchableOpacity, useWindowDimensions
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../../src/store';
 import { useDevice } from '../../src/hooks/useDevice';
+import { useAlerts } from '../../src/hooks/useAlerts';
 
 type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -77,6 +78,8 @@ export default function TabsLayout() {
   // Conecta ao dispenser (ESP32 real ou simulador) enquanto logado e
   // mantém o fluxo de segurança fechado ativo em qualquer aba.
   useDevice();
+  // Escuta alertas (ex.: dose perdida) e mantém o contador de não lidos.
+  useAlerts();
 
   return (
     <Tabs

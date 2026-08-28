@@ -30,6 +30,7 @@ export default function CaregiverScreen() {
   const fs        = isDesktop ? 15 : isTablet ? 14 : 13;
 
   const user = useStore((s) => s.user);
+  const unreadAlerts = useStore((s) => s.unreadAlerts);
 
   const [items, setItems]     = useState<PatientOverview[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,24 @@ export default function CaregiverScreen() {
               {items.length} {items.length === 1 ? 'paciente vinculado' : 'pacientes vinculados'}
             </Text>
           </View>
+          {/* Sino de alertas: doses perdidas dos pacientes chegam aqui. */}
+          <TouchableOpacity
+            onPress={() => router.push('/alerts')}
+            style={styles.bellBtn}
+            activeOpacity={0.8}
+            accessibilityLabel={
+              unreadAlerts > 0 ? `Alertas, ${unreadAlerts} não lidos` : 'Alertas'
+            }
+          >
+            <Ionicons name="notifications-outline" size={21} color="#fff" />
+            {unreadAlerts > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>
+                  {unreadAlerts > 9 ? '9+' : unreadAlerts}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -167,6 +186,18 @@ export default function CaregiverScreen() {
 
 const styles = StyleSheet.create({
   header:    { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
+  bellBtn: {
+    width: 40, height: 40, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  bellBadge: {
+    position: 'absolute', top: 3, right: 2,
+    minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
+    backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: Colors.navy,
+  },
+  bellBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   backBtn:   { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:     { fontWeight: '700', color: '#fff' },
   subtitle:  { color: 'rgba(255,255,255,.6)', marginTop: 3 },

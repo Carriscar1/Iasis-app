@@ -6,6 +6,17 @@ Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vib
 
 ---
 
+## ✨ Novidades da versão 2.2
+
+- **Alerta automático de dose perdida** — quando uma dose não é tomada, o cuidador
+  vinculado recebe um aviso na hora (tela *Alertas*, badge no sino e notificação).
+  A detecção roda por **gatilho no banco**, então funciona mesmo que o paciente
+  nunca abra o aplicativo — o app do cuidador dispara a verificação.
+
+> ⚠️ Requer rodar **`supabase_update4.sql`** (tabela de alertas + gatilho).
+
+---
+
 ## ✨ Novidades da versão 2.1
 
 - **Relatórios com gráficos** — anel de adesão, barras por dia, adesão por horário e por dia da semana, com o insight de qual horário é mais esquecido (Histórico → *Gráficos*)
@@ -58,6 +69,7 @@ npm install
    - `supabase_update.sql` (papel "independente" + vínculo de cuidador)
    - `supabase_update2.sql` (RPC de busca de cuidador + policies de leitura)
    - `supabase_update3.sql` (telefone no perfil, chat paciente↔cuidador, pareamento do dispenser)
+   - `supabase_update4.sql` (alerta automático de dose perdida para o cuidador)
 3. Copie a **URL** e a **anon key** (Settings → API) para:
    - `src/services/supabase.ts`
    - `app.json` (campo `extra`)

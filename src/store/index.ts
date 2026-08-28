@@ -41,6 +41,10 @@ interface AppStore {
   firmware:         string;
   setFirmware:      (v: string) => void;
 
+  // Alertas recebidos (badge de não lidos)
+  unreadAlerts:    number;
+  setUnreadAlerts: (n: number) => void;
+
   // Fluxo de segurança fechado (demonstração/execução ao vivo)
   doseFlow:    DoseFlow;
   setDoseFlow: (f: DoseFlow) => void;
@@ -78,6 +82,9 @@ export const useStore = create<AppStore>((set) => ({
   setLastRfid:      (lastRfid) => set({ lastRfid }),
   firmware:         '—',
   setFirmware:      (firmware) => set({ firmware }),
+
+  unreadAlerts:    0,
+  setUnreadAlerts: (unreadAlerts) => set({ unreadAlerts }),
 
   doseFlow:    { step: 'idle' },
   setDoseFlow: (doseFlow) => set({ doseFlow }),
