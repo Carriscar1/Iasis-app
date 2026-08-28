@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, UserProfile } from '../services/auth';
 import { Colors, Radius, Shadows } from '../theme';
 import { LogoMark } from '../components/Logo';
+import { formatPhoneInput } from '../services/chat';
 
 type Step = 'role' | 'form' | 'link' | 'success';
 type Role = UserProfile['role'];
@@ -58,6 +59,7 @@ export default function RegisterScreen() {
   const [email,          setEmail]          = useState('');
   const [password,       setPassword]       = useState('');
   const [confirm,        setConfirm]        = useState('');
+  const [phone,          setPhone]          = useState('');
   const [activationCode, setActivationCode] = useState('');
   const [showPass,       setShowPass]       = useState(false);
   const [caregiverEmail, setCaregiverEmail] = useState('');
@@ -130,6 +132,7 @@ export default function RegisterScreen() {
     const { error: err, needsConfirmation } = await signUp(
       email, password, name, role, caregiverId,
       requiresCode ? activationCode.trim() : undefined,
+      phone,
     );
     setLoading(false);
 
@@ -405,6 +408,26 @@ export default function RegisterScreen() {
                   </View>
                 </View>
               ))}
+
+              <View style={{ marginBottom: 14 }}>
+                <Text style={[styles.label, { fontSize: isElderly ? fs + 2 : fs - 2 }]}>
+                  {isElderly ? 'Seu telefone (WhatsApp)' : 'Telefone (WhatsApp)'}
+                </Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="logo-whatsapp" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                  <TextInput
+                    style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad }]}
+                    value={phone}
+                    onChangeText={(t) => setPhone(formatPhoneInput(t))}
+                    placeholder="(11) 99999-8888"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                <Text style={{ fontSize: fs - 3, color: Colors.textMuted, marginTop: 6 }}>
+                  Opcional — permite conversar pelo WhatsApp com {role === 'caregiver' ? 'o paciente' : 'seu cuidador'}.
+                </Text>
+              </View>
 
               <View style={{ marginBottom: 14 }}>
                 <Text style={[styles.label, { fontSize: isElderly ? fs + 2 : fs - 2 }]}>

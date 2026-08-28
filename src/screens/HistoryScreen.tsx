@@ -4,7 +4,7 @@ import {
   useWindowDimensions, ActivityIndicator, RefreshControl, Alert as RNAlert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
@@ -89,8 +89,21 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Histórico</Text>
-        <Text style={[styles.subtitle, { fontSize: fs - 1 }]}>Adesão ao tratamento</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Histórico</Text>
+            <Text style={[styles.subtitle, { fontSize: fs - 1 }]}>Adesão ao tratamento</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.chartsBtn}
+            onPress={() => router.push('/reports')}
+            activeOpacity={0.8}
+            accessibilityLabel="Ver relatórios com gráficos"
+          >
+            <Ionicons name="stats-chart" size={16} color="#fff" />
+            <Text style={styles.chartsBtnText}>Gráficos</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -204,6 +217,12 @@ const styles = StyleSheet.create({
   header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   title:    { fontWeight: '700', color: '#fff' },
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4 },
+  chartsBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999,
+  },
+  chartsBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   periodRow:      { flexDirection: 'row', marginTop: 16, marginBottom: 12, backgroundColor: Colors.surface, borderRadius: 10, padding: 3, borderWidth: 0.5, borderColor: Colors.border },
   periodBtn:      { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
   periodActive:   { backgroundColor: '#1C2B4B' },

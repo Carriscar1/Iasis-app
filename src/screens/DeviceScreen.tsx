@@ -4,13 +4,13 @@ import {
   useWindowDimensions, Animated, ActivityIndicator, Easing, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../store';
 import { Colors, Radius, Shadows } from '../theme';
 import ConfirmAction from '../components/ConfirmAction';
 import { deviceActions } from '../hooks/useDevice';
-import { DEMO_WRISTBAND_TAG } from '../services/device';
+import { DEMO_WRISTBAND_TAG, deviceService } from '../services/device';
 import { MQTT_CONFIG } from '../config/app';
 import {
   findDoseAwaitingValidation, listMedications, createMedication, createDose,
@@ -128,14 +128,21 @@ export default function DeviceScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Dispenser IoT</Text>
-            <Text style={[styles.subtitle, { fontSize: fs - 1 }]}>IASIS-{MQTT_CONFIG.dispenserId} · ESP32</Text>
+            <Text style={[styles.subtitle, { fontSize: fs - 1 }]}>IASIS-{deviceService.dispenserId} · ESP32</Text>
           </View>
-          <View style={[styles.modeBadge, { backgroundColor: isDemo ? 'rgba(250,199,117,.2)' : 'rgba(93,202,165,.2)' }]}>
+          {/* Toque no selo para configurar as credenciais do hardware real */}
+          <TouchableOpacity
+            style={[styles.modeBadge, { backgroundColor: isDemo ? 'rgba(250,199,117,.2)' : 'rgba(93,202,165,.2)' }]}
+            onPress={() => router.push('/dispenser-setup')}
+            activeOpacity={0.8}
+            accessibilityLabel="Configurar conexão com o dispenser"
+          >
             <Ionicons name={isDemo ? 'flask' : 'wifi'} size={13} color={isDemo ? '#FAC775' : '#5DCAA5'} />
             <Text style={{ color: isDemo ? '#FAC775' : '#5DCAA5', fontWeight: '700', fontSize: fs - 3 }}>
               {isDemo ? 'Demonstração' : 'MQTT real'}
             </Text>
-          </View>
+            <Ionicons name="settings-outline" size={12} color={isDemo ? '#FAC775' : '#5DCAA5'} />
+          </TouchableOpacity>
         </View>
       </View>
 

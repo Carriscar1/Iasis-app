@@ -5,10 +5,20 @@ export interface UserProfile {
   name:          string;
   email:         string;
   role:          'patient' | 'caregiver' | 'independent';
+  phone?:        string;        // usado pelo atalho do WhatsApp
   rfid_tag?:     string;
   caregiver_id?: string;
   created_at:    string;
 }
+
+// Atualiza campos editáveis do próprio perfil (telefone, nome, tag RFID).
+export const updateProfile = async (
+  userId: string,
+  patch: Partial<Pick<UserProfile, 'name' | 'phone' | 'rfid_tag'>>
+): Promise<{ error: string | null }> => {
+  const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+  return { error: error ? error.message : null };
+};
 
 export const signUp = async (
   email: string,
@@ -16,7 +26,8 @@ export const signUp = async (
   name: string,
   role: UserProfile['role'] = 'independent',
   caregiver_id?: string,
-  activationCode?: string
+  activationCode?: string,
+  phone?: string
 ): Promise<{ user: UserProfile | null; error: string | null; needsConfirmation?: boolean }> => {
   try {
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -48,6 +59,7 @@ export const signUp = async (
       email: email.trim().toLowerCase(),
       role,
       ...(caregiver_id ? { caregiver_id } : {}),
+      ...(phone?.trim() ? { phone: phone.trim() } : {}),
     };
 
     await supabase.from('profiles').upsert(profile, { onConflict: 'id' });

@@ -145,6 +145,7 @@ export interface MqttCommandPayload {
   command: 'DISPENSE' | 'VIBRATE_ON' | 'VIBRATE_OFF' | 'RESTART' | 'STATUS_REQ';
   slot?:   number;
   doseId?: string;
+  pattern?: 'sos' | 'gentle' | 'urgent';
 }
 
 export type MqttPayload =

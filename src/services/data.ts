@@ -344,6 +344,74 @@ export const getAdherence = async (
 // Sequência de dias seguidos com 100% das doses tomadas (para a Home).
 // Dias sem nenhuma dose não quebram nem contam. Hoje, se ainda estiver em
 // andamento (sem perdidas), não quebra a sequência — só ainda não soma.
+// ── Insights de adesão (para os gráficos de relatório) ─────────
+// Complementa getAdherence com dois recortes que revelam padrões:
+//   · byHour    — em quais horários a pessoa mais falha
+//   · byWeekday — em quais dias da semana a adesão cai
+export interface AdherenceInsights {
+  byHour:    { hour: number; total: number; taken: number }[];
+  byWeekday: { weekday: number; total: number; taken: number }[];
+  worstHour: { hour: number; rate: number } | null;
+  bestHour:  { hour: number; rate: number } | null;
+}
+
+export const getAdherenceInsights = async (
+  userId: string,
+  days = 30
+): Promise<{ data: AdherenceInsights; error: string | null }> => {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (days - 1));
+
+  const { data, error } = await supabase
+    .from('doses')
+    .select('scheduled_at, status')
+    .eq('user_id', userId)
+    .gte('scheduled_at', start.toISOString());
+
+  const empty: AdherenceInsights = { byHour: [], byWeekday: [], worstHour: null, bestHour: null };
+  if (error) return { data: empty, error: error.message };
+
+  const hours    = new Map<number, { total: number; taken: number }>();
+  const weekdays = new Map<number, { total: number; taken: number }>();
+  for (let d = 0; d < 7; d++) weekdays.set(d, { total: 0, taken: 0 });
+
+  for (const r of data ?? []) {
+    // Só conta doses cujo horário já passou (pendentes futuras distorceriam).
+    if (r.status !== 'taken' && r.status !== 'late' && r.status !== 'missed') continue;
+    const dt      = new Date(r.scheduled_at);
+    const isTaken = r.status === 'taken' || r.status === 'late';
+
+    const h = dt.getHours();
+    const hb = hours.get(h) ?? { total: 0, taken: 0 };
+    hb.total++; if (isTaken) hb.taken++;
+    hours.set(h, hb);
+
+    const w = dt.getDay();
+    const wb = weekdays.get(w)!;
+    wb.total++; if (isTaken) wb.taken++;
+  }
+
+  const byHour = Array.from(hours.entries())
+    .map(([hour, v]) => ({ hour, ...v }))
+    .sort((a, b) => a.hour - b.hour);
+
+  // Considera só horários com amostra mínima, para não eleger um outlier.
+  const ranked = byHour
+    .filter((h) => h.total >= 2)
+    .map((h) => ({ hour: h.hour, rate: Math.round((h.taken / h.total) * 100) }))
+    .sort((a, b) => a.rate - b.rate);
+
+  return {
+    data: {
+      byHour,
+      byWeekday: Array.from(weekdays.entries()).map(([weekday, v]) => ({ weekday, ...v })),
+      worstHour: ranked.length ? ranked[0] : null,
+      bestHour:  ranked.length ? ranked[ranked.length - 1] : null,
+    },
+    error: null,
+  };
+};
+
 export const computeStreak = (byDay: AdherenceSummary['byDay']): number => {
   let streak = 0;
   const todayKey = new Date().toISOString().slice(0, 10);

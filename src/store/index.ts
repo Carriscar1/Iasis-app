@@ -31,6 +31,9 @@ interface AppStore {
   setMqttConnected: (v: boolean) => void;
   deviceMode:       'mqtt' | 'demo';
   setDeviceMode:    (m: 'mqtt' | 'demo') => void;
+  // Incrementado ao salvar/apagar credenciais MQTT: faz o useDevice reconectar.
+  deviceConfigVersion: number;
+  bumpDeviceConfig:    () => void;
   wristbandVibrating:    boolean;
   setWristbandVibrating: (v: boolean) => void;
   lastRfid:         { tag: string; valid: boolean; at: string } | null;
@@ -67,6 +70,8 @@ export const useStore = create<AppStore>((set) => ({
   setMqttConnected: (mqttConnected) => set({ mqttConnected }),
   deviceMode:       'demo',
   setDeviceMode:    (deviceMode) => set({ deviceMode }),
+  deviceConfigVersion: 0,
+  bumpDeviceConfig: () => set((s) => ({ deviceConfigVersion: s.deviceConfigVersion + 1 })),
   wristbandVibrating:    false,
   setWristbandVibrating: (wristbandVibrating) => set({ wristbandVibrating }),
   lastRfid:         null,

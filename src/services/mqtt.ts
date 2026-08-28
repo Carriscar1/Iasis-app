@@ -15,12 +15,17 @@ import {
   MqttVibratePayload,
 } from '../types';
 import { MQTT_CONFIG } from '../config/app';
+import type { MqttSettings } from './deviceConfig';
 
 // ─── Configuração ─────────────────────────────
-// Broker configurado em src/config/app.ts (MQTT_CONFIG).
-const BROKER_URL    = MQTT_CONFIG.brokerUrl;
-const MQTT_USERNAME = MQTT_CONFIG.username;
-const MQTT_PASSWORD = MQTT_CONFIG.password;
+// As credenciais chegam em connect() (vindas da tela "Configurar dispenser",
+// salvas no aparelho). Sem elas, cai no que estiver em src/config/app.ts.
+const FALLBACK: MqttSettings = {
+  brokerUrl:   MQTT_CONFIG.brokerUrl,
+  username:    MQTT_CONFIG.username,
+  password:    MQTT_CONFIG.password,
+  dispenserId: MQTT_CONFIG.dispenserId,
+};
 
 // Tópicos do ecossistema IASIS
 const TOPICS = {
@@ -55,23 +60,30 @@ class MqttService {
   private connected: boolean = false;
 
   // ── Inicializa conexão ──────────────────────
-  connect(dispenserId: string, userId: string, callbacks: Callbacks = {}) {
-    this.dispenserId = dispenserId;
+  connect(
+    dispenserId: string,
+    userId: string,
+    callbacks: Callbacks = {},
+    settings?: MqttSettings,
+  ) {
+    const cfg = settings ?? FALLBACK;
+    this.dispenserId = dispenserId || cfg.dispenserId;
     this.userId      = userId;
     this.callbacks   = callbacks;
 
     const options: IClientOptions = {
       clientId:   `iasis_app_${userId}_${Date.now()}`,
-      username:   MQTT_USERNAME,
-      password:   MQTT_PASSWORD,
+      username:   cfg.username,
+      password:   cfg.password,
       clean:      true,
       reconnectPeriod: 5000,
       connectTimeout:  10000,
       keepalive:       60,
-      protocol:   'wss',
+      // ws:// (Mosquitto local) e wss:// (HiveMQ Cloud) são ambos aceitos.
+      protocol:   cfg.brokerUrl.startsWith('ws://') ? 'ws' : 'wss',
     };
 
-    this.client = mqtt.connect(BROKER_URL, options);
+    this.client = mqtt.connect(cfg.brokerUrl, options);
 
     this.client.on('connect', this.handleConnect.bind(this));
     this.client.on('message', this.handleMessage.bind(this));
@@ -167,6 +179,7 @@ class MqttService {
     const cmd: MqttCommandPayload = {
       type:    'CMD',
       command: active ? 'VIBRATE_ON' : 'VIBRATE_OFF',
+      pattern,
     };
     this.publish(TOPICS.command(this.dispenserId), cmd);
   }
@@ -208,3 +221,58 @@ class MqttService {
 // Singleton exportado
 export const mqttService = new MqttService();
 export { TOPICS };
+
+// ─────────────────────────────────────────────
+//  Teste de credenciais (tela "Configurar dispenser")
+//  Abre uma conexão separada e efêmera: não interfere na conexão
+//  principal do app. Resolve assim que conecta, falha ou estoura o tempo.
+// ─────────────────────────────────────────────
+export const testMqttConnection = (
+  settings: MqttSettings,
+  timeoutMs = 12000,
+): Promise<{ ok: boolean; error?: string }> =>
+  new Promise((resolve) => {
+    let client: MqttClient | null = null;
+    let done = false;
+
+    const finish = (result: { ok: boolean; error?: string }) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { client?.end(true); } catch { /* ignora */ }
+      resolve(result);
+    };
+
+    const timer = setTimeout(
+      () => finish({
+        ok: false,
+        error: 'Tempo esgotado. Confira o endereço do broker e se o aparelho está com internet.',
+      }),
+      timeoutMs,
+    );
+
+    try {
+      client = mqtt.connect(settings.brokerUrl, {
+        clientId:   `iasis_test_${Date.now()}`,
+        username:   settings.username,
+        password:   settings.password,
+        clean:      true,
+        reconnectPeriod: 0,          // não reconecta: é só um teste
+        connectTimeout:  timeoutMs,
+        protocol:   settings.brokerUrl.startsWith('ws://') ? 'ws' : 'wss',
+      });
+
+      client.on('connect', () => finish({ ok: true }));
+      client.on('error', (err: Error) => {
+        const msg = err?.message ?? 'Erro desconhecido';
+        const friendly = /not authorized|bad username|unauthorized/i.test(msg)
+          ? 'Usuário ou senha incorretos.'
+          : /getaddrinfo|ENOTFOUND|failed to connect|ECONNREFUSED/i.test(msg)
+            ? 'Broker não encontrado. Confira o endereço.'
+            : msg;
+        finish({ ok: false, error: friendly });
+      });
+    } catch (err: any) {
+      finish({ ok: false, error: err?.message ?? 'Não foi possível iniciar a conexão.' });
+    }
+  });

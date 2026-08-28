@@ -6,6 +6,19 @@ Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vib
 
 ---
 
+## ✨ Novidades da versão 2.1
+
+- **Relatórios com gráficos** — anel de adesão, barras por dia, adesão por horário e por dia da semana, com o insight de qual horário é mais esquecido (Histórico → *Gráficos*)
+- **Chat com o cuidador** — conversa dentro do app (tempo real) **ou** direto pelo **WhatsApp**, usando o telefone do perfil
+- **Telefone no perfil** — cadastrado no registro ou depois em *Perfil → Meu telefone*
+- **Configurar o dispenser pelo app** — a tela *Configurar dispenser* recebe as credenciais do broker MQTT, **testa a conexão** e liga o hardware real sem precisar editar código
+- **Firmware corrigido** — o ESP32 agora publica o estado da pulseira em `.../vibrate` e recebe o padrão de vibração (`gentle`/`urgent`/`sos`)
+
+> ⚠️ Estas novidades exigem rodar **`supabase_update3.sql`** no SQL Editor do Supabase
+> (telefone, chat e pareamento do dispenser).
+
+---
+
 ## ✨ Novidades da versão 2.0
 
 - **Tratamentos recorrentes** — vários horários por dia + duração (hoje / 7 / 14 / 30 dias); o app gera todas as doses de uma vez e agenda os lembretes
@@ -44,6 +57,7 @@ npm install
    - `supabase_setup.sql` (tabelas + RLS)
    - `supabase_update.sql` (papel "independente" + vínculo de cuidador)
    - `supabase_update2.sql` (RPC de busca de cuidador + policies de leitura)
+   - `supabase_update3.sql` (telefone no perfil, chat paciente↔cuidador, pareamento do dispenser)
 3. Copie a **URL** e a **anon key** (Settings → API) para:
    - `src/services/supabase.ts`
    - `app.json` (campo `extra`)
@@ -65,18 +79,26 @@ npx expo start --tunnel # se o celular não estiver na mesma rede
 ## 4. Conectar o dispenser físico (opcional)
 
 1. Crie um cluster grátis no [HiveMQ Cloud](https://www.hivemq.com/cloud) e dois usuários (`iasis_app` e `iasis_esp32`)
-2. Edite `src/config/app.ts`:
 
-```ts
-export const MQTT_CONFIG = {
-  brokerUrl: 'wss://SEU_CLUSTER.hivemq.cloud:8884/mqtt',
-  username:  'iasis_app',
-  password:  'sua_senha',
-  dispenserId: '01',
-};
-```
+2. **No app**, abra a aba **Dispenser** e toque no selo *Demonstração* (canto superior direito)
+   → tela **Configurar dispenser**. Preencha:
 
-3. Configure e grave o firmware (`firmware/esp32/iasis_dispenser.ino`):
+   | Campo | Exemplo |
+   |---|---|
+   | Endereço do broker | `wss://SEU_CLUSTER.hivemq.cloud:8884/mqtt` |
+   | Usuário | `iasis_app` |
+   | Senha | a senha desse usuário |
+   | ID do dispenser | `01` |
+
+   Toque em **Testar conexão** e depois em **Salvar e conectar**. O app troca o simulador
+   pelo hardware real na hora — **sem editar código nem recompilar**. As credenciais ficam
+   salvas no aparelho; para voltar ao simulador, use *Apagar e voltar ao modo demonstração*.
+
+   > Alternativa para quem prefere deixar fixo no código: preencha `MQTT_CONFIG`
+   > em `src/config/app.ts` (a tela do app tem prioridade sobre esse valor).
+
+3. Configure e grave o firmware (`firmware/esp32/iasis_dispenser.ino`) — use o **mesmo
+   `DISPENSER_ID`** que você digitou no app:
 
 ```cpp
 const char* WIFI_SSID     = "NOME_DA_SUA_REDE";

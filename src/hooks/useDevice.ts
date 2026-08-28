@@ -29,18 +29,26 @@ const haptic = (type: Haptics.NotificationFeedbackType) => {
 
 export const useDevice = () => {
   const userId = useStore((s) => s.user?.id);
+  // Muda quando as credenciais MQTT são salvas/apagadas → reconecta.
+  const configVersion = useStore((s) => s.deviceConfigVersion);
 
   useEffect(() => {
     if (!userId) return;
+    let cancelled = false;
 
     const {
       setMqttConnected, setDeviceMode, setSensors, setFirmware,
       setWristbandVibrating, setLastRfid, setDoseFlow, addMqttLog,
     } = useStore.getState();
 
-    setDeviceMode(deviceService.mode);
+    const start = async () => {
+      // Carrega as credenciais salvas no aparelho antes de escolher o canal.
+      await deviceService.init();
+      if (cancelled) return;
 
-    deviceService.connect(userId, {
+      setDeviceMode(deviceService.mode);
+
+      deviceService.connect(userId, {
       onConnect: () => {
         setMqttConnected(true);
         addMqttLog({
@@ -113,15 +121,19 @@ export const useDevice = () => {
       onError: (e) => {
         addMqttLog({ direction: 'in', payload: `ERRO: ${e.message}` });
       },
-    });
+      });
+    };
+
+    start();
 
     return () => {
+      cancelled = true;
       deviceService.disconnect();
       setMqttConnected(false);
       setWristbandVibrating(false);
       setDoseFlow({ step: 'idle' });
     };
-  }, [userId]);
+  }, [userId, configVersion]);
 };
 
 // Valida a dose no banco e comanda o motor. Compartilhado entre a leitura

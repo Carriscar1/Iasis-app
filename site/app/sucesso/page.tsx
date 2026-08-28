@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
+import { getSupabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Compra confirmada' };
 
 async function fetchCode(orderId: string): Promise<{ code: string | null; status: string | null }> {
   try {
-    const supabase = getSupabaseAdmin();
+    const supabase = getSupabase();
     const { data, error } = await supabase.rpc('get_code_for_order', { p_order_id: orderId });
     if (error || !data || data.length === 0) return { code: null, status: null };
     return { code: data[0].code ?? null, status: data[0].status ?? null };

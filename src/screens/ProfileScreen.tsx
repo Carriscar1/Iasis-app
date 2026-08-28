@@ -64,6 +64,25 @@ export default function ProfileScreen() {
       onPress: () => router.push('/(tabs)/history'),
     },
     {
+      icon:  'stats-chart-outline',
+      label: 'Relatórios',
+      desc:  'Gráficos de adesão',
+      onPress: () => router.push('/reports'),
+    },
+    // O chat existe quando há vínculo paciente ↔ cuidador.
+    ...(user?.role === 'independent' ? [] : [{
+      icon:  'chatbubbles-outline',
+      label: 'Conversas',
+      desc:  user?.role === 'caregiver' ? 'Falar com seus pacientes' : 'Falar com seu cuidador',
+      onPress: () => router.push('/chat'),
+    }]),
+    {
+      icon:  'call-outline',
+      label: 'Meu telefone',
+      desc:  user?.phone ? user.phone : 'Cadastrar para usar o WhatsApp',
+      onPress: () => router.push('/edit-phone'),
+    },
+    {
       icon:  'notifications-outline',
       label: 'Notificações',
       desc:  'Lembretes de dose',

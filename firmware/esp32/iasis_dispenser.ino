@@ -98,9 +98,14 @@ void blinkLed(int n, int ms = 100) {
   }
 }
 
-void setVibrate(bool on) {
+void publishVibrate(bool active, const char* pattern);
+
+void setVibrate(bool on, const char* pattern = "gentle") {
   vibrateActive = on;
   digitalWrite(PIN_VIBRATE, on ? HIGH : LOW);
+  // Confirma o estado para o app: é assim que a tela mostra a pulseira
+  // vibrando de verdade (e não só o comando que foi enviado).
+  publishVibrate(on, pattern);
 }
 
 // Passo motor: gira N passos na direção
@@ -152,6 +157,22 @@ void publishStatus() {
   mqtt.publish(TOPIC_STATUS.c_str(), buf, true);  // retained
 
   Serial.printf("[MQTT] Status → umidade: %.1f%%, temp: %.1f°C\n", humidity, temperature);
+}
+
+// Estado da pulseira → app (tópico .../vibrate)
+void publishVibrate(bool active, const char* pattern = "gentle") {
+  if (!mqtt.connected()) return;
+
+  StaticJsonDocument<128> doc;
+  doc["type"]    = "VIBRATE";
+  doc["active"]  = active;
+  doc["pattern"] = pattern;
+
+  char buf[128];
+  serializeJson(doc, buf);
+  mqtt.publish(TOPIC_VIBRATE.c_str(), buf, true);  // retained
+
+  Serial.printf("[MQTT] Vibrate → %s (%s)\n", active ? "ON" : "OFF", pattern);
 }
 
 void publishRfid(String tag, bool valid, String doseId = "") {
@@ -221,11 +242,13 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 
     // ── Vibração ────────────────────────────
     else if (command == "VIBRATE_ON") {
-      setVibrate(true);
+      // O app manda o padrão junto (gentle / urgent / sos).
+      String pattern = doc["pattern"] | "gentle";
+      setVibrate(true, pattern.c_str());
       Serial.println("[Vibrate] ON");
     }
     else if (command == "VIBRATE_OFF") {
-      setVibrate(false);
+      setVibrate(false, "gentle");
       Serial.println("[Vibrate] OFF");
     }
 

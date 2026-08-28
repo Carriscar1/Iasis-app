@@ -1,8 +1,9 @@
-'use client';
+import type { Metadata } from 'next';
+import { BuyForm } from './BuyForm';
+import { PRODUCT, isMpConfigured } from '@/lib/config';
+import { Check, Shield, Truck, Box, Sparkle } from '../components/icons';
 
-import { useState } from 'react';
-import { PRODUCT, formatBRL } from '@/lib/config';
-import { Check, Lock, Shield, Truck, Box } from '../components/icons';
+export const metadata: Metadata = { title: 'Adquirir o dispenser' };
 
 const INCLUDES = [
   'Dispensador inteligente IASIS (ESP32, múltiplos compartimentos)',
@@ -14,52 +15,34 @@ const INCLUDES = [
 ];
 
 export default function Comprar() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleBuy(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!name.trim() || !email.trim()) {
-      setError('Preencha nome e e-mail para continuar.');
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.init_point) {
-        throw new Error(data.error || 'Não foi possível iniciar o pagamento.');
-      }
-      window.location.href = data.init_point;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro inesperado.');
-      setLoading(false);
-    }
-  }
+  const demo = !isMpConfigured();
 
   return (
     <section className="section">
       <div className="container">
         <div style={{ marginBottom: 44, maxWidth: 640 }}>
           <span className="eyebrow">Finalizar aquisição</span>
-          <h1 style={{ fontSize: 'clamp(30px, 4.5vw, 46px)', marginTop: 16 }}>
-            {PRODUCT.name}
-          </h1>
+          <h1 style={{ fontSize: 'clamp(30px, 4.5vw, 46px)', marginTop: 16 }}>{PRODUCT.name}</h1>
           <p className="lead" style={{ marginTop: 14 }}>
             O kit completo para transformar a hora do remédio em um processo seguro.
           </p>
         </div>
 
+        {demo && (
+          <div className="demo-banner">
+            <span className="dic"><Sparkle size={20} /></span>
+            <span>
+              <b>Modo demonstração</b>
+              <span>
+                O pagamento é simulado (nenhum valor é cobrado) e o código de ativação é
+                gerado na hora — ideal para apresentar o fluxo completo. Ao configurar o
+                Mercado Pago, o pagamento real entra automaticamente.
+              </span>
+            </span>
+          </div>
+        )}
+
         <div className="buy-grid">
-          {/* Esquerda: o que vem + confiança */}
           <div>
             <div className="card">
               <h3 style={{ fontSize: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -94,47 +77,7 @@ export default function Comprar() {
             </p>
           </div>
 
-          {/* Direita: preço + formulário */}
-          <div className="price-card">
-            <div className="price-tag">
-              <span className="val">{formatBRL(PRODUCT.price)}</span>
-              <span className="cond">à vista</span>
-            </div>
-            <div className="price-sub">ou parcelado no cartão via Mercado Pago</div>
-
-            <form onSubmit={handleBuy} style={{ marginTop: 24 }}>
-              {error && (
-                <div className="error-box">
-                  <Lock size={17} /> {error}
-                </div>
-              )}
-
-              <div className="field">
-                <label htmlFor="name">Nome completo</label>
-                <input id="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" autoComplete="name" />
-              </div>
-              <div className="field">
-                <label htmlFor="email">E-mail</label>
-                <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" autoComplete="email" />
-              </div>
-              <div className="field">
-                <label htmlFor="phone">Telefone (opcional)</label>
-                <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(00) 00000-0000" autoComplete="tel" />
-              </div>
-
-              <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={loading} style={{ marginTop: 6 }}>
-                {loading ? 'Redirecionando…' : 'Pagar com Mercado Pago'}
-              </button>
-
-              <div className="pay-methods">
-                <Lock size={13} />
-                <span className="tag">Pix</span>
-                <span className="tag">Cartão</span>
-                <span className="tag">Boleto</span>
-                <span>· processado pelo Mercado Pago</span>
-              </div>
-            </form>
-          </div>
+          <BuyForm price={PRODUCT.price} demo={demo} />
         </div>
       </div>
     </section>
