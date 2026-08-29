@@ -7,13 +7,14 @@
 // ─────────────────────────────────────────────
 import { supabase } from './supabase';
 
-export type AlertType = 'dose_missed' | 'dose_taken' | 'dispenser_offline' | 'info';
+export type AlertType = 'dose_missed' | 'dose_taken' | 'dispenser_offline' | 'low_stock' | 'info';
 
 export interface AppAlert {
   id:        string;
   userId:    string;
-  patientId: string | null;
-  doseId:    string | null;
+  patientId:    string | null;
+  doseId:       string | null;
+  medicationId: string | null;
   type:      AlertType;
   title:     string;
   body:      string;
@@ -24,8 +25,9 @@ export interface AppAlert {
 const mapRow = (r: any): AppAlert => ({
   id:        r.id,
   userId:    r.user_id,
-  patientId: r.patient_id ?? null,
-  doseId:    r.dose_id ?? null,
+  patientId:    r.patient_id ?? null,
+  doseId:       r.dose_id ?? null,
+  medicationId: r.medication_id ?? null,
   type:      r.type,
   title:     r.title,
   body:      r.body,

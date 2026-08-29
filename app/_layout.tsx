@@ -5,12 +5,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
 import { useStore } from '../src/store';
+import { loadPreferences } from '../src/services/preferences';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+
+    // Preferências de acessibilidade ficam no aparelho: aplica antes de tudo.
+    loadPreferences().then((p) => useStore.getState().setLargeText(p.largeText));
 
     // Mantém o app em sincronia com a sessão do Supabase: se a sessão cair
     // (logout em outra aba, token revogado/expirado), volta para o login.

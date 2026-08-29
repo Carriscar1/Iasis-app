@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import { Colors, Radius, Shadows } from '../theme';
 import { requestPermission, sendLocalNotification } from '../services/notifications';
 
@@ -16,7 +17,7 @@ export default function NotificationsScreen() {
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
-  const isElderly = useStore((s) => s.user?.role) === 'patient';
+  const isElderly = useElderlyMode();
   const maxW = isDesktop ? 680 : isTablet ? 560 : undefined;
   const fs   = (isDesktop ? 15 : 14) + (isElderly ? 3 : 0);
 

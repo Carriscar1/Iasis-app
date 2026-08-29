@@ -7,17 +7,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import { Colors, Radius, Shadows } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
   const { user, mqttConnected } = useStore();
-  const unreadAlerts = useStore((s) => s.unreadAlerts);
+  const unreadAlerts   = useStore((s) => s.unreadAlerts);
+  const unreadMessages = useStore((s) => s.unreadMessages);
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
   // Paciente = perfil idoso: fontes e alvos de toque maiores.
-  const isElderly = user?.role === 'patient';
+  const isElderly = useElderlyMode();
   const maxW      = isDesktop ? 720 : isTablet ? 560 : undefined;
   const baseFs    = isDesktop ? 15 : isTablet ? 14 : 13;
   const fs        = isElderly ? baseFs + 3 : baseFs;
@@ -65,6 +67,12 @@ export default function ProfileScreen() {
       onPress: () => router.push('/(tabs)/history'),
     },
     {
+      icon:  'flask-outline',
+      label: 'Estoque',
+      desc:  'Quanto ainda tem de cada remédio',
+      onPress: () => router.push('/stock'),
+    },
+    {
       icon:  'stats-chart-outline',
       label: 'Relatórios',
       desc:  'Gráficos de adesão',
@@ -74,7 +82,10 @@ export default function ProfileScreen() {
     ...(user?.role === 'independent' ? [] : [{
       icon:  'chatbubbles-outline',
       label: 'Conversas',
-      desc:  user?.role === 'caregiver' ? 'Falar com seus pacientes' : 'Falar com seu cuidador',
+      desc:  unreadMessages > 0
+        ? `${unreadMessages} nova${unreadMessages === 1 ? '' : 's'} mensagem${unreadMessages === 1 ? '' : 's'}`
+        : user?.role === 'caregiver' ? 'Falar com seus pacientes' : 'Falar com seu cuidador',
+      badge: unreadMessages,
       onPress: () => router.push('/chat'),
     }]),
     {
@@ -97,6 +108,12 @@ export default function ProfileScreen() {
       label: 'Notificações',
       desc:  'Lembretes de dose',
       onPress: () => router.push('/notifications'),
+    },
+    {
+      icon:  'accessibility-outline',
+      label: 'Acessibilidade',
+      desc:  'Modo fácil: letras e botões maiores',
+      onPress: () => router.push('/accessibility'),
     },
     {
       icon:  'information-circle-outline',

@@ -8,8 +8,8 @@ import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
-import { getPatientsOverview, type PatientOverview } from '../services/data';
-import type { DoseStatus } from '../types';
+import { getPatientsOverview, caregiverMarkDoseTaken, type PatientOverview } from '../services/data';
+import type { Dose, DoseStatus } from '../types';
 
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -36,6 +36,29 @@ export default function CaregiverScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  // Confirma a dose em nome do paciente, pedindo certeza antes.
+  const handleConfirm = (d: Dose) => {
+    const nome = d.medication ? `${d.medication.name} ${d.medication.dosage}` : 'o medicamento';
+    RNAlert.alert(
+      'Confirmar dose',
+      `Registrar que o paciente tomou ${nome} das ${fmtTime(d.scheduledAt)}?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setConfirming(d.id);
+            const { error } = await caregiverMarkDoseTaken(d.id);
+            setConfirming(null);
+            if (error) { RNAlert.alert('Não foi possível confirmar', error); return; }
+            load();
+          },
+        },
+      ],
+    );
+  };
 
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
@@ -157,15 +180,34 @@ export default function CaregiverScreen() {
                         {today.length === 0 ? (
                           <Text style={[styles.noDoses, { fontSize: fs - 1 }]}>Sem doses agendadas para hoje.</Text>
                         ) : (
-                          today.map((d) => (
-                            <View key={d.id} style={styles.doseRow}>
-                              <View style={[styles.doseDot, { backgroundColor: STATUS_DOT[d.status] }]} />
-                              <Text style={[styles.doseTime, { fontSize: fs - 1 }]}>{fmtTime(d.scheduledAt)}</Text>
-                              <Text style={[styles.doseName, { fontSize: fs - 1 }]} numberOfLines={1}>
-                                {d.medication ? `${d.medication.name} ${d.medication.dosage}` : 'Medicamento'}
-                              </Text>
-                            </View>
-                          ))
+                          today.map((d) => {
+                            const pendente = d.status !== 'taken' && d.status !== 'late';
+                            return (
+                              <View key={d.id} style={styles.doseRow}>
+                                <View style={[styles.doseDot, { backgroundColor: STATUS_DOT[d.status] }]} />
+                                <Text style={[styles.doseTime, { fontSize: fs - 1 }]}>{fmtTime(d.scheduledAt)}</Text>
+                                <Text style={[styles.doseName, { fontSize: fs - 1 }]} numberOfLines={1}>
+                                  {d.medication ? `${d.medication.name} ${d.medication.dosage}` : 'Medicamento'}
+                                </Text>
+                                {/* Cuidador pode confirmar em nome do paciente (fica
+                                    registrado como validated_by = 'caregiver'). */}
+                                {pendente && (
+                                  <TouchableOpacity
+                                    style={[styles.confirmBtn, confirming === d.id && { opacity: 0.5 }]}
+                                    onPress={() => handleConfirm(d)}
+                                    disabled={confirming === d.id}
+                                    activeOpacity={0.8}
+                                    accessibilityLabel={`Confirmar dose das ${fmtTime(d.scheduledAt)}`}
+                                  >
+                                    {confirming === d.id
+                                      ? <ActivityIndicator size="small" color={Colors.greenText} />
+                                      : <Ionicons name="checkmark" size={15} color={Colors.greenText} />}
+                                    <Text style={styles.confirmText}>Dei</Text>
+                                  </TouchableOpacity>
+                                )}
+                              </View>
+                            );
+                          })
                         )}
                       </View>
                     )}
@@ -175,7 +217,7 @@ export default function CaregiverScreen() {
             )}
 
             <Text style={[styles.hint, { fontSize: fs - 3 }]}>
-              Visualização somente leitura. Puxe para baixo para atualizar.
+              Toque em “Dei” para registrar uma dose que você deu. Puxe para baixo para atualizar.
             </Text>
           </View>
         </ScrollView>
@@ -224,5 +266,11 @@ const styles = StyleSheet.create({
   doseDot:   { width: 9, height: 9, borderRadius: 5 },
   doseTime:  { fontWeight: '700', color: Colors.textPrimary, width: 46 },
   doseName:  { color: Colors.textSecondary, flex: 1 },
+  confirmBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.greenLight, borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 5,
+  },
+  confirmText: { color: Colors.greenText, fontWeight: '700', fontSize: 12 },
   hint:      { textAlign: 'center', color: Colors.textMuted, marginTop: 8 },
 });

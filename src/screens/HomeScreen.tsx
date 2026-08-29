@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import { Colors, Radius, Shadows } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 import {
@@ -53,7 +54,7 @@ export default function HomeScreen() {
 
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
-  const isElderly = user?.role === 'patient';
+  const isElderly = useElderlyMode();
   const fs        = (isDesktop ? 15 : isTablet ? 14 : 13) + (isElderly ? 3 : 0);
   const maxW      = isDesktop ? 960 : isTablet ? 720 : undefined;
 

@@ -16,6 +16,8 @@ import { useStore } from '../store';
 import {
   countUnreadAlerts, subscribeToAlerts, syncOverdueDoses,
 } from '../services/alerts';
+import { countUnread as countUnreadMessages } from '../services/chat';
+import { supabase } from '../services/supabase';
 import { sendLocalNotification } from '../services/notifications';
 
 // Reconferência periódica: cobre o caso do app ficar aberto por horas.
@@ -28,15 +30,20 @@ export const useAlerts = () => {
     if (!userId) return;
     let cancelled = false;
 
-    const { setUnreadAlerts } = useStore.getState();
+    const { setUnreadAlerts, setUnreadMessages } = useStore.getState();
 
     const refresh = async () => {
       // Marca doses vencidas (minhas e dos pacientes vinculados). É isso que
       // faz o gatilho criar os alertas.
       await syncOverdueDoses();
       if (cancelled) return;
-      const n = await countUnreadAlerts(userId);
-      if (!cancelled) setUnreadAlerts(n);
+      const [n, m] = await Promise.all([
+        countUnreadAlerts(userId),
+        countUnreadMessages(userId),
+      ]);
+      if (cancelled) return;
+      setUnreadAlerts(n);
+      setUnreadMessages(m);
     };
 
     refresh();
@@ -52,10 +59,24 @@ export const useAlerts = () => {
       sendLocalNotification(`⚠️ ${alert.title}`, alert.body);
     });
 
+    // Mensagens novas: só atualizam o contador (a conversa em si é escutada
+    // pela tela do chat, que também marca como lidas).
+    const msgChannel = supabase
+      .channel(`msg-badge:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${userId}` },
+        () => {
+          if (!cancelled) setUnreadMessages(useStore.getState().unreadMessages + 1);
+        },
+      )
+      .subscribe();
+
     return () => {
       cancelled = true;
       clearInterval(timer);
       unsubscribe();
+      supabase.removeChannel(msgChannel);
     };
   }, [userId]);
 };

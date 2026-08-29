@@ -16,6 +16,9 @@ const rowToMedication = (r: any): Medication => ({
   compartment:  r.compartment ?? 1,
   instructions: r.instructions ?? undefined,
   color:        r.color ?? undefined,
+  stock:          r.stock ?? null,
+  stockThreshold: r.stock_threshold ?? 5,
+  unitsPerDose:   r.units_per_dose ?? 1,
 });
 
 const rowToDose = (r: any): Dose => ({
@@ -39,6 +42,9 @@ export interface NewMedication {
   compartment?:  number;
   instructions?: string;
   color?:        string;
+  stock?:          number | null;   // null/undefined = não controla estoque
+  stockThreshold?: number;
+  unitsPerDose?:   number;
 }
 
 export const listMedications = async (
@@ -67,6 +73,9 @@ export const createMedication = async (
       compartment:  input.compartment ?? 1,
       instructions: input.instructions?.trim() || null,
       color:        input.color ?? null,
+      stock:           input.stock ?? null,
+      stock_threshold: input.stockThreshold ?? 5,
+      units_per_dose:  input.unitsPerDose ?? 1,
     })
     .select('*')
     .single();
@@ -85,6 +94,9 @@ export const updateMedication = async (
   if (patch.compartment !== undefined)  row.compartment  = patch.compartment;
   if (patch.instructions !== undefined) row.instructions = patch.instructions?.trim() || null;
   if (patch.color !== undefined)        row.color        = patch.color ?? null;
+  if (patch.stock !== undefined)          row.stock           = patch.stock;
+  if (patch.stockThreshold !== undefined) row.stock_threshold = patch.stockThreshold;
+  if (patch.unitsPerDose !== undefined)   row.units_per_dose  = patch.unitsPerDose;
 
   const { data, error } = await supabase
     .from('medications')
@@ -94,6 +106,67 @@ export const updateMedication = async (
     .single();
   if (error) return { data: null, error: error.message };
   return { data: rowToMedication(data), error: null };
+};
+
+// ── Estoque ───────────────────────────────────
+// Repõe unidades e limpa o aviso de "acabando" (RPC verifica o dono).
+export const restockMedication = async (
+  medicationId: string,
+  amount: number
+): Promise<{ stock: number | null; error: string | null }> => {
+  const { data, error } = await supabase.rpc('restock_medication', {
+    p_medication: medicationId,
+    p_amount: amount,
+  });
+  if (error) return { stock: null, error: error.message };
+  return { stock: typeof data === 'number' ? data : null, error: null };
+};
+
+// Quantos dias o estoque ainda cobre, dado quantas doses são tomadas por dia.
+// Retorna null quando não há controle de estoque ou nenhuma dose agendada.
+export const estimateDaysLeft = (
+  med: Medication,
+  dosesPerDay: number
+): number | null => {
+  if (med.stock == null || dosesPerDay <= 0) return null;
+  const perDay = dosesPerDay * (med.unitsPerDose ?? 1);
+  return Math.floor(med.stock / perDay);
+};
+
+// Quantas doses por dia estão agendadas para cada medicamento (média dos
+// próximos 7 dias) — usado para estimar a duração do estoque.
+export const getDosesPerDay = async (
+  userId: string
+): Promise<{ data: Record<string, number>; error: string | null }> => {
+  const from = new Date();
+  const to   = new Date(); to.setDate(to.getDate() + 7);
+  const { data, error } = await supabase
+    .from('doses')
+    .select('medication_id, scheduled_at')
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .gte('scheduled_at', from.toISOString())
+    .lte('scheduled_at', to.toISOString());
+
+  if (error) return { data: {}, error: error.message };
+
+  const days = new Map<string, Set<string>>();
+  const counts = new Map<string, number>();
+  for (const r of data ?? []) {
+    const id = r.medication_id;
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+    const day = new Date(r.scheduled_at).toISOString().slice(0, 10);
+    if (!days.has(id)) days.set(id, new Set());
+    days.get(id)!.add(day);
+  }
+
+  const out: Record<string, number> = {};
+  counts.forEach((total, id) => {
+    const nDays = days.get(id)?.size ?? 1;
+    out[id] = total / Math.max(1, nDays);
+  });
+  return { data: out, error: null };
 };
 
 // Exclui o medicamento limpando antes as doses FUTURAS ainda não tomadas.
@@ -211,6 +284,21 @@ export const listDosesForDay = async (
     .order('scheduled_at', { ascending: true });
   if (error) return { data: [], error: error.message };
   return { data: (data ?? []).map(rowToDose), error: null };
+};
+
+// O cuidador confirma uma dose em nome do paciente. Passa por RPC porque a
+// RLS de `doses` só dá leitura ao cuidador; a função valida o vínculo antes
+// de gravar e registra validated_by = 'caregiver'.
+export const caregiverMarkDoseTaken = async (
+  doseId: string
+): Promise<{ error: string | null }> => {
+  const { error } = await supabase.rpc('caregiver_mark_dose_taken', { p_dose: doseId });
+  if (!error) return { error: null };
+  const msg = error.message ?? '';
+  if (msg.includes('already_taken'))  return { error: 'Esta dose já foi confirmada.' };
+  if (msg.includes('not_allowed'))    return { error: 'Você não é o cuidador deste paciente.' };
+  if (msg.includes('dose_not_found')) return { error: 'Dose não encontrada.' };
+  return { error: msg };
 };
 
 export const markDoseTaken = async (

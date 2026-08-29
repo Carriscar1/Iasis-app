@@ -9,6 +9,7 @@ import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import {
   listDosesForDay, listMedications, createMedication, updateMedication,
   deleteMedication, createDosesBulk, markDoseTaken, deleteDose,
@@ -67,7 +68,7 @@ export default function ScheduleScreen() {
   const fs        = isDesktop ? 15 : isTablet ? 14 : 13;
 
   const user = useStore((s) => s.user);
-  const isElderly = user?.role === 'patient';
+  const isElderly = useElderlyMode();
 
   const [view, setView]       = useState<'doses' | 'meds'>('doses');
   const [selDay, setSelDay]   = useState<Date>(atMidnight(new Date()));

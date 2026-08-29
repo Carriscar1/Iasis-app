@@ -23,6 +23,11 @@ export interface Medication {
   compartment:  number;         // slot físico no dispenser (1-8)
   instructions?: string;        // ex: "Tomar com água"
   color?:       string;         // cor visual no app
+  // Estoque: null = não controla. Ao validar uma dose o banco desconta
+  // `unitsPerDose` e avisa quando fica <= stockThreshold.
+  stock?:          number | null;
+  stockThreshold?: number;
+  unitsPerDose?:   number;
 }
 
 export type MedForm = 'comprimido' | 'cápsula' | 'líquido' | 'outro';

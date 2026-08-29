@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import { signOut } from '../services/auth';
 import { Colors, Radius, Shadows } from '../theme';
 
@@ -13,7 +14,7 @@ export default function LogoutScreen() {
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
   const { user, logout } = useStore();
-  const isElderly = user?.role === 'patient';
+  const isElderly = useElderlyMode();
   const fs   = (isDesktop ? 16 : 15) + (isElderly ? 3 : 0);
   const maxW = 460;
 

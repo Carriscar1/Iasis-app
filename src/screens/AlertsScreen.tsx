@@ -17,6 +17,7 @@ const ICON: Record<AppAlert['type'], { name: any; bg: string; fg: string }> = {
   dose_missed:       { name: 'alert-circle',    bg: Colors.redLight,   fg: Colors.redText },
   dose_taken:        { name: 'checkmark-circle', bg: Colors.greenLight, fg: Colors.greenText },
   dispenser_offline: { name: 'cloud-offline',   bg: Colors.amberLight, fg: Colors.amberText },
+  low_stock:         { name: 'flask',           bg: Colors.amberLight, fg: Colors.amberText },
   info:              { name: 'information-circle', bg: Colors.borderSoft, fg: Colors.textSecondary },
 };
 

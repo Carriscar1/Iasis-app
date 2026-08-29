@@ -6,6 +6,22 @@ Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vib
 
 ---
 
+## ✨ Novidades da versão 2.3
+
+- **Controle de estoque** — cadastre quantas unidades tem de cada remédio; o banco
+  desconta sozinho a cada dose validada, estima quantos dias ainda dura e avisa
+  paciente **e** cuidador quando está acabando (tela *Estoque*)
+- **Modo fácil (acessibilidade)** — letras e botões maiores em todo o app, com prévia
+  ao vivo. Contas de paciente já vêm com ele ligado (*Perfil → Acessibilidade*)
+- **Cuidador confirma dose** — na tela *Meus pacientes*, o botão “Dei” registra a dose
+  que o cuidador administrou (fica gravada como `validated_by = 'caregiver'`)
+- **Badge de mensagens não lidas** no menu de Conversas
+
+> ⚠️ Requer rodar **`supabase_update5.sql`** (estoque) e **`supabase_update6.sql`**
+> (confirmação pelo cuidador).
+
+---
+
 ## ✨ Novidades da versão 2.2
 
 - **Alerta automático de dose perdida** — quando uma dose não é tomada, o cuidador
@@ -70,6 +86,8 @@ npm install
    - `supabase_update2.sql` (RPC de busca de cuidador + policies de leitura)
    - `supabase_update3.sql` (telefone no perfil, chat paciente↔cuidador, pareamento do dispenser)
    - `supabase_update4.sql` (alerta automático de dose perdida para o cuidador)
+   - `supabase_update5.sql` (controle de estoque + aviso de "acabando")
+   - `supabase_update6.sql` (cuidador confirma dose do paciente)
 3. Copie a **URL** e a **anon key** (Settings → API) para:
    - `src/services/supabase.ts`
    - `app.json` (campo `extra`)

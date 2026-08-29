@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
+import { useElderlyMode } from '../hooks/useElderly';
 import { Colors, Radius, Shadows } from '../theme';
 import { APP_META, FOOTER_LABEL } from '../config/app';
 
@@ -12,7 +13,7 @@ export default function AboutScreen() {
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
   const role      = useStore((s) => s.user?.role);
-  const isElderly = role === 'patient';
+  const isElderly = useElderlyMode();
   const maxW = isDesktop ? 720 : isTablet ? 600 : undefined;
   const fs   = (isDesktop ? 15 : 14) + (isElderly ? 3 : 0);
 

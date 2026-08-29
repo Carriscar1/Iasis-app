@@ -11,7 +11,7 @@ import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
 import {
   listChatContacts, listMessages, sendMessage, markConversationRead,
-  subscribeToMessages, openWhatsApp,
+  subscribeToMessages, openWhatsApp, countUnread,
   type ChatContact, type Message,
 } from '../services/chat';
 
@@ -34,6 +34,7 @@ export default function ChatScreen() {
   const maxW      = width >= 1024 ? 720 : isTablet ? 640 : undefined;
 
   const user = useStore((s) => s.user);
+  const setUnreadMessages = useStore((s) => s.setUnreadMessages);
 
   const [contacts, setContacts] = useState<ChatContact[]>([]);
   const [active, setActive]     = useState<ChatContact | null>(null);
@@ -65,16 +66,19 @@ export default function ChatScreen() {
       const { data } = await listMessages(user.id, active.id);
       if (!alive) return;
       setMessages(data);
-      markConversationRead(user.id, active.id);
+      // Lidas: atualiza o badge com o que sobrou de outras conversas.
+      await markConversationRead(user.id, active.id);
+      if (alive) setUnreadMessages(await countUnread(user.id));
     })();
 
-    const unsubscribe = subscribeToMessages(user.id, active.id, (m) => {
+    const unsubscribe = subscribeToMessages(user.id, active.id, async (m) => {
       setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
-      markConversationRead(user.id, active.id);
+      await markConversationRead(user.id, active.id);
+      if (alive) setUnreadMessages(await countUnread(user.id));
     });
 
     return () => { alive = false; unsubscribe(); };
-  }, [user, active]);
+  }, [user, active, setUnreadMessages]);
 
   const handleSend = async () => {
     const text = draft.trim();
