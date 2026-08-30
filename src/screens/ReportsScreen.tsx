@@ -10,7 +10,8 @@ import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
 import {
   getAdherence, getAdherenceInsights, computeStreak, listRecentDoses,
-  type AdherenceSummary, type AdherenceInsights,
+  getAdherenceTrend,
+  type AdherenceSummary, type AdherenceInsights, type AdherenceTrend,
 } from '../services/data';
 import type { Dose } from '../types';
 import { exportAdherenceReport } from '../services/report';
@@ -37,20 +38,23 @@ export default function ReportsScreen() {
   const [summary, setSummary]   = useState<AdherenceSummary | null>(null);
   const [insights, setInsights] = useState<AdherenceInsights | null>(null);
   const [recent, setRecent]     = useState<Dose[]>([]);
+  const [trend, setTrend]       = useState<AdherenceTrend | null>(null);
   const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting]   = useState(false);
 
   const load = useCallback(async (period: number) => {
     if (!user) { setLoading(false); return; }
-    const [a, i, r] = await Promise.all([
+    const [a, i, r, t] = await Promise.all([
       getAdherence(user.id, period),
       getAdherenceInsights(user.id, period),
       listRecentDoses(user.id, 40),
+      getAdherenceTrend(user.id, period),
     ]);
     setSummary(a.data);
     setInsights(i.data);
     setRecent(r.data ?? []);
+    setTrend(t.data);
     setLoading(false);
     setRefreshing(false);
   }, [user]);
@@ -150,6 +154,66 @@ export default function ReportsScreen() {
                 </View>
               )}
             </View>
+
+            {/* Comparação com o período anterior */}
+            {trend?.hasData && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Comparado ao período anterior</Text>
+                <View style={styles.trendRow}>
+                  <View
+                    style={[
+                      styles.trendBadge,
+                      {
+                        backgroundColor:
+                          trend.deltaPoints > 0 ? Colors.greenLight
+                          : trend.deltaPoints < 0 ? Colors.redLight
+                          : Colors.borderSoft,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={
+                        trend.deltaPoints > 0 ? 'trending-up'
+                        : trend.deltaPoints < 0 ? 'trending-down'
+                        : 'remove'
+                      }
+                      size={26}
+                      color={
+                        trend.deltaPoints > 0 ? Colors.greenText
+                        : trend.deltaPoints < 0 ? Colors.redText
+                        : Colors.textSecondary
+                      }
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={[
+                        styles.trendValue,
+                        {
+                          color:
+                            trend.deltaPoints > 0 ? Colors.greenText
+                            : trend.deltaPoints < 0 ? Colors.redText
+                            : Colors.textSecondary,
+                        },
+                      ]}
+                    >
+                      {trend.deltaPoints > 0 ? '+' : ''}{trend.deltaPoints} pontos
+                    </Text>
+                    <Text style={styles.trendText}>
+                      {trend.deltaPoints > 0
+                        ? `Sua adesão melhorou: ${trend.previous.percentage}% → ${trend.current.percentage}%.`
+                        : trend.deltaPoints < 0
+                          ? `Sua adesão caiu: ${trend.previous.percentage}% → ${trend.current.percentage}%.`
+                          : `Sua adesão se manteve em ${trend.current.percentage}%.`}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.trendHint}>
+                  Comparando {trend.current.evaluated} doses destes {days} dias com{' '}
+                  {trend.previous.evaluated} dos {days} dias anteriores.
+                </Text>
+              </View>
+            )}
 
             {/* Doses por dia */}
             <View style={styles.card}>
@@ -300,6 +364,11 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
   cardHint:  { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
 
+  trendRow:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
+  trendBadge: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  trendValue: { fontSize: 20, fontWeight: '800' },
+  trendText:  { fontSize: 14.5, color: Colors.textSecondary, marginTop: 3, lineHeight: 20 },
+  trendHint:  { fontSize: 12.5, color: Colors.textMuted, marginTop: 12 },
   statRow:   { flexDirection: 'row', width: '100%', marginTop: 12 },
   statValue: { fontSize: 22, fontWeight: '800' },
   statLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },

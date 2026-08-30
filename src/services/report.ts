@@ -57,7 +57,7 @@ const buildTextReport = ({ userName, periodLabel, adherence, recent }: ReportInp
 };
 
 // ── Relatório HTML (impressão / PDF na web) ───
-const buildHtmlReport = ({ userName, periodLabel, adherence, recent, insights }: ReportInput): string => {
+export const buildHtmlReport = ({ userName, periodLabel, adherence, recent, insights }: ReportInput): string => {
   const rows = recent.slice(0, 30).map((d) => {
     const med = d.medication ? `${d.medication.name} ${d.medication.dosage}` : 'Medicamento';
     const color = d.status === 'missed' ? '#A32D2D' : d.status === 'late' ? '#854F0B' : '#0F6E56';
@@ -122,7 +122,11 @@ const buildHtmlReport = ({ userName, periodLabel, adherence, recent, insights }:
 <title>IASIS — Relatório de adesão</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  /* Documento para impressão: fixa fundo branco para não herdar o tema
+     escuro do navegador e sair ilegível no PDF. */
+  html, body { background: #FFFFFF; }
   body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; color: #1C2B4B; padding: 40px; }
+  @media print { html, body { background: #FFFFFF !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
   .head { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1C2B4B; padding-bottom: 16px; }
   h1 { font-size: 26px; } .brand { font-size: 13px; color: #64748B; }
   .meta { margin: 18px 0; color: #64748B; font-size: 14px; line-height: 1.7; }

@@ -564,6 +564,75 @@ export const getAdherenceInsights = async (
   };
 };
 
+// ── Comparação com o período anterior ─────────
+// Responde "melhorei ou piorei?": compara os últimos N dias com os N dias
+// imediatamente anteriores. Só considera doses já avaliadas (tomadas ou
+// perdidas) — pendentes futuras distorceriam a conta.
+export interface AdherenceTrend {
+  current:   { taken: number; evaluated: number; percentage: number };
+  previous:  { taken: number; evaluated: number; percentage: number };
+  deltaPoints: number;   // diferença em pontos percentuais (pode ser negativa)
+  hasData:   boolean;    // false quando não há período anterior para comparar
+}
+
+export const getAdherenceTrend = async (
+  userId: string,
+  days: number
+): Promise<{ data: AdherenceTrend; error: string | null }> => {
+  const empty: AdherenceTrend = {
+    current:  { taken: 0, evaluated: 0, percentage: 0 },
+    previous: { taken: 0, evaluated: 0, percentage: 0 },
+    deltaPoints: 0,
+    hasData: false,
+  };
+
+  const startCurrent = new Date(); startCurrent.setHours(0, 0, 0, 0);
+  startCurrent.setDate(startCurrent.getDate() - (days - 1));
+
+  const startPrevious = new Date(startCurrent);
+  startPrevious.setDate(startPrevious.getDate() - days);
+
+  const { data, error } = await supabase
+    .from('doses')
+    .select('scheduled_at, status')
+    .eq('user_id', userId)
+    .gte('scheduled_at', startPrevious.toISOString());
+
+  if (error) return { data: empty, error: error.message };
+
+  const bucket = (rows: { taken: number; evaluated: number }) => ({
+    ...rows,
+    percentage: rows.evaluated ? Math.round((rows.taken / rows.evaluated) * 100) : 0,
+  });
+
+  const cur  = { taken: 0, evaluated: 0 };
+  const prev = { taken: 0, evaluated: 0 };
+
+  for (const r of data ?? []) {
+    const isTaken  = r.status === 'taken' || r.status === 'late';
+    const isMissed = r.status === 'missed';
+    if (!isTaken && !isMissed) continue;      // ainda não avaliada
+
+    const when = new Date(r.scheduled_at);
+    const target = when >= startCurrent ? cur : prev;
+    target.evaluated++;
+    if (isTaken) target.taken++;
+  }
+
+  const current  = bucket(cur);
+  const previous = bucket(prev);
+
+  return {
+    data: {
+      current,
+      previous,
+      deltaPoints: current.percentage - previous.percentage,
+      hasData: previous.evaluated > 0 && current.evaluated > 0,
+    },
+    error: null,
+  };
+};
+
 export const computeStreak = (byDay: AdherenceSummary['byDay']): number => {
   let streak = 0;
   const todayKey = new Date().toISOString().slice(0, 10);

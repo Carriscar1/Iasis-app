@@ -6,6 +6,20 @@ Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vib
 
 ---
 
+## ✨ Novidades da versão 2.4
+
+- **Home com seção “precisa de atenção”** — avisos não lidos e remédios acabando
+  aparecem no topo, com atalho direto para resolver
+- **Relatório exportável com gráficos** — anel de adesão em SVG, adesão por horário
+  e a observação do horário menos seguido; fundo branco fixo para imprimir bem
+- **Renovar tratamento** — botão em *Meus remédios* estende o tratamento por
+  7/14/30 dias reaproveitando os horários já usados, sem duplicar doses
+- **Comparação com o período anterior** — “sua adesão melhorou: 72% → 86%”
+
+*(Não exige novas migrações no banco.)*
+
+---
+
 ## ✨ Novidades da versão 2.3
 
 - **Controle de estoque** — cadastre quantas unidades tem de cada remédio; o banco
