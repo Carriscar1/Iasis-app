@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Modal, useWindowDimensions, TextInput, ActivityIndicator,
-  RefreshControl, Platform,
+  RefreshControl, Platform, Alert as RNAlert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
@@ -13,7 +13,7 @@ import { useElderlyMode } from '../hooks/useElderly';
 import {
   listDosesForDay, listMedications, createMedication, updateMedication,
   deleteMedication, createDosesBulk, markDoseTaken, deleteDose,
-  computeLiveStatus, syncOverdueDoses,
+  computeLiveStatus, syncOverdueDoses, renewTreatment,
 } from '../services/data';
 import { searchMedications, MEDICATIONS_ALPHABETICAL, type CatalogMed } from '../data/medications';
 import {
@@ -97,6 +97,38 @@ export default function ScheduleScreen() {
     setLoading(false);
     setRefreshing(false);
   }, [user, selDay]);
+
+  const [renewing, setRenewing] = useState<string | null>(null);
+
+  // Estende o tratamento por mais N dias reaproveitando os horários atuais.
+  const handleRenew = (med: Medication) => {
+    RNAlert.alert(
+      `Renovar ${med.name}`,
+      'Por quantos dias você quer continuar este tratamento?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        ...[7, 14, 30].map((d) => ({
+          text: `${d} dias`,
+          onPress: async () => {
+            if (!user) return;
+            setRenewing(med.id);
+            const { data, error } = await renewTreatment(user.id, med.id, d);
+            setRenewing(null);
+            if (error) { RNAlert.alert('Não foi possível renovar', error); return; }
+            if (data.created === 0) {
+              RNAlert.alert('Nada a fazer', 'Essas doses já estão agendadas.');
+              return;
+            }
+            RNAlert.alert(
+              'Tratamento renovado',
+              `${data.created} doses criadas nos horários ${data.times.join(', ')}.`,
+            );
+            load();
+          },
+        })),
+      ],
+    );
+  };
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
   useEffect(() => { setLoading(true); load(); }, [selDay]);
@@ -291,6 +323,18 @@ export default function ScheduleScreen() {
                         <TouchableOpacity style={styles.medEditBtn} onPress={() => setEditMed(med)} activeOpacity={0.8}>
                           <Ionicons name="pencil" size={14} color={Colors.navy} />
                           <Text style={[styles.medEditText, { fontSize: fs - 2 }]}>Editar</Text>
+                        </TouchableOpacity>
+                        {/* Renova usando os mesmos horários que o tratamento já tinha. */}
+                        <TouchableOpacity
+                          style={[styles.medRenewBtn, renewing === med.id && { opacity: 0.5 }]}
+                          onPress={() => handleRenew(med)}
+                          disabled={renewing === med.id}
+                          activeOpacity={0.8}
+                        >
+                          {renewing === med.id
+                            ? <ActivityIndicator size="small" color={Colors.greenText} />
+                            : <Ionicons name="refresh" size={14} color={Colors.greenText} />}
+                          <Text style={[styles.medRenewText, { fontSize: fs - 2 }]}>Renovar</Text>
                         </TouchableOpacity>
                         <ConfirmAction
                           label="Excluir" confirmLabel="Excluir"
@@ -850,6 +894,12 @@ const styles = StyleSheet.create({
   doseInstr: { color: Colors.textSecondary, marginTop: 2 },
   badge:     { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontWeight: '600' },
+  medRenewBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: Colors.greenLight, borderRadius: 8,
+    paddingHorizontal: 11, paddingVertical: 7,
+  },
+  medRenewText: { color: Colors.greenText, fontWeight: '700' },
   medCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
   medIcon:    { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
   medName:    { fontWeight: '700', color: Colors.textPrimary },

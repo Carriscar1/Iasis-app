@@ -108,6 +108,75 @@ export const updateMedication = async (
   return { data: rowToMedication(data), error: null };
 };
 
+// ── Renovar tratamento ────────────────────────
+// Descobre os horários que o tratamento já usava (pelas doses existentes) e
+// gera novas doses para os próximos N dias, começando no dia seguinte à
+// última dose agendada. Não duplica: pula horários que já existem.
+export interface RenewResult {
+  created:   number;
+  times:     string[];   // ex: ['08:00', '20:00']
+  startsAt:  string | null;
+}
+
+export const renewTreatment = async (
+  userId: string,
+  medicationId: string,
+  days: number
+): Promise<{ data: RenewResult; error: string | null }> => {
+  const empty: RenewResult = { created: 0, times: [], startsAt: null };
+
+  // Últimas doses desse medicamento para inferir os horários e o fim atual.
+  const { data: rows, error } = await supabase
+    .from('doses')
+    .select('scheduled_at')
+    .eq('user_id', userId)
+    .eq('medication_id', medicationId)
+    .order('scheduled_at', { ascending: false })
+    .limit(60);
+
+  if (error) return { data: empty, error: error.message };
+  if (!rows || rows.length === 0) {
+    return { data: empty, error: 'Este remédio ainda não tem horários. Crie um tratamento primeiro.' };
+  }
+
+  // Horários distintos (hh:mm), na ordem do dia.
+  const timeSet = new Set<string>();
+  for (const r of rows) {
+    const d = new Date(r.scheduled_at);
+    timeSet.add(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+  }
+  const times = Array.from(timeSet).sort();
+
+  // Recomeça no dia seguinte à última dose (ou amanhã, se já passou).
+  const last = new Date(rows[0].scheduled_at);
+  const start = new Date(Math.max(last.getTime(), Date.now()));
+  start.setDate(start.getDate() + 1);
+  start.setHours(0, 0, 0, 0);
+
+  const existing = new Set(rows.map((r) => new Date(r.scheduled_at).toISOString()));
+  const list: string[] = [];
+  for (let day = 0; day < days; day++) {
+    for (const t of times) {
+      const [hh, mm] = t.split(':').map(Number);
+      const when = new Date(start);
+      when.setDate(start.getDate() + day);
+      when.setHours(hh, mm, 0, 0);
+      const iso = when.toISOString();
+      if (!existing.has(iso)) list.push(iso);
+    }
+  }
+
+  if (list.length === 0) return { data: { created: 0, times, startsAt: null }, error: null };
+
+  const { error: insErr } = await createDosesBulk(userId, medicationId, list);
+  if (insErr) return { data: empty, error: insErr };
+
+  return {
+    data: { created: list.length, times, startsAt: list[0] },
+    error: null,
+  };
+};
+
 // ── Estoque ───────────────────────────────────
 // Repõe unidades e limpa o aviso de "acabando" (RPC verifica o dono).
 export const restockMedication = async (

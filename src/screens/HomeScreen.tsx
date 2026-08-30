@@ -13,9 +13,9 @@ import { Colors, Radius, Shadows } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 import {
   listDosesForDay, computeLiveStatus, syncOverdueDoses,
-  getAdherence, computeStreak,
+  getAdherence, computeStreak, listMedications,
 } from '../services/data';
-import type { Dose } from '../types';
+import type { Dose, Medication } from '../types';
 import type { UserProfile } from '../services/auth';
 
 type Shortcut = { icon: string; label: string; sub: string; route: string; bg: string; ic: string };
@@ -26,14 +26,16 @@ const SC = {
   historico: { icon: 'bar-chart',     label: 'Histórico',  sub: 'Como você vem indo',   route: '/(tabs)/history',  bg: '#FAEEDA', ic: '#854F0B' },
   perfil:    { icon: 'person',        label: 'Perfil',     sub: 'Sua conta',            route: '/(tabs)/profile',  bg: '#F1F5F9', ic: '#64748B' },
   pacientes: { icon: 'people',        label: 'Pacientes',  sub: 'Quem você cuida',      route: '/patients',        bg: '#EDE9FE', ic: '#6D44C9' },
+  estoque:   { icon: 'flask',         label: 'Estoque',    sub: 'Quanto ainda tem',     route: '/stock',           bg: '#E1F5EE', ic: '#0F6E56' },
+  alertas:   { icon: 'notifications', label: 'Alertas',    sub: 'Avisos importantes',   route: '/alerts',          bg: '#FCEBEB', ic: '#A32D2D' },
 } satisfies Record<string, Shortcut>;
 
 // Atalhos exibidos variam conforme o perfil do usuário.
 const shortcutsForRole = (role?: UserProfile['role']): Shortcut[] => {
-  if (role === 'caregiver')  return [SC.pacientes, SC.agenda, SC.historico, SC.perfil];
+  if (role === 'caregiver')  return [SC.pacientes, SC.alertas, SC.agenda, SC.historico];
   // Paciente (idoso): foco na agenda e no histórico, sem o aparelho.
-  if (role === 'patient')    return [SC.agenda, SC.historico, SC.perfil];
-  return [SC.agenda, SC.dispenser, SC.historico, SC.perfil]; // independente
+  if (role === 'patient')    return [SC.agenda, SC.historico, SC.estoque, SC.perfil];
+  return [SC.agenda, SC.dispenser, SC.estoque, SC.historico]; // independente
 };
 
 const roleSubtitle = (role?: UserProfile['role']): string => {
@@ -51,6 +53,7 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [doses, setDoses] = useState<Dose[]>([]);
   const [streak, setStreak] = useState(0);
+  const [lowStock, setLowStock] = useState<Medication[]>([]);
 
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -59,6 +62,7 @@ export default function HomeScreen() {
   const maxW      = isDesktop ? 960 : isTablet ? 720 : undefined;
 
   const shortcuts = shortcutsForRole(user?.role);
+  const unreadAlerts = useStore((s) => s.unreadAlerts);
 
   // Grid: paciente vê cartões maiores (1 coluna no celular) para facilitar o toque.
   const cols     = isElderly ? (isTablet ? 3 : 1) : isDesktop ? 4 : isTablet ? 4 : 2;
@@ -71,7 +75,15 @@ export default function HomeScreen() {
   const showsDoses = user?.role !== 'caregiver';
 
   const loadDoses = useCallback(async () => {
-    if (!user || user.role === 'caregiver') { setDoses([]); return; }
+    if (!user) { setDoses([]); setLowStock([]); return; }
+
+    // Estoque baixo aparece no topo para qualquer papel.
+    const meds = await listMedications(user.id);
+    setLowStock(
+      meds.data.filter((m) => m.stock != null && m.stock <= (m.stockThreshold ?? 5)),
+    );
+
+    if (user.role === 'caregiver') { setDoses([]); return; }
     // Persiste doses vencidas como "missed" antes de mostrar o resumo.
     await syncOverdueDoses(user.id);
     const [{ data }, adh] = await Promise.all([
@@ -167,6 +179,57 @@ export default function HomeScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,.7)" />
             </TouchableOpacity>
+          )}
+
+          {/* Precisa de atenção: alertas não lidos + estoque acabando */}
+          {(unreadAlerts > 0 || lowStock.length > 0) && (
+            <View style={{ marginTop: 18, gap: 10 }}>
+              {unreadAlerts > 0 && (
+                <TouchableOpacity
+                  style={styles.attentionCard}
+                  onPress={() => router.push('/alerts')}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.attentionIcon, { backgroundColor: Colors.redLight }]}>
+                    <Ionicons name="alert-circle" size={isElderly ? 24 : 20} color={Colors.redText} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.attentionTitle, { fontSize: fs }]}>
+                      {unreadAlerts} {unreadAlerts === 1 ? 'aviso novo' : 'avisos novos'}
+                    </Text>
+                    <Text style={[styles.attentionSub, { fontSize: fs - 3 }]}>
+                      Toque para ver o que aconteceu
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
+
+              {lowStock.length > 0 && (
+                <TouchableOpacity
+                  style={styles.attentionCard}
+                  onPress={() => router.push('/stock')}
+                  activeOpacity={0.85}
+                >
+                  <View style={[styles.attentionIcon, { backgroundColor: Colors.amberLight }]}>
+                    <Ionicons name="flask" size={isElderly ? 24 : 20} color={Colors.amberText} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.attentionTitle, { fontSize: fs }]}>
+                      {lowStock.length === 1
+                        ? `${lowStock[0].name} está acabando`
+                        : `${lowStock.length} remédios acabando`}
+                    </Text>
+                    <Text style={[styles.attentionSub, { fontSize: fs - 3 }]}>
+                      {lowStock.length === 1
+                        ? `Restam ${lowStock[0].stock} unidades`
+                        : lowStock.map((m) => m.name).join(', ')}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
           )}
 
           {/* Próximo remédio — foco principal */}
@@ -317,6 +380,17 @@ const styles = StyleSheet.create({
   gridIcon:    { alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   gridLabel:   { fontWeight: '700', color: Colors.textPrimary },
   gridSub:     { color: Colors.textSecondary, marginTop: 3 },
+  attentionCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    padding: 14, ...Shadows.sm,
+  },
+  attentionIcon: {
+    width: 44, height: 44, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  attentionTitle: { fontWeight: '700', color: Colors.textPrimary },
+  attentionSub:   { color: Colors.textSecondary, marginTop: 2 },
   tipCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.redLight, borderRadius: Radius.md, padding: 16, marginTop: 22 },
   tipText:     { flex: 1, color: Colors.textPrimary, lineHeight: 20 },
   version:     { textAlign: 'center', color: Colors.textMuted, marginTop: 22 },

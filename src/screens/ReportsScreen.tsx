@@ -67,6 +67,7 @@ export default function ReportsScreen() {
       periodLabel: `últimos ${days} dias`,
       adherence:   summary,
       recent,
+      insights:    insights ?? undefined,
     });
     setExporting(false);
   };

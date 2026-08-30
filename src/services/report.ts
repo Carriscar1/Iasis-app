@@ -8,7 +8,7 @@
 //  Sem dependências novas — usa só APIs da plataforma.
 // ─────────────────────────────────────────────
 import { Platform, Share } from 'react-native';
-import type { AdherenceSummary } from './data';
+import type { AdherenceSummary, AdherenceInsights } from './data';
 import type { Dose } from '../types';
 
 interface ReportInput {
@@ -16,6 +16,7 @@ interface ReportInput {
   periodLabel: string;           // ex: "últimos 7 dias"
   adherence:   AdherenceSummary;
   recent:      Dose[];
+  insights?:   AdherenceInsights;  // adesão por horário / dia da semana
 }
 
 const fmtWhen = (iso: string) =>
@@ -56,7 +57,7 @@ const buildTextReport = ({ userName, periodLabel, adherence, recent }: ReportInp
 };
 
 // ── Relatório HTML (impressão / PDF na web) ───
-const buildHtmlReport = ({ userName, periodLabel, adherence, recent }: ReportInput): string => {
+const buildHtmlReport = ({ userName, periodLabel, adherence, recent, insights }: ReportInput): string => {
   const rows = recent.slice(0, 30).map((d) => {
     const med = d.medication ? `${d.medication.name} ${d.medication.dosage}` : 'Medicamento';
     const color = d.status === 'missed' ? '#A32D2D' : d.status === 'late' ? '#854F0B' : '#0F6E56';
@@ -67,6 +68,42 @@ const buildHtmlReport = ({ userName, periodLabel, adherence, recent }: ReportInp
       <td>${validLabel(d)}</td>
     </tr>`;
   }).join('');
+
+  // Anel de adesão em SVG puro — imprime nítido em qualquer resolução.
+  const donut = (() => {
+    const pct = Math.max(0, Math.min(100, adherence.percentage));
+    const r = 54, c = 2 * Math.PI * r;
+    const filled = (pct / 100) * c;
+    const color = pct >= 80 ? '#0F6E56' : pct >= 50 ? '#854F0B' : '#A32D2D';
+    return `<svg width="140" height="140" viewBox="0 0 140 140">
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="#F1F5F9" stroke-width="16"/>
+      <circle cx="70" cy="70" r="${r}" fill="none" stroke="${color}" stroke-width="16"
+              stroke-linecap="round" stroke-dasharray="${filled} ${c - filled}"
+              transform="rotate(-90 70 70)"/>
+      <text x="70" y="72" text-anchor="middle" font-size="30" font-weight="700" fill="#1C2B4B">${pct}%</text>
+      <text x="70" y="92" text-anchor="middle" font-size="11" fill="#64748B">de adesão</text>
+    </svg>`;
+  })();
+
+  // Adesão por horário (só entra no relatório quando há dados suficientes).
+  const hourRows = (insights?.byHour ?? [])
+    .filter((h) => h.total > 0)
+    .map((h) => {
+      const pct = Math.round((h.taken / h.total) * 100);
+      const color = pct >= 80 ? '#1D9E75' : pct >= 50 ? '#F59E0B' : '#EF4444';
+      return `<div class="hour-row">
+        <span class="hour-lbl">${String(h.hour).padStart(2, '0')}h</span>
+        <span class="hour-track"><span class="hour-fill" style="width:${pct}%;background:${color}"></span></span>
+        <span class="hour-pct">${pct}%</span>
+        <span class="hour-n">${h.taken}/${h.total}</span>
+      </div>`;
+    }).join('');
+
+  const worst = insights?.worstHour;
+  const insightNote = worst && (insights?.bestHour?.hour !== worst.hour)
+    ? `<div class="note"><strong>Observação:</strong> o horário das
+       ${String(worst.hour).padStart(2, '0')}h é o menos seguido (${worst.rate}% de adesão).</div>`
+    : '';
 
   const bars = adherence.byDay.map((day) => {
     const pct = day.total ? Math.round((day.taken / day.total) * 100) : 0;
@@ -101,6 +138,14 @@ const buildHtmlReport = ({ userName, periodLabel, adherence, recent }: ReportInp
   .bar-fill { width: 100%; background: #1D9E75; border-radius: 6px; }
   .bar-pct { font-size: 10px; color: #64748B; margin-top: 4px; }
   .bar-label { font-size: 10px; color: #94A3B8; }
+  .summary { display: flex; gap: 24px; align-items: center; margin: 20px 0; }
+  .hour-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; font-size: 12px; }
+  .hour-lbl { width: 34px; color: #64748B; }
+  .hour-track { flex: 1; height: 9px; background: #F1F5F9; border-radius: 5px; overflow: hidden; }
+  .hour-fill { display: block; height: 100%; border-radius: 5px; }
+  .hour-pct { width: 36px; text-align: right; font-weight: 700; color: #1C2B4B; }
+  .hour-n { width: 44px; text-align: right; color: #94A3B8; }
+  .note { background: #FAEEDA; color: #854F0B; border-radius: 8px; padding: 10px 12px; font-size: 12.5px; margin-top: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
   th { text-align: left; padding: 8px 10px; background: #F4F6FA; color: #64748B; text-transform: uppercase; font-size: 11px; letter-spacing: .4px; }
   td { padding: 8px 10px; border-bottom: 1px solid #F1F5F9; }
@@ -118,14 +163,18 @@ const buildHtmlReport = ({ userName, periodLabel, adherence, recent }: ReportInp
     <strong>Período:</strong> ${periodLabel}<br>
     <strong>Emitido em:</strong> ${new Date().toLocaleString('pt-BR')}
   </div>
-  <div class="score">
-    <div class="box"><div class="num navy">${adherence.percentage}%</div><div class="lbl">Adesão geral</div></div>
+  <div class="summary">
+    ${donut}
+    <div class="score" style="flex:1;margin:0">
+    <div class="box"><div class="num navy">${adherence.total}</div><div class="lbl">Doses no período</div></div>
     <div class="box"><div class="num green">${adherence.taken - adherence.late}</div><div class="lbl">No horário</div></div>
     <div class="box"><div class="num amber">${adherence.late}</div><div class="lbl">Com atraso</div></div>
     <div class="box"><div class="num red">${adherence.missed}</div><div class="lbl">Perdidas</div></div>
+    </div>
   </div>
   <h2>Adesão por dia</h2>
   <div class="chart">${bars}</div>
+  ${hourRows ? `<h2>Adesão por horário</h2>${hourRows}${insightNote}` : ''}
   <h2>Linha do tempo</h2>
   <table>
     <thead><tr><th>Quando</th><th>Medicamento</th><th>Status</th><th>Validação</th></tr></thead>
