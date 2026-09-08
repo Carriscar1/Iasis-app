@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { UserProfile } from '../services/auth';
+import type { MedForm } from '../types';
 
 export interface MqttLog {
   id:        string;
@@ -10,6 +11,13 @@ export interface MqttLog {
 
 // Etapas do fluxo de segurança fechado (alerta → RFID → dispensa → confirmado)
 export type FlowStep = 'idle' | 'alerting' | 'validating' | 'dispensing' | 'done';
+
+// Remédio lido pelo código de barras, entregue à tela de cadastro.
+export interface ScannedMedication {
+  name:   string;
+  dosage: string;
+  form:   MedForm;
+}
 
 export interface DoseFlow {
   step:     FlowStep;
@@ -50,6 +58,11 @@ interface AppStore {
   setUnreadAlerts: (n: number) => void;
   unreadMessages:    number;
   setUnreadMessages: (n: number) => void;
+
+  // Remédio vindo do leitor de código de barras (consumido uma única vez
+  // pela tela de cadastro e limpo em seguida).
+  scannedMedication:    ScannedMedication | null;
+  setScannedMedication: (m: ScannedMedication | null) => void;
 
   // Fluxo de segurança fechado (demonstração/execução ao vivo)
   doseFlow:    DoseFlow;
@@ -96,6 +109,9 @@ export const useStore = create<AppStore>((set) => ({
   setUnreadAlerts: (unreadAlerts) => set({ unreadAlerts }),
   unreadMessages:    0,
   setUnreadMessages: (unreadMessages) => set({ unreadMessages }),
+
+  scannedMedication:    null,
+  setScannedMedication: (scannedMedication) => set({ scannedMedication }),
 
   doseFlow:    { step: 'idle' },
   setDoseFlow: (doseFlow) => set({ doseFlow }),

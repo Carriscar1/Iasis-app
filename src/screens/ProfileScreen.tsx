@@ -10,6 +10,7 @@ import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import { Colors, Radius, Shadows } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
+import Avatar from '../components/Avatar';
 
 export default function ProfileScreen() {
   const { width } = useWindowDimensions();
@@ -137,12 +138,18 @@ export default function ProfileScreen() {
 
           {/* Avatar */}
           <View style={styles.avatarSection}>
-            <View style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}>
-              <Text style={{ fontSize: avatarSize * 0.4, fontWeight: '800', color: '#fff' }}>
-                {user?.name?.charAt(0).toUpperCase() ?? 'U'}
-              </Text>
-            </View>
-            <Text style={[styles.userName, { fontSize: isTablet ? 22 : 18 }]}>{user?.name ?? 'Usuário'}</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/edit-avatar')}
+              activeOpacity={0.8}
+              accessibilityLabel="Alterar foto de perfil"
+            >
+              <Avatar name={user?.name} uri={user?.avatar_url} size={avatarSize} />
+              {/* Selo de câmera: sinaliza que o avatar é tocável. */}
+              <View style={styles.avatarEdit}>
+                <Ionicons name="camera" size={14} color="#fff" />
+              </View>
+            </TouchableOpacity>
+            <Text style={[styles.userName, { fontSize: isTablet ? 22 : 18, marginTop: 12 }]}>{user?.name ?? 'Usuário'}</Text>
             <View style={styles.roleBadge}>
               <Text style={[styles.roleText, { fontSize: fs - 1 }]}>{roleLabel()}</Text>
             </View>
@@ -218,6 +225,12 @@ const styles = StyleSheet.create({
   title:        { fontWeight: '700', color: '#fff' },
   avatarSection:{ alignItems: 'center', paddingVertical: 28 },
   avatar:       { backgroundColor: '#1C2B4B', alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...Shadows.md },
+  avatarEdit:   {
+    position: 'absolute', right: -2, bottom: -2,
+    width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.navyLight,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: Colors.bg,
+  },
   userName:     { fontWeight: '700', color: Colors.textPrimary },
   roleBadge:    { marginTop: 6, backgroundColor: Colors.borderSoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
   roleText:     { color: Colors.textSecondary, fontWeight: '500' },

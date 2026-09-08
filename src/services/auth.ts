@@ -7,6 +7,7 @@ export interface UserProfile {
   role:          'patient' | 'caregiver' | 'independent';
   phone?:        string;        // usado pelo atalho do WhatsApp
   rfid_tag?:     string;
+  avatar_url?:   string;        // foto de perfil (data URI JPEG 256x256)
   caregiver_id?: string;
   created_at:    string;
 }
@@ -14,7 +15,7 @@ export interface UserProfile {
 // Atualiza campos editáveis do próprio perfil (telefone, nome, tag RFID).
 export const updateProfile = async (
   userId: string,
-  patch: Partial<Pick<UserProfile, 'name' | 'phone' | 'rfid_tag'>>
+  patch: Partial<Pick<UserProfile, 'name' | 'phone' | 'rfid_tag' | 'avatar_url'>>
 ): Promise<{ error: string | null }> => {
   const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
   return { error: error ? error.message : null };

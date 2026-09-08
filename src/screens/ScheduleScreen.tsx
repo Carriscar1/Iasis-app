@@ -5,7 +5,7 @@ import {
   RefreshControl, Platform, Alert as RNAlert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
@@ -447,6 +447,9 @@ function AddMedicationModal({
   const [saving, setSaving]     = useState(false);
   const [formError, setFormError] = useState('');
 
+  const scanned    = useStore((st) => st.scannedMedication);
+  const setScanned = useStore((st) => st.setScannedMedication);
+
   const reset = () => {
     setQuery(''); setSelected(null); setCustom(false); setName('');
     setForm('comprimido'); setDosage(''); setTimes(['08:00']); setTimeDraft('08:00');
@@ -458,6 +461,20 @@ function AddMedicationModal({
   const results  = showList
     ? (query.trim() ? searchMedications(query, 40) : MEDICATIONS_ALPHABETICAL)
     : [];
+
+  // O leitor de código de barras devolve o remédio pelo store. Assim que ele
+  // chega, o formulário se preenche sozinho e o valor é limpo — senão a
+  // próxima abertura do formulário repetiria o último remédio lido.
+  useEffect(() => {
+    if (!scanned) return;
+    setCustom(true);
+    setSelected(null);
+    setName(scanned.name);
+    setDosage(scanned.dosage);
+    setForm(scanned.form);
+    setQuery('');
+    setScanned(null);
+  }, [scanned]);
 
   const pickFromCatalog = (m: CatalogMed) => {
     setSelected(m);
@@ -570,6 +587,20 @@ function AddMedicationModal({
                     </TouchableOpacity>
                   )}
                 </View>
+
+                {/* Atalho da câmera: em vez de procurar o remédio na lista,
+                    lê o código de barras da própria caixa. */}
+                <TouchableOpacity
+                  style={styles.scanBtn}
+                  onPress={() => router.push('/scan-medication')}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="barcode-outline" size={19} color={Colors.navy} />
+                  <Text style={[styles.scanBtnText, { fontSize: fs - 1 }]}>
+                    Ler código de barras da caixa
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                </TouchableOpacity>
 
                 <Text style={[styles.listHint, { fontSize: fs - 3 }]}>
                   {query.trim()
@@ -925,6 +956,14 @@ const styles = StyleSheet.create({
   inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14 },
   inputFlex: { flex: 1, color: Colors.textPrimary, paddingVertical: Platform.OS === 'web' ? 12 : 11 },
   stepper: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  scanBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 9,
+    backgroundColor: Colors.blueLight + '33', borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.blueLight,
+    paddingHorizontal: 13, paddingVertical: 11, marginTop: 10,
+  },
+  scanBtnText: { flex: 1, color: Colors.navy, fontWeight: '700' },
+
   listHint:    { color: Colors.textMuted, marginTop: 10, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
   resultsScroll: { maxHeight: 280, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, backgroundColor: Colors.surface },
   resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: Colors.border },

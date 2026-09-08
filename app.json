@@ -3,7 +3,7 @@
     "name": "IASIS",
     "slug": "iasis",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "iasis",
     "userInterfaceStyle": "light",
@@ -25,7 +25,14 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1C2B4B"
-      }
+      },
+      "permissions": [
+        "CAMERA",
+        "READ_CONTACTS",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -35,7 +42,37 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      ["expo-notifications", { "color": "#1C2B4B" }]
+      [
+        "expo-notifications",
+        {
+          "color": "#1C2B4B"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "O IASIS usa a câmera para a sua foto de perfil e para ler o código de barras da caixa do remédio."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O IASIS acessa suas fotos para você escolher uma imagem de perfil.",
+          "cameraPermission": "O IASIS usa a câmera para tirar a sua foto de perfil."
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "O IASIS lê seus contatos apenas neste aparelho, para você escolher um cuidador sem digitar o número."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "O IASIS envia sua localização aos cuidadores quando você aciona a emergência."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
