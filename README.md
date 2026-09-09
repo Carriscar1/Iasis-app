@@ -29,6 +29,9 @@ recurso não existe ou não foi liberado.
   e aparece com a data de quando foi tirada
 - **Exportar doses em planilha (CSV)** — abre no Excel para filtrar, somar
   atrasos e cruzar dados (*Histórico → Exportar doses em planilha*)
+- **Tema claro e escuro** — ou seguindo o aparelho; a troca vale na hora
+  (*Perfil → Aparência*). Todos os pares de cor do tema escuro foram
+  conferidos por contraste antes de entrar
 - **Gira com o aparelho** — retrato e paisagem, com área segura nas laterais
   para o conteúdo não passar por baixo do notch
 
@@ -260,10 +263,12 @@ iasis/
 │   │   └── report.ts           # Relatório de adesão exportável
 │   ├── hooks/useDevice.ts      # Fluxo de segurança fechado (global)
 │   ├── store/index.ts          # Zustand (usuário, dispositivo, fluxo)
+│   ├── theme/
+│   │   ├── index.ts            # useTheme(makeStyles) + escalas
+│   │   └── palette.ts          # Paletas clara e escura
 │   ├── config/app.ts           # Versão, MQTT_CONFIG, modo demo
 │   ├── data/medications.ts     # Catálogo de remédios comuns no Brasil
 │   ├── types/index.ts          # Tipos globais
-│   └── theme/index.ts          # Cores, fontes, espaçamentos
 │
 ├── firmware/esp32/iasis_dispenser.ino
 ├── supabase_setup.sql          # + supabase_update.sql … update9.sql
