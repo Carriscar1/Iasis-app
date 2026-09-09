@@ -67,6 +67,15 @@ export default function ProfileScreen() {
       desc:  'Relatório de adesão',
       onPress: () => router.push('/(tabs)/history'),
     },
+    // Independente cuida de si mesmo — não monta equipe.
+    ...(user?.role === 'independent' ? [] : [{
+      icon:  'people-circle-outline',
+      label: 'Equipe de cuidado',
+      desc:  user?.role === 'caregiver'
+        ? 'Pacientes que você acompanha'
+        : 'Quem acompanha suas doses',
+      onPress: () => router.push('/care-team'),
+    }]),
     {
       icon:  'flask-outline',
       label: 'Estoque',

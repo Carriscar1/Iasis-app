@@ -31,6 +31,7 @@ export interface ChatContact {
   name:  string;
   phone: string | null;
   role:  'patient' | 'caregiver' | 'independent';
+  avatarUrl?: string;
 }
 
 export const listChatContacts = async (): Promise<{
@@ -42,6 +43,7 @@ export const listChatContacts = async (): Promise<{
   return {
     data: (data ?? []).map((r: any) => ({
       id: r.id, name: r.name, phone: r.phone ?? null, role: r.role,
+      avatarUrl: r.avatar_url ?? undefined,
     })),
     error: null,
   };
