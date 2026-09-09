@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import { signOut } from '../services/auth';
+import { clearCache } from '../services/offline';
 import { Colors, Radius, Shadows } from '../theme';
 
 // Tela dedicada de confirmação de saída — sem pop-up de janela.
@@ -22,6 +23,11 @@ export default function LogoutScreen() {
 
   const confirm = async () => {
     setLoading(true);
+    // O histórico salvo no aparelho sai junto: em celular compartilhado
+    // (comum entre paciente e cuidador da mesma casa), quem entrar depois
+    // não pode ver as doses de quem saiu.
+    if (user?.id) await clearCache(user.id);
+
     await signOut();
     logout();
     router.replace('/(auth)/login');

@@ -10,6 +10,8 @@ import { Colors, Radius, Shadows } from '../theme';
 import { useStore } from '../store';
 import { getAdherence, listRecentDoses, syncOverdueDoses, type AdherenceSummary } from '../services/data';
 import { exportAdherenceReport } from '../services/report';
+import { exportDosesCsv } from '../services/export';
+import { withCache, describeAge } from '../services/offline';
 import type { Dose } from '../types';
 
 type Period = '7d' | '30d' | '3m';
@@ -44,6 +46,10 @@ export default function HistoryScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [csvBusy, setCsvBusy]     = useState(false);
+  // RF01: quando a rede falha, a tela mostra a última cópia gravada no
+  // aparelho em vez de ficar vazia — com a data de quando ela foi tirada.
+  const [offlineAt, setOfflineAt] = useState<string | null>(null);
 
   const periodLabel =
     period === '7d' ? 'últimos 7 dias' : period === '30d' ? 'últimos 30 dias' : 'últimos 3 meses';
@@ -65,16 +71,32 @@ export default function HistoryScreen() {
     if (!user) { setLoading(false); return; }
     // Grava como "missed" as doses vencidas antes de calcular a adesão.
     await syncOverdueDoses(user.id);
+
     const [a, r] = await Promise.all([
-      getAdherence(user.id, DAYS[period]),
-      listRecentDoses(user.id, 30),
+      withCache('adherence', user.id, () => getAdherence(user.id, DAYS[period])),
+      withCache('doses',     user.id, () => listRecentDoses(user.id, 30)),
     ]);
-    if (a.error) RNAlert.alert('Erro', a.error);
-    setAdh(a.data);
-    setRecent(r.data.filter((d) => d.takenAt || d.status === 'missed'));
+
+    // Só avisa "offline" quando de fato caímos na cópia local. Um erro sem
+    // cópia continua sendo erro, e aí a mensagem tem que aparecer.
+    const cachedAt = a.fromCache ? a.savedAt : r.fromCache ? r.savedAt : null;
+    setOfflineAt(cachedAt ?? null);
+
+    if (a.error && !a.fromCache) RNAlert.alert('Erro', a.error);
+
+    setAdh(a.data ?? null);
+    setRecent((r.data ?? []).filter((d) => d.takenAt || d.status === 'missed'));
     setLoading(false);
     setRefreshing(false);
   }, [user, period]);
+
+  const handleCsv = async () => {
+    if (csvBusy) return;
+    setCsvBusy(true);
+    const res = await exportDosesCsv(recent, user?.name ?? 'Paciente');
+    setCsvBusy(false);
+    if (!res.ok && res.error) RNAlert.alert('Exportar doses', res.error);
+  };
 
   useFocusEffect(useCallback(() => { setLoading(true); load(); }, [load]));
   const onRefresh = () => { setRefreshing(true); load(); };
@@ -112,6 +134,19 @@ export default function HistoryScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={{ width: '100%', maxWidth: maxW, paddingHorizontal: 16 }}>
+
+          {/* RF01: o histórico continua legível sem internet. A faixa diz de
+              quando é a cópia, para ninguém tomar decisão com dado velho
+              achando que é o de agora. */}
+          {offlineAt ? (
+            <View style={styles.offlineBar}>
+              <Ionicons name="cloud-offline-outline" size={17} color={Colors.amberText} />
+              <Text style={[styles.offlineText, { fontSize: fs - 1 }]}>
+                Sem conexão — mostrando o histórico salvo {describeAge(offlineAt)}.
+              </Text>
+            </View>
+          ) : null}
+
 
           <View style={styles.periodRow}>
             {(['7d', '30d', '3m'] as Period[]).map((p) => (
@@ -205,6 +240,22 @@ export default function HistoryScreen() {
                   {Platform.OS === 'web' ? 'Exportar relatório PDF' : 'Compartilhar relatório'}
                 </Text>
               </TouchableOpacity>
+
+              {/* O PDF é para ler; o CSV é para trabalhar em cima — abre no
+                  Excel e deixa o médico filtrar, somar e cruzar dados. */}
+              <TouchableOpacity
+                style={[styles.csvBtn, csvBusy && { opacity: 0.7 }]}
+                onPress={handleCsv}
+                disabled={csvBusy || recent.length === 0}
+                activeOpacity={0.85}
+              >
+                {csvBusy
+                  ? <ActivityIndicator color={Colors.navy} size="small" />
+                  : <Ionicons name="grid-outline" size={isTablet ? 19 : 16} color={Colors.navy} />}
+                <Text style={[styles.csvText, { fontSize: fs }]}>
+                  Exportar doses em planilha (CSV)
+                </Text>
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -248,6 +299,21 @@ const styles = StyleSheet.create({
   tlLine:     { height: 0.5, backgroundColor: Colors.border, marginLeft: 36 },
   tlBadge:    { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   tlBadgeText:{ fontWeight: '600' },
+  offlineBar: {
+    flexDirection: 'row', alignItems: 'center', gap: 9,
+    backgroundColor: Colors.amberLight, borderRadius: Radius.md,
+    paddingHorizontal: 13, paddingVertical: 11, marginTop: 14,
+  },
+  offlineText: { flex: 1, color: Colors.amberText, lineHeight: 18 },
+
+  csvBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    backgroundColor: Colors.surface, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.border,
+    paddingVertical: 14, marginTop: 10,
+  },
+  csvText: { color: Colors.navy, fontWeight: '700' },
+
   exportBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2B4B', borderRadius: 12, paddingVertical: 14 },
   exportText: { color: '#fff', fontWeight: '600' },
 });
