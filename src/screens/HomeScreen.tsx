@@ -129,7 +129,7 @@ export default function HomeScreen() {
         : `💊 ${taken} de ${total} tomado(s) hoje`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
       {/* Header amigável (sem termos técnicos) */}
       <LinearGradient colors={['#1C2B4B', '#2E4A7A']} style={styles.header}>
         <View style={[styles.headerInner, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : {}]}>

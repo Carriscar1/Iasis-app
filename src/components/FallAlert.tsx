@@ -15,6 +15,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, Vibration, AppState,
+  ScrollView,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -111,7 +112,11 @@ export default function FallAlert() {
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={dismiss}>
-      <View style={styles.backdrop}>
+      {/* Rola quando o aparelho esta deitado: o cartao e alto. */}
+      <ScrollView
+        style={styles.backdrop}
+        contentContainerStyle={styles.backdropContent}
+      >
         <View style={styles.card}>
           {sent === null ? (
             <>
@@ -160,7 +165,7 @@ export default function FallAlert() {
             </>
           )}
         </View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
@@ -169,6 +174,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.72)',
+  },
+  backdropContent: {
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,

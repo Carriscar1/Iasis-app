@@ -162,7 +162,7 @@ export default function ScanMedicationScreen() {
   // confiável no navegador — melhor dizer isso do que entregar algo que falha.
   if (Platform.OS === 'web') {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
           <Ionicons name="desktop-outline" size={54} color={Colors.textMuted} />
@@ -183,7 +183,7 @@ export default function ScanMedicationScreen() {
   // Enquanto o Expo ainda não respondeu qual é o estado da permissão.
   if (!permission) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
           <ActivityIndicator color={Colors.navy} />
@@ -197,7 +197,7 @@ export default function ScanMedicationScreen() {
     const blocked = outcome === 'blocked';
 
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
           <View style={[styles.permIcon, blocked && { backgroundColor: Colors.redLight }]}>
@@ -250,7 +250,7 @@ export default function ScanMedicationScreen() {
 
   // ── Câmera liberada ─────────────────────────
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {header}
 
       <View style={[styles.body, isLandscape && styles.bodyLandscape]}>

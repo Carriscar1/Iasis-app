@@ -273,7 +273,7 @@ export default function ContactPickerScreen() {
   // ── RNF01: sem agenda nesta plataforma ──────
   if (!contactsSupported()) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
           <Ionicons name="desktop-outline" size={54} color={Colors.textMuted} />
@@ -295,7 +295,7 @@ export default function ContactPickerScreen() {
     const blocked = outcome === 'blocked';
 
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
           <View style={[styles.permIcon, blocked && { backgroundColor: Colors.redLight }]}>
@@ -343,7 +343,7 @@ export default function ContactPickerScreen() {
 
   // ── Lista ───────────────────────────────────
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       {header}
 
       <View style={styles.searchWrap}>

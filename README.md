@@ -6,6 +6,51 @@ Ecossistema IoT para adesão a medicamentos: dispenser ESP32 + pulseira RFID vib
 
 ---
 
+## ✨ Novidades da versão 3.0
+
+Esta versão traz o app para dentro dos recursos do próprio aparelho — câmera,
+agenda, GPS e acelerômetro — sempre com um caminho alternativo quando o
+recurso não existe ou não foi liberado.
+
+- **Foto de perfil** — pela câmera ou pela galeria, reduzida a 256×256 no
+  próprio aparelho. Sem foto, o avatar mostra as iniciais numa cor estável
+  derivada do nome (*Perfil → toque no avatar*)
+- **Cadastro de remédio por código de barras** — aponte a câmera para a caixa e
+  o cadastro se preenche. Código novo vira um cadastro rápido que fica salvo
+  numa base compartilhada, então a próxima leitura da mesma caixa já vem
+  reconhecida (*Agenda → Ler código de barras da caixa*)
+- **Equipe de cuidado** — vários cuidadores por paciente, escolhidos direto na
+  agenda do celular. Todos recebem os mesmos avisos (*Perfil → Equipe de cuidado*)
+- **Emergência** — botão de socorro que avisa toda a equipe com a localização
+  **e a precisão dela**: 🟢 alta (< 10 m) · 🟡 média (10–30 m) · 🔴 baixa (> 30 m)
+- **Detecção de queda** — impacto acima de **2,0 g** abre uma contagem de 30
+  segundos; sem resposta, a família é avisada (*Emergência → Detecção de queda*)
+- **Histórico sem internet** — a última versão carregada fica salva no aparelho
+  e aparece com a data de quando foi tirada
+- **Exportar doses em planilha (CSV)** — abre no Excel para filtrar, somar
+  atrasos e cruzar dados (*Histórico → Exportar doses em planilha*)
+- **Gira com o aparelho** — retrato e paisagem, com área segura nas laterais
+  para o conteúdo não passar por baixo do notch
+
+> ⚠️ Requer rodar **`supabase_update7.sql`**, **`supabase_update8.sql`** e
+> **`supabase_update9.sql`**.
+
+### Como cada recurso se comporta quando falta algo
+
+O app nunca quebra por falta de hardware ou permissão — cada caso tem uma saída:
+
+| Situação | O que acontece |
+|---|---|
+| Permissão negada | Explica por que o recurso é usado e oferece pedir de novo |
+| "Não perguntar novamente" | O sistema para de exibir o diálogo, então o app mostra o **caminho exato** nas configurações e abre a tela certa |
+| GPS desligado | Avisa e sugere ligar; o pedido de socorro sai mesmo assim, sem coordenada |
+| Sem acelerômetro | A detecção de queda aparece desativada e explicada |
+| Sem câmera / no navegador | Oferece o cadastro pelo formulário normal |
+| Sem agenda (navegador) | Oferece adicionar o cuidador pelo e-mail |
+| Sem internet | Histórico mostra a cópia local com a data |
+
+---
+
 ## ✨ Novidades da versão 2.4
 
 - **Home com seção “precisa de atenção”** — avisos não lidos e remédios acabando
@@ -102,6 +147,9 @@ npm install
    - `supabase_update4.sql` (alerta automático de dose perdida para o cuidador)
    - `supabase_update5.sql` (controle de estoque + aviso de "acabando")
    - `supabase_update6.sql` (cuidador confirma dose do paciente)
+   - `supabase_update7.sql` (foto de perfil + base de códigos de barras)
+   - `supabase_update8.sql` (vários cuidadores por paciente)
+   - `supabase_update9.sql` (emergência: socorro e detecção de queda)
 3. Copie a **URL** e a **anon key** (Settings → API) para:
    - `src/services/supabase.ts`
    - `app.json` (campo `extra`)
@@ -199,6 +247,16 @@ iasis/
 │   │   ├── dispenserSim.ts     # Simulador fiel do ESP32 (modo demo)
 │   │   ├── mqtt.ts             # Comunicação com o ESP32 real
 │   │   ├── notifications.ts    # Lembretes locais + aviso de atraso
+│   │   ├── permissions.ts      # Permissão negada vs. negada definitivamente
+│   │   ├── avatar.ts           # Foto de perfil (câmera/galeria)
+│   │   ├── barcode.ts          # Código de barras da caixa do remédio
+│   │   ├── contacts.ts         # Agenda paginada com busca nativa
+│   │   ├── careTeam.ts         # Vários cuidadores por paciente
+│   │   ├── location.ts         # GPS + classificação da precisão
+│   │   ├── motion.ts           # Acelerômetro (detecção de queda, 2,0 g)
+│   │   ├── emergency.ts        # Pedido de socorro para toda a equipe
+│   │   ├── offline.ts          # Cópia local do histórico
+│   │   ├── export.ts           # Doses em CSV
 │   │   └── report.ts           # Relatório de adesão exportável
 │   ├── hooks/useDevice.ts      # Fluxo de segurança fechado (global)
 │   ├── store/index.ts          # Zustand (usuário, dispositivo, fluxo)
@@ -208,7 +266,7 @@ iasis/
 │   └── theme/index.ts          # Cores, fontes, espaçamentos
 │
 ├── firmware/esp32/iasis_dispenser.ino
-├── supabase_setup.sql          # + supabase_update.sql / update2.sql
+├── supabase_setup.sql          # + supabase_update.sql … update9.sql
 ├── email_templates/
 └── app.json
 ```

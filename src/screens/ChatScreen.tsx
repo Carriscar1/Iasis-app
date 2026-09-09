@@ -115,7 +115,7 @@ export default function ChatScreen() {
   // ── Sem vínculo ──────────────────────────────
   if (!loading && contacts.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
         <Header title="Conversas" onBack={() => router.back()} />
         <View style={styles.emptyWrap}>
           <Ionicons name="chatbubbles-outline" size={54} color={Colors.textMuted} />
@@ -132,7 +132,7 @@ export default function ChatScreen() {
   // ── Lista de contatos (cuidador com vários pacientes) ──
   if (!active) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
         <Header title="Conversas" onBack={() => router.back()} />
         <ScrollView contentContainerStyle={[styles.listPad, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : null]}>
           {loading ? (
@@ -167,7 +167,7 @@ export default function ChatScreen() {
   let lastDay = '';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
       {/* Cabeçalho da conversa */}
       <View style={styles.header}>
         <TouchableOpacity

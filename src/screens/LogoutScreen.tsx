@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, useWindowDimensions } from 'react-native';
+import {
+  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
+  ScrollView, useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -34,7 +37,7 @@ export default function LogoutScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -44,7 +47,8 @@ export default function LogoutScreen() {
         </View>
       </View>
 
-      <View style={styles.body}>
+      {/* Rola em paisagem: o cartao nao cabe deitado num celular. */}
+      <ScrollView contentContainerStyle={styles.body}>
         <View style={[styles.card, { maxWidth: maxW }]}>
           <View style={styles.iconCircle}>
             <Ionicons name="log-out-outline" size={40} color={Colors.redText} />
@@ -73,7 +77,7 @@ export default function LogoutScreen() {
             <Text style={[styles.cancelText, { fontSize: fs }]}>Não, continuar</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -82,7 +86,7 @@ const styles = StyleSheet.create({
   header:     { backgroundColor: Colors.navy, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   backBtn:    { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:      { fontWeight: '700', color: '#fff' },
-  body:       { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  body:       { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   card:       { width: '100%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 28, ...Shadows.md },
   iconCircle: { width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.redLight, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   heading:    { fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
