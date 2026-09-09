@@ -53,6 +53,10 @@ interface AppStore {
   largeText:    boolean;
   setLargeText: (v: boolean) => void;
 
+  // Acelerômetro vigiando queda (rede de proteção do paciente)
+  fallDetection:    boolean;
+  setFallDetection: (v: boolean) => void;
+
   // Alertas e mensagens recebidos (badges de não lidos)
   unreadAlerts:    number;
   setUnreadAlerts: (n: number) => void;
@@ -104,6 +108,9 @@ export const useStore = create<AppStore>((set) => ({
 
   largeText:    false,
   setLargeText: (largeText) => set({ largeText }),
+
+  fallDetection:    true,
+  setFallDetection: (fallDetection) => set({ fallDetection }),
 
   unreadAlerts:    0,
   setUnreadAlerts: (unreadAlerts) => set({ unreadAlerts }),

@@ -28,14 +28,15 @@ const SC = {
   pacientes: { icon: 'people',        label: 'Pacientes',  sub: 'Quem você cuida',      route: '/patients',        bg: '#EDE9FE', ic: '#6D44C9' },
   estoque:   { icon: 'flask',         label: 'Estoque',    sub: 'Quanto ainda tem',     route: '/stock',           bg: '#E1F5EE', ic: '#0F6E56' },
   alertas:   { icon: 'notifications', label: 'Alertas',    sub: 'Avisos importantes',   route: '/alerts',          bg: '#FCEBEB', ic: '#A32D2D' },
+  socorro:   { icon: 'alert-circle',  label: 'Emergência', sub: 'Avisar quem te cuida', route: '/emergency',       bg: '#FCEBEB', ic: '#A32D2D' },
 } satisfies Record<string, Shortcut>;
 
 // Atalhos exibidos variam conforme o perfil do usuário.
 const shortcutsForRole = (role?: UserProfile['role']): Shortcut[] => {
   if (role === 'caregiver')  return [SC.pacientes, SC.alertas, SC.agenda, SC.historico];
   // Paciente (idoso): foco na agenda e no histórico, sem o aparelho.
-  if (role === 'patient')    return [SC.agenda, SC.historico, SC.estoque, SC.perfil];
-  return [SC.agenda, SC.dispenser, SC.estoque, SC.historico]; // independente
+  if (role === 'patient')    return [SC.agenda, SC.socorro, SC.historico, SC.estoque];
+  return [SC.agenda, SC.dispenser, SC.socorro, SC.historico]; // independente
 };
 
 const roleSubtitle = (role?: UserProfile['role']): string => {

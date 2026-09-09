@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
 import { useStore } from '../src/store';
 import { loadPreferences } from '../src/services/preferences';
+import FallAlert from '../src/components/FallAlert';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -14,7 +15,11 @@ export default function RootLayout() {
     SplashScreen.hideAsync();
 
     // Preferências de acessibilidade ficam no aparelho: aplica antes de tudo.
-    loadPreferences().then((p) => useStore.getState().setLargeText(p.largeText));
+    loadPreferences().then((p) => {
+      const st = useStore.getState();
+      st.setLargeText(p.largeText);
+      st.setFallDetection(p.fallDetection);
+    });
 
     // Mantém o app em sincronia com a sessão do Supabase: se a sessão cair
     // (logout em outra aba, token revogado/expirado), volta para o login.
@@ -41,6 +46,10 @@ export default function RootLayout() {
           <Stack.Screen name="notifications" />
           <Stack.Screen name="logout" />
         </Stack>
+
+        {/* Vigia queda por cima de qualquer tela — inclusive com o app aberto
+            em outra aba. Só age quando há sessão e o recurso está ligado. */}
+        <FallAlert />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

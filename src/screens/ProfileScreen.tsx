@@ -67,6 +67,13 @@ export default function ProfileScreen() {
       desc:  'Relatório de adesão',
       onPress: () => router.push('/(tabs)/history'),
     },
+    // Cuidador não pede socorro por si — ele recebe o do paciente.
+    ...(user?.role === 'caregiver' ? [] : [{
+      icon:  'alert-circle-outline',
+      label: 'Emergência',
+      desc:  'Pedir socorro e detecção de queda',
+      onPress: () => router.push('/emergency'),
+    }]),
     // Independente cuida de si mesmo — não monta equipe.
     ...(user?.role === 'independent' ? [] : [{
       icon:  'people-circle-outline',

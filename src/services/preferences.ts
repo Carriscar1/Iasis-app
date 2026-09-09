@@ -11,10 +11,18 @@ import { Platform } from 'react-native';
 const KEY = '@iasis:prefs';
 
 export interface Preferences {
-  largeText: boolean;   // modo fácil: tudo maior
+  largeText:     boolean;   // modo fácil: tudo maior
+  fallDetection: boolean;   // acelerômetro vigiando queda
+  theme:         ThemeMode; // aparência do app
 }
 
-export const defaultPreferences = (): Preferences => ({ largeText: false });
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+export const defaultPreferences = (): Preferences => ({
+  largeText:     false,
+  fallDetection: true,      // ligado por padrão: é rede de proteção
+  theme:         'system',
+});
 
 const storage = {
   async get(): Promise<string | null> {
@@ -42,6 +50,15 @@ export const loadPreferences = async (): Promise<Preferences> => {
   return defaultPreferences();
 };
 
-export const savePreferences = async (p: Preferences): Promise<void> => {
-  try { await storage.set(JSON.stringify(p)); } catch { /* ignora */ }
+/**
+ * Grava as preferências. Aceita mudança parcial: quem altera só o tema não
+ * precisa carregar e reenviar o resto (e não corre o risco de zerar um
+ * campo que outra tela acabou de mudar).
+ */
+export const savePreferences = async (
+  patch: Partial<Preferences>,
+): Promise<Preferences> => {
+  const next = { ...(await loadPreferences()), ...patch };
+  try { await storage.set(JSON.stringify(next)); } catch { /* ignora */ }
+  return next;
 };
