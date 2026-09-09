@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Colors } from '../theme';
+import { useTheme, type ThemeColors } from '../theme';
 
 // ─────────────────────────────────────────────
 //  IASIS — Faixa de seleção do dia de início do tratamento
@@ -23,6 +23,7 @@ const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 export default function DateStrip({ value, onChange, days = 30, pastDays = 0, isElderly = false }: Props) {
+  const { C, styles } = useTheme(makeStyles);
   const scrollRef = useRef<ScrollView>(null);
   const today = atMidnight(new Date());
   const list  = Array.from({ length: pastDays + days }, (_, i) => {
@@ -84,12 +85,12 @@ export default function DateStrip({ value, onChange, days = 30, pastDays = 0, is
   );
 }
 
-const styles = StyleSheet.create({
-  chip:       { alignItems: 'center', borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 8, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  chip:       { alignItems: 'center', borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 8, backgroundColor: C.bg },
   chipPast:   { opacity: 0.55 },
-  chipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
-  top:        { color: Colors.textSecondary, fontWeight: '600', textTransform: 'capitalize' },
-  day:        { color: Colors.navy, fontWeight: '800', marginVertical: 2 },
-  month:      { color: Colors.textMuted, textTransform: 'uppercase' },
+  chipActive: { backgroundColor: C.navyBg, borderColor: C.navy },
+  top:        { color: C.textSecondary, fontWeight: '600', textTransform: 'capitalize' },
+  day:        { color: C.navy, fontWeight: '800', marginVertical: 2 },
+  month:      { color: C.textMuted, textTransform: 'uppercase' },
   textActive: { color: '#fff' },
 });

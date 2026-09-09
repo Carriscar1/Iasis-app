@@ -8,12 +8,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { requestPermission, sendLocalNotification } from '../services/notifications';
 
 type Status = 'unknown' | 'granted' | 'denied' | 'unsupported';
 
 export default function NotificationsScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -46,14 +47,14 @@ export default function NotificationsScreen() {
   };
 
   const banner = {
-    granted:     { bg: Colors.greenLight, color: Colors.greenText, icon: 'checkmark-circle', text: 'Lembretes ativados. Você será avisado no horário de cada dose.' },
-    denied:      { bg: Colors.redLight,   color: Colors.redText,   icon: 'close-circle',     text: 'Permissão negada. Ative as notificações nas configurações do aparelho.' },
-    unsupported: { bg: Colors.amberLight, color: Colors.amberText, icon: 'information-circle', text: 'No computador os lembretes não tocam. Use o aplicativo no celular para receber os avisos no horário de cada dose.' },
-    unknown:     { bg: Colors.borderSoft, color: Colors.textSecondary, icon: 'notifications-outline', text: 'Toque em "Ativar lembretes" para receber um aviso no horário de cada dose.' },
+    granted:     { bg: C.greenLight, color: C.greenText, icon: 'checkmark-circle', text: 'Lembretes ativados. Você será avisado no horário de cada dose.' },
+    denied:      { bg: C.redLight,   color: C.redText,   icon: 'close-circle',     text: 'Permissão negada. Ative as notificações nas configurações do aparelho.' },
+    unsupported: { bg: C.amberLight, color: C.amberText, icon: 'information-circle', text: 'No computador os lembretes não tocam. Use o aplicativo no celular para receber os avisos no horário de cada dose.' },
+    unknown:     { bg: C.borderSoft, color: C.textSecondary, icon: 'notifications-outline', text: 'Toque em "Ativar lembretes" para receber um aviso no horário de cada dose.' },
   }[status];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -109,7 +110,7 @@ export default function NotificationsScreen() {
 
           {status === 'granted' && (
             <TouchableOpacity style={styles.testBtn} onPress={handleTest} activeOpacity={0.85}>
-              <Ionicons name="paper-plane-outline" size={18} color={Colors.navy} />
+              <Ionicons name="paper-plane-outline" size={18} color={C.navy} />
               <Text style={[styles.testText, { fontSize: fs - 1 }]}>Enviar notificação de teste</Text>
             </TouchableOpacity>
           )}
@@ -126,10 +127,11 @@ export default function NotificationsScreen() {
 function PrefRow({
   icon, label, desc, value, onChange, fs, isElderly,
 }: { icon: string; label: string; desc: string; value: boolean; onChange: (v: boolean) => void; fs: number; isElderly: boolean }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={styles.prefRow}>
       <View style={styles.prefIcon}>
-        <Ionicons name={icon as any} size={isElderly ? 22 : 18} color={Colors.navy} />
+        <Ionicons name={icon as any} size={isElderly ? 22 : 18} color={C.navy} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={[styles.prefLabel, { fontSize: fs }]}>{label}</Text>
@@ -138,29 +140,29 @@ function PrefRow({
       <Switch
         value={value}
         onValueChange={onChange}
-        trackColor={{ false: Colors.border, true: Colors.green }}
+        trackColor={{ false: C.border, true: C.green }}
         thumbColor="#fff"
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  header:    { backgroundColor: Colors.navy, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  header:    { backgroundColor: C.navyBg, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   backBtn:   { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:     { fontWeight: '700', color: '#fff' },
   banner:    { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: Radius.md, padding: 16, marginBottom: 16 },
   bannerText:{ flex: 1, lineHeight: 20 },
-  enableBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.navy, borderRadius: 14, paddingVertical: 15, marginBottom: 8 },
+  enableBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.navyBg, borderRadius: 14, paddingVertical: 15, marginBottom: 8 },
   enableText:{ color: '#fff', fontWeight: '700' },
-  section:   { fontWeight: '700', color: Colors.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  card:      { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  section:   { fontWeight: '700', color: C.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card:      { backgroundColor: C.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   prefRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  prefIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  prefLabel: { fontWeight: '600', color: Colors.textPrimary },
-  prefDesc:  { color: Colors.textSecondary, marginTop: 2 },
-  divider:   { height: 0.5, backgroundColor: Colors.border, marginLeft: 14 },
-  testBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 12, paddingVertical: 13, marginTop: 16 },
-  testText:  { color: Colors.navy, fontWeight: '700' },
-  note:      { color: Colors.textMuted, textAlign: 'center', marginTop: 18, lineHeight: 17 },
+  prefIcon:  { width: 38, height: 38, borderRadius: 11, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  prefLabel: { fontWeight: '600', color: C.textPrimary },
+  prefDesc:  { color: C.textSecondary, marginTop: 2 },
+  divider:   { height: 0.5, backgroundColor: C.border, marginLeft: 14 },
+  testBtn:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: C.navy, borderRadius: 12, paddingVertical: 13, marginTop: 16 },
+  testText:  { color: C.navy, fontWeight: '700' },
+  note:      { color: C.textMuted, textAlign: 'center', marginTop: 18, lineHeight: 17 },
 });

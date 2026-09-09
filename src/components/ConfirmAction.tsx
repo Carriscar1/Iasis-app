@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Colors } from '../theme';
+import { useTheme, type ThemeColors } from '../theme';
 
 // ─────────────────────────────────────────────
 //  IASIS — Botão com confirmação INLINE (sem pop-up de janela)
@@ -18,19 +18,25 @@ interface Props {
 }
 
 export default function ConfirmAction({
-  label, confirmLabel = 'Confirmar', onConfirm, bg = Colors.borderSoft, txtColor = Colors.textPrimary, disabled = false, fs = 13,
+  label, confirmLabel = 'Confirmar', onConfirm, bg, txtColor, disabled = false, fs = 13,
 }: Props) {
+  const { C, styles } = useTheme(makeStyles);
   const [armed, setArmed] = useState(false);
+
+  // As cores padrao vem do tema, entao nao podem ser valor padrao de
+  // parametro: o parametro e avaliado antes do hook rodar.
+  const bgColor = bg ?? C.borderSoft;
+  const textColor = txtColor ?? C.textPrimary;
 
   if (!armed) {
     return (
       <TouchableOpacity
-        style={[styles.btn, { backgroundColor: bg }, disabled && { opacity: 0.5 }]}
+        style={[styles.btn, { backgroundColor: bgColor }, disabled && { opacity: 0.5 }]}
         onPress={() => setArmed(true)}
         disabled={disabled}
         activeOpacity={0.8}
       >
-        <Text style={[styles.btnText, { color: txtColor, fontSize: fs }]}>{label}</Text>
+        <Text style={[styles.btnText, { color: textColor, fontSize: fs }]}>{label}</Text>
       </TouchableOpacity>
     );
   }
@@ -49,16 +55,16 @@ export default function ConfirmAction({
         onPress={() => setArmed(false)}
         activeOpacity={0.8}
       >
-        <Text style={[styles.btnText, { color: Colors.textSecondary, fontSize: fs }]}>Cancelar</Text>
+        <Text style={[styles.btnText, { color: C.textSecondary, fontSize: fs }]}>Cancelar</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   row:     { flexDirection: 'row', gap: 6 },
   btn:     { borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
   btnText: { fontWeight: '700' },
-  confirm: { backgroundColor: Colors.green },
-  cancel:  { backgroundColor: Colors.borderSoft },
+  confirm: { backgroundColor: C.green },
+  cancel:  { backgroundColor: C.borderSoft },
 });

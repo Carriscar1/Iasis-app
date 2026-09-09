@@ -6,12 +6,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { updateProfile } from '../services/auth';
 import { formatPhoneInput, normalizePhone } from '../services/chat';
 
 export default function EditPhoneScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const maxW = width >= 1024 ? 560 : width >= 768 ? 520 : undefined;
 
@@ -43,7 +44,7 @@ export default function EditPhoneScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -65,13 +66,13 @@ export default function EditPhoneScreen() {
 
           <Text style={styles.label}>Telefone com DDD</Text>
           <View style={styles.inputWrap}>
-            <Ionicons name="call-outline" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
+            <Ionicons name="call-outline" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
             <TextInput
               style={styles.input}
               value={phone}
               onChangeText={(t) => setPhone(formatPhoneInput(t))}
               placeholder="(11) 99999-8888"
-              placeholderTextColor={Colors.textMuted}
+              placeholderTextColor={C.textMuted}
               keyboardType="phone-pad"
               maxLength={16}
             />
@@ -97,10 +98,10 @@ export default function EditPhoneScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -110,26 +111,26 @@ const styles = StyleSheet.create({
   title:  { color: '#fff', fontWeight: '800', fontSize: 20 },
   scroll: { padding: 16 },
 
-  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 22, ...Shadows.sm },
+  card: { backgroundColor: C.surface, borderRadius: Radius.lg, padding: 22, ...Shadows.sm },
   iconCircle: {
-    width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.greenLight,
+    width: 60, height: 60, borderRadius: 30, backgroundColor: C.greenLight,
     alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 14,
   },
-  cardTitle: { fontSize: 19, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
-  cardText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 22 },
+  cardTitle: { fontSize: 19, fontWeight: '800', color: C.textPrimary, textAlign: 'center' },
+  cardText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21, marginTop: 8, marginBottom: 22 },
 
-  label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 7 },
+  label: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: 7 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    backgroundColor: Colors.bg, paddingHorizontal: 14,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 12,
+    backgroundColor: C.bg, paddingHorizontal: 14,
   },
-  input: { flex: 1, color: Colors.textPrimary, fontSize: 16, paddingVertical: 14 },
+  input: { flex: 1, color: C.textPrimary, fontSize: 16, paddingVertical: 14 },
 
   saveBtn: {
-    backgroundColor: Colors.navy, borderRadius: Radius.md,
+    backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 15, alignItems: 'center', marginTop: 22,
   },
   saveText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  hint: { fontSize: 12.5, color: Colors.textMuted, textAlign: 'center', marginTop: 12 },
+  hint: { fontSize: 12.5, color: C.textMuted, textAlign: 'center', marginTop: 12 },
 });

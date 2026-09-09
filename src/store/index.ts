@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { UserProfile } from '../services/auth';
 import type { MedForm } from '../types';
+import type { ThemeMode } from '../services/preferences';
 
 export interface MqttLog {
   id:        string;
@@ -57,6 +58,10 @@ interface AppStore {
   fallDetection:    boolean;
   setFallDetection: (v: boolean) => void;
 
+  // Aparência: claro, escuro ou seguir o aparelho
+  themeMode:    ThemeMode;
+  setThemeMode: (m: ThemeMode) => void;
+
   // Alertas e mensagens recebidos (badges de não lidos)
   unreadAlerts:    number;
   setUnreadAlerts: (n: number) => void;
@@ -111,6 +116,9 @@ export const useStore = create<AppStore>((set) => ({
 
   fallDetection:    true,
   setFallDetection: (fallDetection) => set({ fallDetection }),
+
+  themeMode:    'system',
+  setThemeMode: (themeMode) => set({ themeMode }),
 
   unreadAlerts:    0,
   setUnreadAlerts: (unreadAlerts) => set({ unreadAlerts }),

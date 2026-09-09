@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, UserProfile } from '../services/auth';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
 import { formatPhoneInput } from '../services/chat';
 
@@ -47,6 +47,7 @@ const ROLES = [
 ];
 
 export default function RegisterScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -159,17 +160,17 @@ export default function RegisterScreen() {
 
             {/* Ícone */}
             <View style={styles.successIcon}>
-              <Ionicons name={needsConfirm ? 'mail-unread' : 'checkmark-circle'} size={44} color={Colors.navy} />
+              <Ionicons name={needsConfirm ? 'mail-unread' : 'checkmark-circle'} size={44} color={C.navy} />
             </View>
 
-            <Text style={{ fontSize: isElderly ? 28 : 23, fontWeight: '800', color: Colors.textPrimary, marginTop: 18, marginBottom: 8, textAlign: 'center' }}>
+            <Text style={{ fontSize: isElderly ? 28 : 23, fontWeight: '800', color: C.textPrimary, marginTop: 18, marginBottom: 8, textAlign: 'center' }}>
               {needsConfirm ? 'Verifique seu e-mail' : 'Conta criada!'}
             </Text>
 
             {role === 'patient' && caregiverName ? (
               <View style={[styles.caregiverFound, { marginBottom: 14 }]}>
-                <Ionicons name="link" size={16} color={Colors.greenText} />
-                <Text style={{ fontSize: fs - 1, color: Colors.greenText, fontWeight: '600', flex: 1 }}>
+                <Ionicons name="link" size={16} color={C.greenText} />
+                <Text style={{ fontSize: fs - 1, color: C.greenText, fontWeight: '600', flex: 1 }}>
                   Vinculado ao cuidador {caregiverName}
                 </Text>
               </View>
@@ -177,17 +178,17 @@ export default function RegisterScreen() {
 
             {needsConfirm ? (
               <>
-                <Text style={{ fontSize: elderlyFs, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
+                <Text style={{ fontSize: elderlyFs, color: C.textSecondary, textAlign: 'center', lineHeight: 24 }}>
                   Enviamos um link de confirmação para:
                 </Text>
 
                 {/* E-mail digitado */}
                 <View style={styles.emailPill}>
-                  <Ionicons name="mail" size={16} color={Colors.navy} />
-                  <Text style={{ fontSize: elderlyFs, color: Colors.textPrimary, fontWeight: '700' }}>{email.trim().toLowerCase()}</Text>
+                  <Ionicons name="mail" size={16} color={C.navy} />
+                  <Text style={{ fontSize: elderlyFs, color: C.textPrimary, fontWeight: '700' }}>{email.trim().toLowerCase()}</Text>
                 </View>
 
-                <Text style={{ fontSize: fs - 1, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginTop: 14, marginBottom: 8 }}>
+                <Text style={{ fontSize: fs - 1, color: C.textSecondary, textAlign: 'center', lineHeight: 22, marginTop: 14, marginBottom: 8 }}>
                   Abra o e-mail e clique no link para ativar sua conta. Depois é só entrar.
                   {'\n'}Não esqueça de checar a caixa de <Text style={{ fontWeight: '700' }}>spam</Text>.
                 </Text>
@@ -195,8 +196,8 @@ export default function RegisterScreen() {
                 {/* Feedback do reenvio */}
                 {resendMsg ? (
                   <View style={[resendErr ? styles.errorBox : styles.okBox, { marginTop: 8, width: '100%' }]}>
-                    <Ionicons name={resendErr ? 'alert-circle' : 'checkmark-circle'} size={15} color={resendErr ? Colors.redText : Colors.greenText} />
-                    <Text style={{ fontSize: fs - 2, color: resendErr ? Colors.redText : Colors.greenText, flex: 1 }}>{resendMsg}</Text>
+                    <Ionicons name={resendErr ? 'alert-circle' : 'checkmark-circle'} size={15} color={resendErr ? C.redText : C.greenText} />
+                    <Text style={{ fontSize: fs - 2, color: resendErr ? C.redText : C.greenText, flex: 1 }}>{resendMsg}</Text>
                   </View>
                 ) : null}
 
@@ -207,16 +208,16 @@ export default function RegisterScreen() {
                   disabled={resending}
                 >
                   {resending
-                    ? <ActivityIndicator color={Colors.navy} />
+                    ? <ActivityIndicator color={C.navy} />
                     : <>
-                        <Ionicons name="refresh" size={18} color={Colors.navy} />
-                        <Text style={{ fontSize: elderlyFs, color: Colors.navy, fontWeight: '700' }}>Reenviar e-mail</Text>
+                        <Ionicons name="refresh" size={18} color={C.navy} />
+                        <Text style={{ fontSize: elderlyFs, color: C.navy, fontWeight: '700' }}>Reenviar e-mail</Text>
                       </>
                   }
                 </TouchableOpacity>
               </>
             ) : (
-              <Text style={{ fontSize: elderlyFs, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 8 }}>
+              <Text style={{ fontSize: elderlyFs, color: C.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 8 }}>
                 Sua conta foi criada com sucesso. Você já pode entrar.
               </Text>
             )}
@@ -288,10 +289,10 @@ export default function RegisterScreen() {
             <View style={[styles.card, { width: cardW, padding: isDesktop ? 40 : 28 }]}>
               <View style={{ alignItems: 'center', marginBottom: 28 }}>
                 <Text style={{ fontSize: 56 }}>👴</Text>
-                <Text style={{ fontSize: 26, fontWeight: '800', color: Colors.textPrimary, marginTop: 12, textAlign: 'center' }}>
+                <Text style={{ fontSize: 26, fontWeight: '800', color: C.textPrimary, marginTop: 12, textAlign: 'center' }}>
                   Vincule seu cuidador
                 </Text>
-                <Text style={{ fontSize: 16, color: Colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 24 }}>
+                <Text style={{ fontSize: 16, color: C.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 24 }}>
                   Toda conta de paciente precisa estar ligada a um cuidador.
                   {'\n\n'}Digite o e-mail da pessoa que cuida dos seus medicamentos. Ela já precisa ter uma conta de cuidador no IASIS.
                 </Text>
@@ -299,31 +300,31 @@ export default function RegisterScreen() {
 
               {error ? (
                 <View style={styles.errorBox}>
-                  <Ionicons name="alert-circle" size={16} color={Colors.redText} />
-                  <Text style={{ fontSize: 15, color: Colors.redText, flex: 1 }}>{error}</Text>
+                  <Ionicons name="alert-circle" size={16} color={C.redText} />
+                  <Text style={{ fontSize: 15, color: C.redText, flex: 1 }}>{error}</Text>
                 </View>
               ) : null}
 
               {caregiverName ? (
                 <View style={styles.caregiverFound}>
-                  <Ionicons name="checkmark-circle" size={24} color={Colors.greenText} />
-                  <Text style={{ fontSize: 16, color: Colors.greenText, fontWeight: '600', flex: 1 }}>
+                  <Ionicons name="checkmark-circle" size={24} color={C.greenText} />
+                  <Text style={{ fontSize: 16, color: C.greenText, fontWeight: '600', flex: 1 }}>
                     Cuidador encontrado: {caregiverName}
                   </Text>
                 </View>
               ) : (
                 <>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: C.textSecondary, marginBottom: 8 }}>
                     E-mail do cuidador
                   </Text>
                   <View style={[styles.inputWrap, { marginBottom: 16 }]}>
-                    <Ionicons name="mail-outline" size={20} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                    <Ionicons name="mail-outline" size={20} color={C.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
                       style={[styles.input, { fontSize: 16, paddingVertical: 16 }]}
                       value={caregiverEmail}
                       onChangeText={setCaregiverEmail}
                       placeholder="email@docuidador.com"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={C.textMuted}
                       keyboardType="email-address"
                       autoCapitalize="none"
                     />
@@ -373,8 +374,8 @@ export default function RegisterScreen() {
 
               {caregiverName ? (
                 <View style={[styles.caregiverFound, { marginBottom: 16 }]}>
-                  <Ionicons name="person" size={18} color={Colors.greenText} />
-                  <Text style={{ fontSize: fs, color: Colors.greenText, fontWeight: '600', flex: 1 }}>
+                  <Ionicons name="person" size={18} color={C.greenText} />
+                  <Text style={{ fontSize: fs, color: C.greenText, fontWeight: '600', flex: 1 }}>
                     Vinculado a: {caregiverName}
                   </Text>
                 </View>
@@ -382,7 +383,7 @@ export default function RegisterScreen() {
 
               {error ? (
                 <View style={styles.errorBox}>
-                  <Ionicons name="alert-circle" size={15} color={Colors.redText} />
+                  <Ionicons name="alert-circle" size={15} color={C.redText} />
                   <Text style={[styles.errorText, { fontSize: fs - 1 }]}>{error}</Text>
                 </View>
               ) : null}
@@ -394,13 +395,13 @@ export default function RegisterScreen() {
                 <View key={f.label} style={{ marginBottom: 14 }}>
                   <Text style={[styles.label, { fontSize: isElderly ? fs + 2 : fs - 2 }]}>{f.label}</Text>
                   <View style={styles.inputWrap}>
-                    <Ionicons name={f.icon as any} size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                    <Ionicons name={f.icon as any} size={isElderly ? 20 : 17} color={C.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
                       style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad }]}
                       value={f.value}
                       onChangeText={f.onChange}
                       placeholder={f.placeholder}
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={C.textMuted}
                       keyboardType={f.kb as any}
                       autoCapitalize={f.cap as any}
                       autoCorrect={false}
@@ -414,17 +415,17 @@ export default function RegisterScreen() {
                   {isElderly ? 'Seu telefone (WhatsApp)' : 'Telefone (WhatsApp)'}
                 </Text>
                 <View style={styles.inputWrap}>
-                  <Ionicons name="logo-whatsapp" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                  <Ionicons name="logo-whatsapp" size={isElderly ? 20 : 17} color={C.textMuted} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad }]}
                     value={phone}
                     onChangeText={(t) => setPhone(formatPhoneInput(t))}
                     placeholder="(11) 99999-8888"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={C.textMuted}
                     keyboardType="phone-pad"
                   />
                 </View>
-                <Text style={{ fontSize: fs - 3, color: Colors.textMuted, marginTop: 6 }}>
+                <Text style={{ fontSize: fs - 3, color: C.textMuted, marginTop: 6 }}>
                   Opcional — permite conversar pelo WhatsApp com {role === 'caregiver' ? 'o paciente' : 'seu cuidador'}.
                 </Text>
               </View>
@@ -434,17 +435,17 @@ export default function RegisterScreen() {
                   {isElderly ? 'Crie uma senha secreta' : 'Senha'}
                 </Text>
                 <View style={styles.inputWrap}>
-                  <Ionicons name="lock-closed-outline" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                  <Ionicons name="lock-closed-outline" size={isElderly ? 20 : 17} color={C.textMuted} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad, flex: 1 }]}
                     value={password}
                     onChangeText={setPassword}
                     placeholder="Mínimo 6 caracteres"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={C.textMuted}
                     secureTextEntry={!showPass}
                   />
                   <TouchableOpacity onPress={() => setShowPass(v => !v)} style={{ padding: 4 }}>
-                    <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={isElderly ? 20 : 17} color={Colors.textMuted} />
+                    <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={isElderly ? 20 : 17} color={C.textMuted} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -453,21 +454,21 @@ export default function RegisterScreen() {
                 <Text style={[styles.label, { fontSize: isElderly ? fs + 2 : fs - 2 }]}>
                   {isElderly ? 'Repita a senha' : 'Confirmar senha'}
                 </Text>
-                <View style={[styles.inputWrap, confirm && confirm !== password ? { borderColor: Colors.red } : {}]}>
-                  <Ionicons name="lock-closed-outline" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                <View style={[styles.inputWrap, confirm && confirm !== password ? { borderColor: C.red } : {}]}>
+                  <Ionicons name="lock-closed-outline" size={isElderly ? 20 : 17} color={C.textMuted} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad, flex: 1 }]}
                     value={confirm}
                     onChangeText={setConfirm}
                     placeholder="Repita a senha"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={C.textMuted}
                     secureTextEntry={!showPass}
                   />
                   {confirm.length > 0 && (
                     <Ionicons
                       name={confirm === password ? 'checkmark-circle' : 'close-circle'}
                       size={isElderly ? 20 : 17}
-                      color={confirm === password ? Colors.greenText : Colors.red}
+                      color={confirm === password ? C.greenText : C.red}
                     />
                   )}
                 </View>
@@ -479,18 +480,18 @@ export default function RegisterScreen() {
                     Código de ativação
                   </Text>
                   <View style={styles.inputWrap}>
-                    <Ionicons name="key-outline" size={isElderly ? 20 : 17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                    <Ionicons name="key-outline" size={isElderly ? 20 : 17} color={C.textMuted} style={{ marginRight: 8 }} />
                     <TextInput
                       style={[styles.input, { fontSize: isElderly ? fs + 2 : fs, paddingVertical: elderlyPad, letterSpacing: 1 }]}
                       value={activationCode}
                       onChangeText={t => setActivationCode(t.toUpperCase())}
                       placeholder="IASIS-XXXX-XXXX"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={C.textMuted}
                       autoCapitalize="characters"
                       autoCorrect={false}
                     />
                   </View>
-                  <Text style={{ fontSize: fs - 3, color: Colors.textMuted, marginTop: 6 }}>
+                  <Text style={{ fontSize: fs - 3, color: C.textMuted, marginTop: 6 }}>
                     Você recebe este código ao comprar o dispenser no site.
                   </Text>
                 </View>
@@ -511,8 +512,8 @@ export default function RegisterScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity style={{ marginTop: 16, alignItems: 'center' }} onPress={() => router.back()}>
-                <Text style={{ fontSize: fs - 1, color: Colors.textSecondary }}>
-                  Já tem conta?{'  '}<Text style={{ color: Colors.navy, fontWeight: '700' }}>Entrar</Text>
+                <Text style={{ fontSize: fs - 1, color: C.textSecondary }}>
+                  Já tem conta?{'  '}<Text style={{ color: C.navy, fontWeight: '700' }}>Entrar</Text>
                 </Text>
               </TouchableOpacity>
             </View>
@@ -523,23 +524,23 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   scroll:         { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 32, paddingHorizontal: 16 },
-  card:           { backgroundColor: Colors.surface, borderRadius: Radius.xl, alignSelf: 'center', ...Shadows.lg },
-  cardTitle:      { fontWeight: '800', color: Colors.textPrimary },
-  errorBox:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 10, padding: 12, marginBottom: 14 },
-  okBox:          { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.greenLight, borderRadius: 10, padding: 12 },
-  successIcon:    { width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  emailPill:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.borderSoft, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, marginTop: 12 },
-  errorText:      { color: Colors.redText, flex: 1 },
-  label:          { fontWeight: '600', color: Colors.textSecondary, marginBottom: 8 },
-  inputWrap:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12, backgroundColor: Colors.bg, paddingHorizontal: 14 },
-  input:          { flex: 1, color: Colors.textPrimary },
+  card:           { backgroundColor: C.surface, borderRadius: Radius.xl, alignSelf: 'center', ...Shadows.lg },
+  cardTitle:      { fontWeight: '800', color: C.textPrimary },
+  errorBox:       { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redLight, borderRadius: 10, padding: 12, marginBottom: 14 },
+  okBox:          { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.greenLight, borderRadius: 10, padding: 12 },
+  successIcon:    { width: 84, height: 84, borderRadius: 42, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  emailPill:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.borderSoft, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, marginTop: 12 },
+  errorText:      { color: C.redText, flex: 1 },
+  label:          { fontWeight: '600', color: C.textSecondary, marginBottom: 8 },
+  inputWrap:      { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: C.border, borderRadius: 12, backgroundColor: C.bg, paddingHorizontal: 14 },
+  input:          { flex: 1, color: C.textPrimary },
   btn:            { backgroundColor: '#1C2B4B', borderRadius: 14, alignItems: 'center' },
-  btnOutline:     { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 14, alignItems: 'center', backgroundColor: Colors.bg },
+  btnOutline:     { borderWidth: 1.5, borderColor: C.border, borderRadius: 14, alignItems: 'center', backgroundColor: C.bg },
   btnText:        { color: '#fff', fontWeight: '700' },
   roleCard:       { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 16, borderWidth: 2 },
   roleLabel:      { fontWeight: '700' },
-  roleDesc:       { color: Colors.textSecondary, lineHeight: 20 },
-  caregiverFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.greenLight, borderRadius: 10, padding: 12, marginBottom: 8 },
+  roleDesc:       { color: C.textSecondary, lineHeight: 20 },
+  caregiverFound: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.greenLight, borderRadius: 10, padding: 12, marginBottom: 8 },
 });

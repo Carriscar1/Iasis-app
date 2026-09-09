@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import {
   isValidEan, formatEan, lookupBarcode, teachBarcode, type BarcodeMatch,
@@ -31,6 +31,7 @@ const BARCODE_TYPES = ['ean13', 'ean8'] as const;
 type Phase = 'scanning' | 'looking-up' | 'found' | 'unknown';
 
 export default function ScanMedicationScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
@@ -165,7 +166,7 @@ export default function ScanMedicationScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
-          <Ionicons name="desktop-outline" size={54} color={Colors.textMuted} />
+          <Ionicons name="desktop-outline" size={54} color={C.textMuted} />
           <Text style={styles.emptyTitle}>Disponível no celular</Text>
           <Text style={styles.emptyText}>
             A leitura de código de barras usa a câmera do aparelho. Abra o IASIS
@@ -186,7 +187,7 @@ export default function ScanMedicationScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.navy} />
+          <ActivityIndicator color={C.navy} />
         </View>
       </SafeAreaView>
     );
@@ -200,11 +201,11 @@ export default function ScanMedicationScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
-          <View style={[styles.permIcon, blocked && { backgroundColor: Colors.redLight }]}>
+          <View style={[styles.permIcon, blocked && { backgroundColor: C.redLight }]}>
             <Ionicons
               name={blocked ? 'lock-closed' : 'camera-outline'}
               size={40}
-              color={blocked ? Colors.redText : Colors.navy}
+              color={blocked ? C.redText : C.navy}
             />
           </View>
 
@@ -265,7 +266,7 @@ export default function ScanMedicationScreen() {
             />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.viewfinderPaused]}>
-              <Ionicons name="barcode-outline" size={46} color={Colors.blueLight} />
+              <Ionicons name="barcode-outline" size={46} color={C.blueLight} />
               <Text style={styles.pausedCode}>{formatEan(code)}</Text>
             </View>
           )}
@@ -295,7 +296,7 @@ export default function ScanMedicationScreen() {
 
           {phase === 'looking-up' ? (
             <View style={styles.row}>
-              <ActivityIndicator color={Colors.navy} />
+              <ActivityIndicator color={C.navy} />
               <Text style={styles.hint}>Consultando {formatEan(code)}…</Text>
             </View>
           ) : null}
@@ -303,7 +304,7 @@ export default function ScanMedicationScreen() {
           {phase === 'found' && match ? (
             <>
               <View style={styles.foundBadge}>
-                <Ionicons name="checkmark-circle" size={18} color={Colors.greenText} />
+                <Ionicons name="checkmark-circle" size={18} color={C.greenText} />
                 <Text style={styles.foundBadgeText}>Remédio reconhecido</Text>
               </View>
 
@@ -331,8 +332,8 @@ export default function ScanMedicationScreen() {
           {phase === 'unknown' ? (
             <>
               <View style={[styles.foundBadge, styles.newBadge]}>
-                <Ionicons name="sparkles-outline" size={17} color={Colors.amberText} />
-                <Text style={[styles.foundBadgeText, { color: Colors.amberText }]}>
+                <Ionicons name="sparkles-outline" size={17} color={C.amberText} />
+                <Text style={[styles.foundBadgeText, { color: C.amberText }]}>
                   Código novo
                 </Text>
               </View>
@@ -348,7 +349,7 @@ export default function ScanMedicationScreen() {
                 value={name}
                 onChangeText={(t) => { setName(t); setSuggestion(t); }}
                 placeholder="Ex.: Losartana"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={C.textMuted}
                 autoCapitalize="words"
               />
 
@@ -380,7 +381,7 @@ export default function ScanMedicationScreen() {
                 value={dosage}
                 onChangeText={setDosage}
                 placeholder="Ex.: 50mg"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={C.textMuted}
               />
 
               <Text style={styles.label}>Forma</Text>
@@ -425,12 +426,12 @@ export default function ScanMedicationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -446,21 +447,21 @@ const styles = StyleSheet.create({
 
   viewfinder: {
     height: 260, margin: 16, borderRadius: Radius.lg,
-    overflow: 'hidden', backgroundColor: Colors.navy,
+    overflow: 'hidden', backgroundColor: C.navyBg,
   },
   viewfinderLandscape: { flex: 1, height: undefined, marginRight: 8 },
   viewfinderPaused: {
     alignItems: 'center', justifyContent: 'center', gap: 10,
-    backgroundColor: Colors.navy,
+    backgroundColor: C.navyBg,
   },
   pausedCode: {
-    color: Colors.blueLight, fontSize: 15, letterSpacing: 1.5, fontWeight: '600',
+    color: C.blueLight, fontSize: 15, letterSpacing: 1.5, fontWeight: '600',
   },
 
   reticle: { ...StyleSheet.absoluteFillObject, margin: 34 },
   corner: {
     position: 'absolute', width: 30, height: 30,
-    borderColor: Colors.blueLight,
+    borderColor: C.blueLight,
   },
   cornerTL: { top: 0,    left: 0,  borderTopWidth: 3,    borderLeftWidth: 3,  borderTopLeftRadius: 8 },
   cornerTR: { top: 0,    right: 0, borderTopWidth: 3,    borderRightWidth: 3, borderTopRightRadius: 8 },
@@ -475,70 +476,70 @@ const styles = StyleSheet.create({
   row:    { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   permIcon: {
-    width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.borderSoft,
+    width: 84, height: 84, borderRadius: 42, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
   permHint: {
-    fontSize: 12.5, color: Colors.textMuted, textAlign: 'center', marginTop: 10,
+    fontSize: 12.5, color: C.textMuted, textAlign: 'center', marginTop: 10,
   },
 
-  emptyTitle: { fontSize: 19, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
-  emptyText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21 },
+  emptyTitle: { fontSize: 19, fontWeight: '800', color: C.textPrimary, textAlign: 'center' },
+  emptyText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21 },
 
-  hint: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
+  hint: { fontSize: 14, color: C.textSecondary, lineHeight: 20 },
 
   foundBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 7, alignSelf: 'flex-start',
-    backgroundColor: Colors.greenLight, paddingHorizontal: 12, paddingVertical: 7,
+    backgroundColor: C.greenLight, paddingHorizontal: 12, paddingVertical: 7,
     borderRadius: Radius.full,
   },
-  newBadge: { backgroundColor: Colors.amberLight },
-  foundBadgeText: { fontSize: 13, fontWeight: '700', color: Colors.greenText },
+  newBadge: { backgroundColor: C.amberLight },
+  foundBadgeText: { fontSize: 13, fontWeight: '700', color: C.greenText },
 
-  medName: { fontSize: 23, fontWeight: '800', color: Colors.textPrimary, marginTop: 4 },
-  medDose: { fontSize: 16, color: Colors.textSecondary },
-  medMeta: { fontSize: 12.5, color: Colors.textMuted, marginTop: 2 },
+  medName: { fontSize: 23, fontWeight: '800', color: C.textPrimary, marginTop: 4 },
+  medDose: { fontSize: 16, color: C.textSecondary },
+  medMeta: { fontSize: 12.5, color: C.textMuted, marginTop: 2 },
 
-  label: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary, marginTop: 8 },
+  label: { fontSize: 13, fontWeight: '700', color: C.textSecondary, marginTop: 8 },
   input: {
-    backgroundColor: Colors.surface, borderRadius: Radius.md, paddingHorizontal: 14,
-    paddingVertical: 12, fontSize: 15.5, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderRadius: Radius.md, paddingHorizontal: 14,
+    paddingVertical: 12, fontSize: 15.5, color: C.textPrimary,
+    borderWidth: 1, borderColor: C.border,
   },
 
   suggestions: {
-    backgroundColor: Colors.surface, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.border, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: C.border, overflow: 'hidden',
   },
   suggestion: {
     paddingHorizontal: 14, paddingVertical: 11,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderSoft,
+    borderBottomWidth: 1, borderBottomColor: C.borderSoft,
   },
-  suggestionName: { fontSize: 15, fontWeight: '600', color: Colors.textPrimary },
-  suggestionMeta: { fontSize: 12.5, color: Colors.textMuted, marginTop: 1 },
+  suggestionName: { fontSize: 15, fontWeight: '600', color: C.textPrimary },
+  suggestionMeta: { fontSize: 12.5, color: C.textMuted, marginTop: 1 },
 
   forms: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   formChip: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.full,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,
   },
-  formChipOn:      { backgroundColor: Colors.navy, borderColor: Colors.navy },
-  formChipText:    { fontSize: 13.5, color: Colors.textSecondary },
+  formChipOn:      { backgroundColor: C.navyBg, borderColor: C.navy },
+  formChipText:    { fontSize: 13.5, color: C.textSecondary },
   formChipTextOn:  { color: '#fff', fontWeight: '600' },
 
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.navy, borderRadius: Radius.md,
+    backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 14, marginTop: 12, ...Shadows.sm,
   },
   primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15.5 },
 
   secondaryBtn:     { alignItems: 'center', paddingVertical: 12 },
-  secondaryBtnText: { color: Colors.navyLight, fontWeight: '600', fontSize: 14.5 },
+  secondaryBtnText: { color: C.navyLight, fontWeight: '600', fontSize: 14.5 },
 
-  linkText: { color: Colors.navyLight, fontWeight: '600', fontSize: 14.5 },
+  linkText: { color: C.navyLight, fontWeight: '600', fontSize: 14.5 },
   error: {
-    fontSize: 13.5, color: Colors.redText, backgroundColor: Colors.redLight,
+    fontSize: 13.5, color: C.redText, backgroundColor: C.redLight,
     padding: 11, borderRadius: Radius.sm, marginTop: 8,
   },
 });

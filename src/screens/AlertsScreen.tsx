@@ -6,20 +6,21 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import {
   listAlerts, markAlertRead, markAllAlertsRead, deleteAlert,
   syncOverdueDoses, type AppAlert,
 } from '../services/alerts';
 
-const ICON: Record<AppAlert['type'], { name: any; bg: string; fg: string }> = {
-  dose_missed:       { name: 'alert-circle',    bg: Colors.redLight,   fg: Colors.redText },
-  dose_taken:        { name: 'checkmark-circle', bg: Colors.greenLight, fg: Colors.greenText },
-  dispenser_offline: { name: 'cloud-offline',   bg: Colors.amberLight, fg: Colors.amberText },
-  low_stock:         { name: 'flask',           bg: Colors.amberLight, fg: Colors.amberText },
-  info:              { name: 'information-circle', bg: Colors.borderSoft, fg: Colors.textSecondary },
-};
+// Depende do tema, entao e funcao da paleta e nao constante de modulo.
+const iconFor = (C: ThemeColors): Record<AppAlert['type'], { name: any; bg: string; fg: string }> => ({
+  dose_missed:       { name: 'alert-circle',    bg: C.redLight,   fg: C.redText },
+  dose_taken:        { name: 'checkmark-circle', bg: C.greenLight, fg: C.greenText },
+  dispenser_offline: { name: 'cloud-offline',   bg: C.amberLight, fg: C.amberText },
+  low_stock:         { name: 'flask',           bg: C.amberLight, fg: C.amberText },
+  info:              { name: 'information-circle', bg: C.borderSoft, fg: C.textSecondary },
+});
 
 const fmtWhen = (iso: string) => {
   const d = new Date(iso);
@@ -32,6 +33,7 @@ const fmtWhen = (iso: string) => {
 };
 
 export default function AlertsScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const maxW = width >= 1024 ? 720 : width >= 768 ? 640 : undefined;
 
@@ -90,7 +92,7 @@ export default function AlertsScreen() {
   const unread = items.filter((a) => !a.read).length;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -114,10 +116,10 @@ export default function AlertsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator color={Colors.navy} style={{ marginTop: 50 }} />
+          <ActivityIndicator color={C.navy} style={{ marginTop: 50 }} />
         ) : items.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="notifications-off-outline" size={50} color={Colors.textMuted} />
+            <Ionicons name="notifications-off-outline" size={50} color={C.textMuted} />
             <Text style={styles.emptyTitle}>Nenhum alerta por aqui</Text>
             <Text style={styles.emptyText}>
               {user?.role === 'caregiver'
@@ -127,6 +129,7 @@ export default function AlertsScreen() {
           </View>
         ) : (
           items.map((a) => {
+            const ICON = iconFor(C);
             const ic = ICON[a.type] ?? ICON.info;
             return (
               <TouchableOpacity
@@ -161,10 +164,10 @@ export default function AlertsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -182,22 +185,22 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, gap: 10 },
   card: {
     flexDirection: 'row', gap: 13, alignItems: 'flex-start',
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 15, ...Shadows.sm,
   },
-  cardUnread: { borderLeftWidth: 3, borderLeftColor: Colors.red },
+  cardUnread: { borderLeftWidth: 3, borderLeftColor: C.red },
   icon: {
     width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
   },
   cardTop:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary, flex: 1 },
-  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.red },
-  cardBody:  { fontSize: 14.5, color: Colors.textSecondary, marginTop: 3, lineHeight: 20 },
-  cardWhen:  { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: C.textPrimary, flex: 1 },
+  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: C.red },
+  cardBody:  { fontSize: 14.5, color: C.textSecondary, marginTop: 3, lineHeight: 20 },
+  cardWhen:  { fontSize: 12, color: C.textMuted, marginTop: 6 },
 
   empty:      { alignItems: 'center', paddingVertical: 60, gap: 10, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  emptyText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21 },
-  hint:       { fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 8 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  emptyText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21 },
+  hint:       { fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 8 },
 });

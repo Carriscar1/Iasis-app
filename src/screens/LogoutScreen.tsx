@@ -10,10 +10,11 @@ import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import { signOut } from '../services/auth';
 import { clearCache } from '../services/offline';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 
 // Tela dedicada de confirmação de saída — sem pop-up de janela.
 export default function LogoutScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -37,7 +38,7 @@ export default function LogoutScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -51,7 +52,7 @@ export default function LogoutScreen() {
       <ScrollView contentContainerStyle={styles.body}>
         <View style={[styles.card, { maxWidth: maxW }]}>
           <View style={styles.iconCircle}>
-            <Ionicons name="log-out-outline" size={40} color={Colors.redText} />
+            <Ionicons name="log-out-outline" size={40} color={C.redText} />
           </View>
 
           <Text style={[styles.heading, { fontSize: isElderly ? 24 : 20 }]}>
@@ -82,17 +83,17 @@ export default function LogoutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  header:     { backgroundColor: Colors.navy, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  header:     { backgroundColor: C.navyBg, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   backBtn:    { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:      { fontWeight: '700', color: '#fff' },
   body:       { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  card:       { width: '100%', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 28, ...Shadows.md },
-  iconCircle: { width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.redLight, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
-  heading:    { fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
-  sub:        { color: Colors.textSecondary, textAlign: 'center', lineHeight: 23, marginTop: 10, marginBottom: 24 },
-  dangerBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.redText, borderRadius: 14, paddingVertical: 15, width: '100%' },
+  card:       { width: '100%', alignItems: 'center', backgroundColor: C.surface, borderRadius: Radius.lg, padding: 28, ...Shadows.md },
+  iconCircle: { width: 84, height: 84, borderRadius: 42, backgroundColor: C.redLight, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  heading:    { fontWeight: '800', color: C.textPrimary, textAlign: 'center' },
+  sub:        { color: C.textSecondary, textAlign: 'center', lineHeight: 23, marginTop: 10, marginBottom: 24 },
+  dangerBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.redText, borderRadius: 14, paddingVertical: 15, width: '100%' },
   dangerText: { color: '#fff', fontWeight: '700' },
   cancelBtn:  { alignItems: 'center', justifyContent: 'center', paddingVertical: 15, marginTop: 10, width: '100%' },
-  cancelText: { color: Colors.textSecondary, fontWeight: '700' },
+  cancelText: { color: C.textSecondary, fontWeight: '700' },
 });

@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import {
@@ -61,6 +61,7 @@ const FORM_ICON: Record<MedForm, string> = {
 };
 
 export default function ScheduleScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -170,7 +171,7 @@ export default function ScheduleScreen() {
     : `Doses de ${selDay.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
@@ -196,7 +197,7 @@ export default function ScheduleScreen() {
               onPress={() => setView(s.key)}
               activeOpacity={0.85}
             >
-              <Ionicons name={s.icon as any} size={14} color={view === s.key ? Colors.navy : 'rgba(255,255,255,.7)'} />
+              <Ionicons name={s.icon as any} size={14} color={view === s.key ? C.navy : 'rgba(255,255,255,.7)'} />
               <Text style={[styles.segmentLabel, { fontSize: fs - 2 }, view === s.key && styles.segmentLabelActive]}>
                 {s.label}
               </Text>
@@ -206,7 +207,7 @@ export default function ScheduleScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.navy} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={C.navy} /></View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -217,17 +218,17 @@ export default function ScheduleScreen() {
 
             {!!screenError && (
               <TouchableOpacity style={styles.errorBanner} onPress={() => setScreenError('')} activeOpacity={0.8}>
-                <Ionicons name="alert-circle" size={18} color={Colors.redText} />
+                <Ionicons name="alert-circle" size={18} color={C.redText} />
                 <Text style={[styles.errorBannerText, { fontSize: fs - 1 }]}>{screenError}</Text>
-                <Ionicons name="close" size={16} color={Colors.redText} />
+                <Ionicons name="close" size={16} color={C.redText} />
               </TouchableOpacity>
             )}
 
             {!!screenSuccess && (
               <TouchableOpacity style={styles.successBanner} onPress={() => setScreenSuccess('')} activeOpacity={0.8}>
-                <Ionicons name="checkmark-circle" size={18} color={Colors.greenText} />
+                <Ionicons name="checkmark-circle" size={18} color={C.greenText} />
                 <Text style={[styles.successBannerText, { fontSize: fs - 1 }]}>{screenSuccess}</Text>
-                <Ionicons name="close" size={16} color={Colors.greenText} />
+                <Ionicons name="close" size={16} color={C.greenText} />
               </TouchableOpacity>
             )}
 
@@ -258,7 +259,7 @@ export default function ScheduleScreen() {
 
                 {doses.length === 0 ? (
                   <View style={styles.emptyCard}>
-                    <Ionicons name="calendar-outline" size={40} color={Colors.textMuted} />
+                    <Ionicons name="calendar-outline" size={40} color={C.textMuted} />
                     <Text style={[styles.emptyTitle, { fontSize: fs }]}>
                       {isToday(selDay) ? 'Nenhuma dose para hoje' : 'Nenhuma dose neste dia'}
                     </Text>
@@ -271,7 +272,7 @@ export default function ScheduleScreen() {
                     return (
                       <TouchableOpacity
                         key={dose.id}
-                        style={[styles.doseCard, (dose.status === 'upcoming' || dose.status === 'due') && { borderColor: '#93B4DA', backgroundColor: '#F0F6FF' }]}
+                        style={[styles.doseCard, (dose.status === 'upcoming' || dose.status === 'due') && { borderColor: '#93B4DA', backgroundColor: C.borderSoft }]}
                         onPress={() => setSel(dose)}
                         activeOpacity={0.8}
                       >
@@ -300,7 +301,7 @@ export default function ScheduleScreen() {
 
                 {meds.length === 0 ? (
                   <View style={styles.emptyCard}>
-                    <Ionicons name="medkit-outline" size={40} color={Colors.textMuted} />
+                    <Ionicons name="medkit-outline" size={40} color={C.textMuted} />
                     <Text style={[styles.emptyTitle, { fontSize: fs }]}>Nenhum remédio cadastrado</Text>
                     <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar seu primeiro medicamento.</Text>
                   </View>
@@ -309,7 +310,7 @@ export default function ScheduleScreen() {
                     <View key={med.id} style={styles.medCard}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <View style={styles.medIcon}>
-                          <Ionicons name={(FORM_ICON[med.form] ?? 'medkit-outline') as any} size={20} color={Colors.navy} />
+                          <Ionicons name={(FORM_ICON[med.form] ?? 'medkit-outline') as any} size={20} color={C.navy} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.medName, { fontSize: fs + 1 }]}>{med.name} {med.dosage}</Text>
@@ -321,7 +322,7 @@ export default function ScheduleScreen() {
                       </View>
                       <View style={styles.medActions}>
                         <TouchableOpacity style={styles.medEditBtn} onPress={() => setEditMed(med)} activeOpacity={0.8}>
-                          <Ionicons name="pencil" size={14} color={Colors.navy} />
+                          <Ionicons name="pencil" size={14} color={C.navy} />
                           <Text style={[styles.medEditText, { fontSize: fs - 2 }]}>Editar</Text>
                         </TouchableOpacity>
                         {/* Renova usando os mesmos horários que o tratamento já tinha. */}
@@ -332,14 +333,14 @@ export default function ScheduleScreen() {
                           activeOpacity={0.8}
                         >
                           {renewing === med.id
-                            ? <ActivityIndicator size="small" color={Colors.greenText} />
-                            : <Ionicons name="refresh" size={14} color={Colors.greenText} />}
+                            ? <ActivityIndicator size="small" color={C.greenText} />
+                            : <Ionicons name="refresh" size={14} color={C.greenText} />}
                           <Text style={[styles.medRenewText, { fontSize: fs - 2 }]}>Renovar</Text>
                         </TouchableOpacity>
                         <ConfirmAction
                           label="Excluir" confirmLabel="Excluir"
                           onConfirm={() => handleDeleteMed(med)}
-                          bg={Colors.redLight} txtColor={Colors.redText} fs={fs - 2}
+                          bg={C.redLight} txtColor={C.redText} fs={fs - 2}
                         />
                       </View>
                     </View>
@@ -387,7 +388,7 @@ export default function ScheduleScreen() {
                     <Text style={[styles.closeBtnText, { fontSize: fs }]}>Fechar</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.deleteBtn, { paddingVertical: isTablet ? 16 : 13 }]} onPress={() => handleDelete(sel)}>
-                    <Ionicons name="trash-outline" size={18} color={Colors.redText} />
+                    <Ionicons name="trash-outline" size={18} color={C.redText} />
                   </TouchableOpacity>
                 </View>
               </>
@@ -430,6 +431,7 @@ function AddMedicationModal({
   visible: boolean; onClose: () => void; userId: string | null;
   onSaved: (msg?: string) => void; isTablet: boolean; maxW?: number; fs: number; isElderly: boolean;
 }) {
+  const { C, styles } = useTheme(makeStyles);
   const midnight = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
 
   const [query, setQuery]       = useState('');
@@ -573,17 +575,17 @@ function AddMedicationModal({
             {!hasMed && (
               <Field label="Escolher remédio" fs={fs}>
                 <View style={[styles.inputWrap]}>
-                  <Ionicons name="search" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                  <Ionicons name="search" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
                   <TextInput
                     style={[styles.inputFlex, { fontSize: fs }]}
                     value={query}
                     onChangeText={setQuery}
                     placeholder="Buscar por nome ou marca…"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={C.textMuted}
                   />
                   {query.length > 0 && (
                     <TouchableOpacity onPress={() => setQuery('')} style={{ padding: 4 }}>
-                      <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+                      <Ionicons name="close-circle" size={18} color={C.textMuted} />
                     </TouchableOpacity>
                   )}
                 </View>
@@ -595,11 +597,11 @@ function AddMedicationModal({
                   onPress={() => router.push('/scan-medication')}
                   activeOpacity={0.8}
                 >
-                  <Ionicons name="barcode-outline" size={19} color={Colors.navy} />
+                  <Ionicons name="barcode-outline" size={19} color={C.navy} />
                   <Text style={[styles.scanBtnText, { fontSize: fs - 1 }]}>
                     Ler código de barras da caixa
                   </Text>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
                 </TouchableOpacity>
 
                 <Text style={[styles.listHint, { fontSize: fs - 3 }]}>
@@ -617,22 +619,22 @@ function AddMedicationModal({
                   {results.map((m) => (
                     <TouchableOpacity key={`${m.name}-${m.brand ?? ''}`} style={styles.resultRow} onPress={() => pickFromCatalog(m)} activeOpacity={0.7}>
                       <View style={styles.pillIcon}>
-                        <Ionicons name="medkit-outline" size={16} color={Colors.navy} />
+                        <Ionicons name="medkit-outline" size={16} color={C.navy} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.resultName, { fontSize: fs }]}>{m.name}{m.brand ? <Text style={{ color: Colors.textMuted }}>  · {m.brand}</Text> : null}</Text>
+                        <Text style={[styles.resultName, { fontSize: fs }]}>{m.name}{m.brand ? <Text style={{ color: C.textMuted }}>  · {m.brand}</Text> : null}</Text>
                         <Text style={[styles.resultMeta, { fontSize: fs - 3 }]}>{m.category} · {m.dosages.join(', ')}</Text>
                       </View>
-                      <Ionicons name="add-circle" size={20} color={Colors.green} />
+                      <Ionicons name="add-circle" size={20} color={C.green} />
                     </TouchableOpacity>
                   ))}
                   {query.length > 0 && results.length === 0 && (
-                    <Text style={{ padding: 12, color: Colors.textSecondary, fontSize: fs - 1 }}>Nenhum remédio encontrado.</Text>
+                    <Text style={{ padding: 12, color: C.textSecondary, fontSize: fs - 1 }}>Nenhum remédio encontrado.</Text>
                   )}
                 </ScrollView>
 
                 <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => { setCustom(true); setName(query); setQuery(''); }}>
-                  <Text style={{ fontSize: fs - 1, color: Colors.navy, fontWeight: '600' }}>Não encontrou? Digitar manualmente</Text>
+                  <Text style={{ fontSize: fs - 1, color: C.navy, fontWeight: '600' }}>Não encontrou? Digitar manualmente</Text>
                 </TouchableOpacity>
               </Field>
             )}
@@ -643,19 +645,19 @@ function AddMedicationModal({
                 {customMode ? (
                   <Field label="Nome do remédio" fs={fs}>
                     <TextInput style={[styles.input, { fontSize: fs }]} value={name} onChangeText={setName}
-                      placeholder="Ex: Losartana" placeholderTextColor={Colors.textMuted} autoFocus />
+                      placeholder="Ex: Losartana" placeholderTextColor={C.textMuted} autoFocus />
                   </Field>
                 ) : (
                   <View style={styles.selectedCard}>
                     <View style={styles.pillIcon}>
-                      <Ionicons name="medkit" size={18} color={Colors.navy} />
+                      <Ionicons name="medkit" size={18} color={C.navy} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.resultName, { fontSize: fs + 1 }]}>{selected?.name}</Text>
                       <Text style={[styles.resultMeta, { fontSize: fs - 2 }]}>{selected?.brand} · {selected?.category}</Text>
                     </View>
                     <TouchableOpacity onPress={clearSelection}>
-                      <Text style={{ color: Colors.navy, fontWeight: '600', fontSize: fs - 1 }}>Trocar</Text>
+                      <Text style={{ color: C.navy, fontWeight: '600', fontSize: fs - 1 }}>Trocar</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -671,7 +673,7 @@ function AddMedicationModal({
                     </View>
                   )}
                   <TextInput style={[styles.input, { fontSize: fs, marginTop: selected ? 8 : 0 }]} value={dosage} onChangeText={setDosage}
-                    placeholder="Ex: 50mg" placeholderTextColor={Colors.textMuted} />
+                    placeholder="Ex: 50mg" placeholderTextColor={C.textMuted} />
                 </Field>
 
                 <Field label="Quantas vezes por dia" fs={fs}>
@@ -691,16 +693,16 @@ function AddMedicationModal({
                   <View style={[styles.chipRow, { marginBottom: 10 }]}>
                     {times.map((t) => (
                       <TouchableOpacity key={t} style={styles.timeChip} onPress={() => removeTime(t)} activeOpacity={0.7}>
-                        <Ionicons name="alarm-outline" size={14} color={Colors.greenText} />
+                        <Ionicons name="alarm-outline" size={14} color={C.greenText} />
                         <Text style={[styles.timeChipText, { fontSize: fs - 1 }]}>{t}</Text>
-                        {times.length > 1 && <Ionicons name="close-circle" size={15} color={Colors.greenText} />}
+                        {times.length > 1 && <Ionicons name="close-circle" size={15} color={C.greenText} />}
                       </TouchableOpacity>
                     ))}
                   </View>
                   <View style={styles.pickerCard}>
                     <AlarmTimePicker value={timeDraft} onChange={setTimeDraft} isElderly={isElderly} />
                     <TouchableOpacity style={styles.addTimeBtn} onPress={addTime} activeOpacity={0.85}>
-                      <Ionicons name="add" size={16} color={Colors.navy} />
+                      <Ionicons name="add" size={16} color={C.navy} />
                       <Text style={[styles.addTimeText, { fontSize: fs - 1 }]}>Adicionar este horário</Text>
                     </TouchableOpacity>
                   </View>
@@ -723,19 +725,19 @@ function AddMedicationModal({
                 <Field label="Compartimento" fs={fs}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.max(1, c - 1))}>
-                      <Ionicons name="remove" size={18} color={Colors.navy} />
+                      <Ionicons name="remove" size={18} color={C.navy} />
                     </TouchableOpacity>
-                    <Text style={{ fontSize: fs + 2, fontWeight: '700', color: Colors.textPrimary, minWidth: 24, textAlign: 'center' }}>{compartment}</Text>
+                    <Text style={{ fontSize: fs + 2, fontWeight: '700', color: C.textPrimary, minWidth: 24, textAlign: 'center' }}>{compartment}</Text>
                     <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.min(8, c + 1))}>
-                      <Ionicons name="add" size={18} color={Colors.navy} />
+                      <Ionicons name="add" size={18} color={C.navy} />
                     </TouchableOpacity>
-                    <Text style={{ fontSize: fs - 2, color: Colors.textMuted, marginLeft: 4 }}>slot físico (1–8)</Text>
+                    <Text style={{ fontSize: fs - 2, color: C.textMuted, marginLeft: 4 }}>slot físico (1–8)</Text>
                   </View>
                 </Field>
 
                 <Field label="Instruções (opcional)" fs={fs}>
                   <TextInput style={[styles.input, { fontSize: fs }]} value={instr} onChangeText={setInstr}
-                    placeholder="Ex: Tomar com água" placeholderTextColor={Colors.textMuted} />
+                    placeholder="Ex: Tomar com água" placeholderTextColor={C.textMuted} />
                 </Field>
 
                 {/* Resumo do que será criado */}
@@ -748,7 +750,7 @@ function AddMedicationModal({
 
                 {!!formError && (
                   <View style={styles.formError}>
-                    <Ionicons name="alert-circle" size={16} color={Colors.redText} />
+                    <Ionicons name="alert-circle" size={16} color={C.redText} />
                     <Text style={[styles.formErrorText, { fontSize: fs - 1 }]}>{formError}</Text>
                   </View>
                 )}
@@ -783,6 +785,7 @@ function EditMedicationModal({
   med: Medication | null; onClose: () => void;
   onSaved: (msg: string) => void; isTablet: boolean; maxW?: number; fs: number;
 }) {
+  const { C, styles } = useTheme(makeStyles);
   const [name, setName]         = useState('');
   const [dosage, setDosage]     = useState('');
   const [compartment, setComp]  = useState(1);
@@ -824,35 +827,35 @@ function EditMedicationModal({
 
             <Field label="Nome" fs={fs}>
               <TextInput style={[styles.input, { fontSize: fs }]} value={name} onChangeText={setName}
-                placeholder="Ex: Losartana" placeholderTextColor={Colors.textMuted} />
+                placeholder="Ex: Losartana" placeholderTextColor={C.textMuted} />
             </Field>
 
             <Field label="Dosagem" fs={fs}>
               <TextInput style={[styles.input, { fontSize: fs }]} value={dosage} onChangeText={setDosage}
-                placeholder="Ex: 50mg" placeholderTextColor={Colors.textMuted} />
+                placeholder="Ex: 50mg" placeholderTextColor={C.textMuted} />
             </Field>
 
             <Field label="Compartimento" fs={fs}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.max(1, c - 1))}>
-                  <Ionicons name="remove" size={18} color={Colors.navy} />
+                  <Ionicons name="remove" size={18} color={C.navy} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: fs + 2, fontWeight: '700', color: Colors.textPrimary, minWidth: 24, textAlign: 'center' }}>{compartment}</Text>
+                <Text style={{ fontSize: fs + 2, fontWeight: '700', color: C.textPrimary, minWidth: 24, textAlign: 'center' }}>{compartment}</Text>
                 <TouchableOpacity style={styles.stepper} onPress={() => setComp((c) => Math.min(8, c + 1))}>
-                  <Ionicons name="add" size={18} color={Colors.navy} />
+                  <Ionicons name="add" size={18} color={C.navy} />
                 </TouchableOpacity>
-                <Text style={{ fontSize: fs - 2, color: Colors.textMuted, marginLeft: 4 }}>slot físico (1–8)</Text>
+                <Text style={{ fontSize: fs - 2, color: C.textMuted, marginLeft: 4 }}>slot físico (1–8)</Text>
               </View>
             </Field>
 
             <Field label="Instruções (opcional)" fs={fs}>
               <TextInput style={[styles.input, { fontSize: fs }]} value={instr} onChangeText={setInstr}
-                placeholder="Ex: Tomar com água" placeholderTextColor={Colors.textMuted} />
+                placeholder="Ex: Tomar com água" placeholderTextColor={C.textMuted} />
             </Field>
 
             {!!formError && (
               <View style={styles.formError}>
-                <Ionicons name="alert-circle" size={16} color={Colors.redText} />
+                <Ionicons name="alert-circle" size={16} color={C.redText} />
                 <Text style={[styles.formErrorText, { fontSize: fs - 1 }]}>{formError}</Text>
               </View>
             )}
@@ -877,6 +880,7 @@ function EditMedicationModal({
 }
 
 function Field({ label, children, fs, style }: { label: string; children: React.ReactNode; fs: number; style?: any }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={[{ marginBottom: 14 }, style]}>
       <Text style={[styles.fieldLabel, { fontSize: fs - 2 }]}>{label}</Text>
@@ -885,7 +889,7 @@ function Field({ label, children, fs, style }: { label: string; children: React.
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 14, paddingTop: 10 },
   title:    { fontWeight: '700', color: '#fff' },
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4, textTransform: 'capitalize' },
@@ -895,85 +899,85 @@ const styles = StyleSheet.create({
   segmentBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, borderRadius: 10 },
   segmentActive: { backgroundColor: '#fff' },
   segmentLabel:  { color: 'rgba(255,255,255,.7)', fontWeight: '600' },
-  segmentLabelActive: { color: Colors.navy },
-  errorBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
-  errorBannerText:{ flex: 1, color: Colors.redText },
-  successBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.greenLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
-  successBannerText:{ flex: 1, color: Colors.greenText },
-  pickerCard:     { backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12 },
-  addTimeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 10, paddingVertical: 10 },
-  addTimeText:    { color: Colors.navy, fontWeight: '700' },
-  timeChip:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.greenLight, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  timeChipText:   { color: Colors.greenText, fontWeight: '700' },
-  previewBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#E6F1FB', borderRadius: 10, padding: 12, marginBottom: 8 },
+  segmentLabelActive: { color: C.navy },
+  errorBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
+  errorBannerText:{ flex: 1, color: C.redText },
+  successBanner:    { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.greenLight, borderRadius: Radius.sm, padding: 12, marginTop: 14 },
+  successBannerText:{ flex: 1, color: C.greenText },
+  pickerCard:     { backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12 },
+  addTimeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, borderWidth: 1.5, borderColor: C.navy, borderRadius: 10, paddingVertical: 10 },
+  addTimeText:    { color: C.navy, fontWeight: '700' },
+  timeChip:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.greenLight, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
+  timeChipText:   { color: C.greenText, fontWeight: '700' },
+  previewBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.borderSoft, borderRadius: 10, padding: 12, marginBottom: 8 },
   previewText:    { flex: 1, color: '#185FA5', fontWeight: '500' },
-  formError:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 10, padding: 12, marginTop: 8 },
-  formErrorText:  { flex: 1, color: Colors.redText },
-  summaryCard:    { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 16, marginTop: 14, ...Shadows.md },
+  formError:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redLight, borderRadius: 10, padding: 12, marginTop: 8 },
+  formErrorText:  { flex: 1, color: C.redText },
+  summaryCard:    { flexDirection: 'row', backgroundColor: C.surface, borderRadius: Radius.md, padding: 16, marginTop: 14, ...Shadows.md },
   summaryItem:    { flex: 1, alignItems: 'center' },
   summaryNum:     { fontWeight: '700' },
-  summaryLabel:   { color: Colors.textSecondary, marginTop: 3 },
-  summaryDivider: { width: 0.5, backgroundColor: Colors.border },
-  sectionTitle:   { fontWeight: '700', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  emptyCard:  { alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
-  emptyTitle: { fontWeight: '700', color: Colors.textPrimary, marginTop: 4 },
-  emptySub:   { color: Colors.textSecondary, textAlign: 'center' },
-  doseCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  summaryLabel:   { color: C.textSecondary, marginTop: 3 },
+  summaryDivider: { width: 0.5, backgroundColor: C.border },
+  sectionTitle:   { fontWeight: '700', color: C.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  emptyCard:  { alignItems: 'center', backgroundColor: C.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
+  emptyTitle: { fontWeight: '700', color: C.textPrimary, marginTop: 4 },
+  emptySub:   { color: C.textSecondary, textAlign: 'center' },
+  doseCard:  { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   doseIcon:  { alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  doseTime:  { color: Colors.textSecondary },
-  doseName:  { fontWeight: '600', color: Colors.textPrimary, marginTop: 1 },
-  doseInstr: { color: Colors.textSecondary, marginTop: 2 },
+  doseTime:  { color: C.textSecondary },
+  doseName:  { fontWeight: '600', color: C.textPrimary, marginTop: 1 },
+  doseInstr: { color: C.textSecondary, marginTop: 2 },
   badge:     { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontWeight: '600' },
   medRenewBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    backgroundColor: Colors.greenLight, borderRadius: 8,
+    backgroundColor: C.greenLight, borderRadius: 8,
     paddingHorizontal: 11, paddingVertical: 7,
   },
-  medRenewText: { color: Colors.greenText, fontWeight: '700' },
-  medCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
-  medIcon:    { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  medName:    { fontWeight: '700', color: Colors.textPrimary },
-  medMeta:    { color: Colors.textSecondary, marginTop: 2 },
-  medActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: Colors.border },
-  medEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#E6F1FB', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
-  medEditText:{ color: Colors.navy, fontWeight: '700' },
+  medRenewText: { color: C.greenText, fontWeight: '700' },
+  medCard:    { backgroundColor: C.surface, borderRadius: Radius.md, marginBottom: 10, padding: 14, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
+  medIcon:    { width: 44, height: 44, borderRadius: 12, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  medName:    { fontWeight: '700', color: C.textPrimary },
+  medMeta:    { color: C.textSecondary, marginTop: 2 },
+  medActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: C.border },
+  medEditBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.borderSoft, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
+  medEditText:{ color: C.navy, fontWeight: '700' },
   overlay:   { flex: 1, backgroundColor: 'rgba(0,0,0,.5)', justifyContent: 'flex-end' },
-  sheet:     { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, alignSelf: 'center' },
-  handle:    { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 20 },
-  sheetTitle:{ fontWeight: '700', color: Colors.textPrimary },
-  sheetSub:  { color: Colors.textSecondary, marginTop: 4, marginBottom: 16 },
-  sheetRow:  { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: Colors.border },
-  sheetLabel:{ color: Colors.textSecondary },
-  sheetValue:{ fontWeight: '500', color: Colors.textPrimary },
-  primaryBtn: { marginTop: 18, backgroundColor: Colors.green, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  sheet:     { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, alignSelf: 'center' },
+  handle:    { width: 36, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: 'center', marginBottom: 20 },
+  sheetTitle:{ fontWeight: '700', color: C.textPrimary },
+  sheetSub:  { color: C.textSecondary, marginTop: 4, marginBottom: 16 },
+  sheetRow:  { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: C.border },
+  sheetLabel:{ color: C.textSecondary },
+  sheetValue:{ fontWeight: '500', color: C.textPrimary },
+  primaryBtn: { marginTop: 18, backgroundColor: C.green, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   primaryBtnText: { fontWeight: '700', color: '#fff' },
-  closeBtn:  { backgroundColor: Colors.borderSoft ?? '#F1F5F9', borderRadius: 12, alignItems: 'center' },
-  closeBtnText: { fontWeight: '600', color: Colors.textPrimary },
-  deleteBtn: { width: 52, backgroundColor: Colors.redLight, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  fieldLabel: { fontWeight: '600', color: Colors.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
-  input: { backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: Platform.OS === 'web' ? 12 : 11, color: Colors.textPrimary },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, paddingHorizontal: 14 },
-  inputFlex: { flex: 1, color: Colors.textPrimary, paddingVertical: Platform.OS === 'web' ? 12 : 11 },
-  stepper: { width: 38, height: 38, borderRadius: 10, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  closeBtn:  { backgroundColor: C.borderSoft ?? '#F1F5F9', borderRadius: 12, alignItems: 'center' },
+  closeBtnText: { fontWeight: '600', color: C.textPrimary },
+  deleteBtn: { width: 52, backgroundColor: C.redLight, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  fieldLabel: { fontWeight: '600', color: C.textSecondary, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.4 },
+  input: { backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: Platform.OS === 'web' ? 12 : 11, color: C.textPrimary },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 14 },
+  inputFlex: { flex: 1, color: C.textPrimary, paddingVertical: Platform.OS === 'web' ? 12 : 11 },
+  stepper: { width: 38, height: 38, borderRadius: 10, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
   scanBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    backgroundColor: Colors.blueLight + '33', borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.blueLight,
+    backgroundColor: C.blueLight + '33', borderRadius: Radius.md,
+    borderWidth: 1, borderColor: C.blueLight,
     paddingHorizontal: 13, paddingVertical: 11, marginTop: 10,
   },
-  scanBtnText: { flex: 1, color: Colors.navy, fontWeight: '700' },
+  scanBtnText: { flex: 1, color: C.navy, fontWeight: '700' },
 
-  listHint:    { color: Colors.textMuted, marginTop: 10, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
-  resultsScroll: { maxHeight: 280, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, backgroundColor: Colors.surface },
-  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: Colors.border },
-  resultName: { fontWeight: '600', color: Colors.textPrimary },
-  resultMeta: { color: Colors.textSecondary, marginTop: 2 },
-  pillIcon: { width: 32, height: 32, borderRadius: 9, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  selectedCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.greenLight, borderRadius: 12, padding: 12, marginBottom: 14 },
+  listHint:    { color: C.textMuted, marginTop: 10, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 },
+  resultsScroll: { maxHeight: 280, borderWidth: 1, borderColor: C.border, borderRadius: 12, backgroundColor: C.surface },
+  resultRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 10, borderBottomWidth: 0.5, borderBottomColor: C.border },
+  resultName: { fontWeight: '600', color: C.textPrimary },
+  resultMeta: { color: C.textSecondary, marginTop: 2 },
+  pillIcon: { width: 32, height: 32, borderRadius: 9, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  selectedCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: C.greenLight, borderRadius: 12, padding: 12, marginBottom: 14 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.bg, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
-  chipActive: { backgroundColor: Colors.navy, borderColor: Colors.navy },
-  chipText: { color: Colors.textSecondary, fontWeight: '600' },
+  chip: { borderWidth: 1, borderColor: C.border, backgroundColor: C.bg, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
+  chipActive: { backgroundColor: C.navyBg, borderColor: C.navy },
+  chipText: { color: C.textSecondary, fontWeight: '600' },
   chipTextActive: { color: '#fff' },
 });

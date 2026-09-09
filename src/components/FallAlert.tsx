@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { startFallMonitor, type FallEvent } from '../services/motion';
 import { getCurrentFix } from '../services/location';
@@ -29,6 +29,7 @@ import { raiseEmergency } from '../services/emergency';
 const COUNTDOWN = 30;
 
 export default function FallAlert() {
+  const { C, styles } = useTheme(makeStyles);
   const enabled  = useStore((s) => s.fallDetection);
   const loggedIn = useStore((s) => s.isLoggedIn);
 
@@ -170,7 +171,7 @@ export default function FallAlert() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(15,23,42,0.72)',
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     maxWidth: 380,
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius: Radius.xl,
     padding: 26,
     alignItems: 'center',
@@ -194,35 +195,35 @@ const styles = StyleSheet.create({
 
   iconRing: {
     width: 96, height: 96, borderRadius: 48,
-    backgroundColor: Colors.redLight,
-    borderWidth: 3, borderColor: Colors.red,
+    backgroundColor: C.redLight,
+    borderWidth: 3, borderColor: C.red,
     alignItems: 'center', justifyContent: 'center',
     marginBottom: 4,
   },
   iconRingDone: {
-    backgroundColor: Colors.greenLight,
-    borderColor: Colors.green,
+    backgroundColor: C.greenLight,
+    borderColor: C.green,
   },
-  count:    { fontSize: 38, fontWeight: '900', color: Colors.redText },
-  doneMark: { fontSize: 44, fontWeight: '900', color: Colors.greenText },
+  count:    { fontSize: 38, fontWeight: '900', color: C.redText },
+  doneMark: { fontSize: 44, fontWeight: '900', color: C.greenText },
 
-  title: { fontSize: 23, fontWeight: '900', color: Colors.textPrimary, textAlign: 'center' },
+  title: { fontSize: 23, fontWeight: '900', color: C.textPrimary, textAlign: 'center' },
   body: {
-    fontSize: 15.5, color: Colors.textSecondary,
+    fontSize: 15.5, color: C.textSecondary,
     textAlign: 'center', lineHeight: 22,
   },
-  strong: { fontWeight: '800', color: Colors.textPrimary },
+  strong: { fontWeight: '800', color: C.textPrimary },
 
   // Alvo grande: quem acabou de cair não acerta botão pequeno.
   okBtn: {
-    width: '100%', backgroundColor: Colors.navy, borderRadius: Radius.md,
+    width: '100%', backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 17, alignItems: 'center', marginTop: 8,
   },
   okText: { color: '#fff', fontWeight: '800', fontSize: 17 },
 
   helpBtn: {
-    width: '100%', backgroundColor: Colors.redLight, borderRadius: Radius.md,
+    width: '100%', backgroundColor: C.redLight, borderRadius: Radius.md,
     paddingVertical: 15, alignItems: 'center',
   },
-  helpText: { color: Colors.redText, fontWeight: '800', fontSize: 15.5 },
+  helpText: { color: C.redText, fontWeight: '800', fontSize: 15.5 },
 });

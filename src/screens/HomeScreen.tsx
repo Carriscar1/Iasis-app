@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 import {
   listDosesForDay, computeLiveStatus, syncOverdueDoses,
@@ -20,19 +20,23 @@ import type { UserProfile } from '../services/auth';
 
 type Shortcut = { icon: string; label: string; sub: string; route: string; bg: string; ic: string };
 
-const SC = {
-  agenda:    { icon: 'calendar',      label: 'Agenda',     sub: 'Seus horários',        route: '/(tabs)/schedule', bg: '#E6F1FB', ic: '#185FA5' },
-  dispenser: { icon: 'cube',          label: 'Aparelho',   sub: 'Organizador de doses', route: '/(tabs)/device',   bg: '#E1F5EE', ic: '#0F6E56' },
-  historico: { icon: 'bar-chart',     label: 'Histórico',  sub: 'Como você vem indo',   route: '/(tabs)/history',  bg: '#FAEEDA', ic: '#854F0B' },
-  perfil:    { icon: 'person',        label: 'Perfil',     sub: 'Sua conta',            route: '/(tabs)/profile',  bg: '#F1F5F9', ic: '#64748B' },
-  pacientes: { icon: 'people',        label: 'Pacientes',  sub: 'Quem você cuida',      route: '/patients',        bg: '#EDE9FE', ic: '#6D44C9' },
-  estoque:   { icon: 'flask',         label: 'Estoque',    sub: 'Quanto ainda tem',     route: '/stock',           bg: '#E1F5EE', ic: '#0F6E56' },
-  alertas:   { icon: 'notifications', label: 'Alertas',    sub: 'Avisos importantes',   route: '/alerts',          bg: '#FCEBEB', ic: '#A32D2D' },
-  socorro:   { icon: 'alert-circle',  label: 'Emergência', sub: 'Avisar quem te cuida', route: '/emergency',       bg: '#FCEBEB', ic: '#A32D2D' },
-} satisfies Record<string, Shortcut>;
+// Os selos dos atalhos acompanham o tema: no escuro, fundo tingido escuro
+// com ícone claro — o par claro/escuro invertido ficaria como adesivo aceso
+// em cima de um cartão escuro.
+const shortcuts_ = (C: ThemeColors, dark: boolean) => ({
+  agenda:    { icon: 'calendar',      label: 'Agenda',     sub: 'Seus horários',        route: '/(tabs)/schedule', bg: dark ? '#1E3050' : '#E6F1FB', ic: dark ? C.navy : '#185FA5' },
+  dispenser: { icon: 'cube',          label: 'Aparelho',   sub: 'Organizador de doses', route: '/(tabs)/device',   bg: C.greenLight, ic: C.greenText },
+  historico: { icon: 'bar-chart',     label: 'Histórico',  sub: 'Como você vem indo',   route: '/(tabs)/history',  bg: C.amberLight, ic: C.amberText },
+  perfil:    { icon: 'person',        label: 'Perfil',     sub: 'Sua conta',            route: '/(tabs)/profile',  bg: C.borderSoft, ic: C.textSecondary },
+  pacientes: { icon: 'people',        label: 'Pacientes',  sub: 'Quem você cuida',      route: '/patients',        bg: dark ? '#2B2445' : '#EDE9FE', ic: dark ? '#BFA9F5' : '#6D44C9' },
+  estoque:   { icon: 'flask',         label: 'Estoque',    sub: 'Quanto ainda tem',     route: '/stock',           bg: C.greenLight, ic: C.greenText },
+  alertas:   { icon: 'notifications', label: 'Alertas',    sub: 'Avisos importantes',   route: '/alerts',          bg: C.redLight, ic: C.redText },
+  socorro:   { icon: 'alert-circle',  label: 'Emergência', sub: 'Avisar quem te cuida', route: '/emergency',       bg: C.redLight, ic: C.redText },
+}) satisfies Record<string, Shortcut>;
 
 // Atalhos exibidos variam conforme o perfil do usuário.
-const shortcutsForRole = (role?: UserProfile['role']): Shortcut[] => {
+const shortcutsForRole = (role: UserProfile['role'] | undefined, C: ThemeColors, dark: boolean): Shortcut[] => {
+  const SC = shortcuts_(C, dark);
   if (role === 'caregiver')  return [SC.pacientes, SC.alertas, SC.agenda, SC.historico];
   // Paciente (idoso): foco na agenda e no histórico, sem o aparelho.
   if (role === 'patient')    return [SC.agenda, SC.socorro, SC.historico, SC.estoque];
@@ -49,6 +53,7 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 export default function HomeScreen() {
+  const { C, styles, isDark } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const user = useStore((s) => s.user);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,7 +67,7 @@ export default function HomeScreen() {
   const fs        = (isDesktop ? 15 : isTablet ? 14 : 13) + (isElderly ? 3 : 0);
   const maxW      = isDesktop ? 960 : isTablet ? 720 : undefined;
 
-  const shortcuts = shortcutsForRole(user?.role);
+  const shortcuts = shortcutsForRole(user?.role, C, isDark);
   const unreadAlerts = useStore((s) => s.unreadAlerts);
 
   // Grid: paciente vê cartões maiores (1 coluna no celular) para facilitar o toque.
@@ -129,7 +134,7 @@ export default function HomeScreen() {
         : `💊 ${taken} de ${total} tomado(s) hoje`;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       {/* Header amigável (sem termos técnicos) */}
       <LinearGradient colors={['#1C2B4B', '#2E4A7A']} style={styles.header}>
         <View style={[styles.headerInner, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : {}]}>
@@ -164,7 +169,7 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 32, alignItems: maxW ? 'center' : undefined }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.navy} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.navy} />}
       >
         <View style={{ width: '100%', maxWidth: maxW, paddingHorizontal: padding }}>
 
@@ -191,8 +196,8 @@ export default function HomeScreen() {
                   onPress={() => router.push('/alerts')}
                   activeOpacity={0.85}
                 >
-                  <View style={[styles.attentionIcon, { backgroundColor: Colors.redLight }]}>
-                    <Ionicons name="alert-circle" size={isElderly ? 24 : 20} color={Colors.redText} />
+                  <View style={[styles.attentionIcon, { backgroundColor: C.redLight }]}>
+                    <Ionicons name="alert-circle" size={isElderly ? 24 : 20} color={C.redText} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.attentionTitle, { fontSize: fs }]}>
@@ -202,7 +207,7 @@ export default function HomeScreen() {
                       Toque para ver o que aconteceu
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
                 </TouchableOpacity>
               )}
 
@@ -212,8 +217,8 @@ export default function HomeScreen() {
                   onPress={() => router.push('/stock')}
                   activeOpacity={0.85}
                 >
-                  <View style={[styles.attentionIcon, { backgroundColor: Colors.amberLight }]}>
-                    <Ionicons name="flask" size={isElderly ? 24 : 20} color={Colors.amberText} />
+                  <View style={[styles.attentionIcon, { backgroundColor: C.amberLight }]}>
+                    <Ionicons name="flask" size={isElderly ? 24 : 20} color={C.amberText} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.attentionTitle, { fontSize: fs }]}>
@@ -227,7 +232,7 @@ export default function HomeScreen() {
                         : lowStock.map((m) => m.name).join(', ')}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
                 </TouchableOpacity>
               )}
             </View>
@@ -249,8 +254,8 @@ export default function HomeScreen() {
                   )}
                   activeOpacity={0.85}
                 >
-                  <View style={[styles.nextIcon, { backgroundColor: nextDose.status === 'due' ? '#FFFFFF' : Colors.greenLight }]}>
-                    <Ionicons name={nextDose.status === 'due' ? 'alarm' : 'time'} size={isElderly ? 36 : 28} color={nextDose.status === 'due' ? Colors.amberText : Colors.greenText} />
+                  <View style={[styles.nextIcon, { backgroundColor: nextDose.status === 'due' ? '#FFFFFF' : C.greenLight }]}>
+                    <Ionicons name={nextDose.status === 'due' ? 'alarm' : 'time'} size={isElderly ? 36 : 28} color={nextDose.status === 'due' ? C.amberText : C.greenText} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.nextStatus, { fontSize: fs - 1 }, nextDose.status === 'due' && { color: '#fff' }]}>
@@ -263,11 +268,11 @@ export default function HomeScreen() {
                       🕐 {fmtTime(nextDose.scheduledAt)}{nextDose.medication?.instructions ? ` · ${nextDose.medication.instructions}` : ''}
                     </Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={22} color={nextDose.status === 'due' ? 'rgba(255,255,255,.8)' : Colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={22} color={nextDose.status === 'due' ? 'rgba(255,255,255,.8)' : C.textMuted} />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.nextEmpty} onPress={() => router.push('/(tabs)/schedule')} activeOpacity={0.85}>
-                  <Ionicons name={total > 0 ? 'checkmark-circle' : 'add-circle'} size={isElderly ? 38 : 30} color={total > 0 ? Colors.greenText : Colors.navy} />
+                  <Ionicons name={total > 0 ? 'checkmark-circle' : 'add-circle'} size={isElderly ? 38 : 30} color={total > 0 ? C.greenText : C.navy} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.nextEmptyTitle, { fontSize: isElderly ? 21 : 16 }]}>
                       {total > 0 ? 'Tudo certo por hoje!' : 'Nenhum remédio para hoje'}
@@ -288,9 +293,9 @@ export default function HomeScreen() {
               <View style={styles.summaryCard}>
                 <View style={styles.summaryRow}>
                   {[
-                    { val: taken,   label: 'Tomados',   color: Colors.greenText },
+                    { val: taken,   label: 'Tomados',   color: C.greenText },
                     { val: pending, label: 'A tomar',   color: '#185FA5' },
-                    { val: missed,  label: 'Perdidos',  color: Colors.redText },
+                    { val: missed,  label: 'Perdidos',  color: C.redText },
                   ].map((s, i) => (
                     <React.Fragment key={s.label}>
                       {i > 0 && <View style={styles.summaryDivider} />}
@@ -330,7 +335,7 @@ export default function HomeScreen() {
 
           {/* Dica do dia */}
           <View style={styles.tipCard}>
-            <Ionicons name="heart" size={isElderly ? 22 : 18} color={Colors.redText} />
+            <Ionicons name="heart" size={isElderly ? 22 : 18} color={C.redText} />
             <Text style={[styles.tipText, { fontSize: fs - 1 }]}>
               {isElderly
                 ? 'Tome seus remédios sempre no mesmo horário. Se tiver dúvida, chame seu cuidador.'
@@ -345,7 +350,7 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:      { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 },
   headerInner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   greeting:    { color: 'rgba(255,255,255,.65)', fontWeight: '500' },
@@ -354,45 +359,45 @@ const styles = StyleSheet.create({
   avatar:      { backgroundColor: 'rgba(255,255,255,.2)', alignItems: 'center', justifyContent: 'center' },
   statusPill:  { backgroundColor: 'rgba(255,255,255,.14)', borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7, alignSelf: 'flex-start' },
   statusPillText: { color: '#fff', fontWeight: '600' },
-  sectionTitle:{ fontWeight: '700', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  nextCard:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 16, borderWidth: 1, borderColor: Colors.greenLight, ...Shadows.md },
-  nextCardDue: { backgroundColor: Colors.amberText, borderColor: Colors.amberText },
+  sectionTitle:{ fontWeight: '700', color: C.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  nextCard:    { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: Radius.lg, padding: 16, borderWidth: 1, borderColor: C.greenLight, ...Shadows.md },
+  nextCardDue: { backgroundColor: C.amberText, borderColor: C.amberText },
   nextIcon:    { width: 60, height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  nextStatus:  { color: Colors.greenText, fontWeight: '700' },
-  nextName:    { fontWeight: '800', color: Colors.textPrimary, marginTop: 2 },
-  nextTime:    { color: Colors.textSecondary, marginTop: 4 },
-  nextEmpty:   { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 18, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
-  nextEmptyTitle: { fontWeight: '700', color: Colors.textPrimary },
-  nextEmptySub:   { color: Colors.textSecondary, marginTop: 3 },
-  summaryCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 16, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  nextStatus:  { color: C.greenText, fontWeight: '700' },
+  nextName:    { fontWeight: '800', color: C.textPrimary, marginTop: 2 },
+  nextTime:    { color: C.textSecondary, marginTop: 4 },
+  nextEmpty:   { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: C.surface, borderRadius: Radius.lg, padding: 18, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
+  nextEmptyTitle: { fontWeight: '700', color: C.textPrimary },
+  nextEmptySub:   { color: C.textSecondary, marginTop: 3 },
+  summaryCard:    { backgroundColor: C.surface, borderRadius: Radius.md, padding: 16, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   summaryRow:     { flexDirection: 'row' },
   summaryItem:    { flex: 1, alignItems: 'center' },
   summaryNum:     { fontWeight: '800' },
-  summaryLabel:   { color: Colors.textSecondary, marginTop: 2 },
-  summaryDivider: { width: 0.5, backgroundColor: Colors.border },
-  progressTrack:  { height: 8, borderRadius: 4, backgroundColor: Colors.borderSoft, marginTop: 16, overflow: 'hidden' },
-  progressFill:   { height: 8, borderRadius: 4, backgroundColor: Colors.green },
-  progressText:   { color: Colors.textSecondary, marginTop: 8, textAlign: 'center' },
+  summaryLabel:   { color: C.textSecondary, marginTop: 2 },
+  summaryDivider: { width: 0.5, backgroundColor: C.border },
+  progressTrack:  { height: 8, borderRadius: 4, backgroundColor: C.borderSoft, marginTop: 16, overflow: 'hidden' },
+  progressFill:   { height: 8, borderRadius: 4, backgroundColor: C.green },
+  progressText:   { color: C.textSecondary, marginTop: 8, textAlign: 'center' },
   caregiverBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#1C2B4B', borderRadius: Radius.md, padding: 14, marginTop: 20, ...Shadows.md },
   caregiverIcon:   { width: 44, height: 44, borderRadius: 13, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center' },
   caregiverTitle:  { fontWeight: '700', color: '#fff' },
   caregiverSub:    { color: 'rgba(255,255,255,.65)', marginTop: 2 },
-  gridCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 14, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  gridCard:    { backgroundColor: C.surface, borderRadius: Radius.md, padding: 14, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   gridIcon:    { alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  gridLabel:   { fontWeight: '700', color: Colors.textPrimary },
-  gridSub:     { color: Colors.textSecondary, marginTop: 3 },
+  gridLabel:   { fontWeight: '700', color: C.textPrimary },
+  gridSub:     { color: C.textSecondary, marginTop: 3 },
   attentionCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 14, ...Shadows.sm,
   },
   attentionIcon: {
     width: 44, height: 44, borderRadius: 14,
     alignItems: 'center', justifyContent: 'center',
   },
-  attentionTitle: { fontWeight: '700', color: Colors.textPrimary },
-  attentionSub:   { color: Colors.textSecondary, marginTop: 2 },
-  tipCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.redLight, borderRadius: Radius.md, padding: 16, marginTop: 22 },
-  tipText:     { flex: 1, color: Colors.textPrimary, lineHeight: 20 },
-  version:     { textAlign: 'center', color: Colors.textMuted, marginTop: 22 },
+  attentionTitle: { fontWeight: '700', color: C.textPrimary },
+  attentionSub:   { color: C.textSecondary, marginTop: 2 },
+  tipCard:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.redLight, borderRadius: Radius.md, padding: 16, marginTop: 22 },
+  tipText:     { flex: 1, color: C.textPrimary, lineHeight: 20 },
+  version:     { textAlign: 'center', color: C.textMuted, marginTop: 22 },
 });

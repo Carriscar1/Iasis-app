@@ -8,7 +8,7 @@ import {
   View, Text, Image, StyleSheet,
   type ViewStyle, type ImageStyle, type StyleProp,
 } from 'react-native';
-import { Colors } from '../theme';
+import { useTheme, type ThemeColors } from '../theme';
 import { initials } from '../services/avatar';
 
 type Props = {
@@ -22,8 +22,8 @@ type Props = {
 
 /** Paleta das iniciais. Tons escuros o bastante para o texto branco ler bem. */
 const PALETTE = [
-  Colors.navy,
-  Colors.navyLight,
+  '#1C2B4B',
+  '#2E4A7A',
   '#2F6F5E',
   '#7A4E8C',
   '#A35A2D',
@@ -35,9 +35,9 @@ const PALETTE = [
  * Cor estável a partir do nome. Sem isso, uma lista de contatos vira um
  * arco-íris aleatório que muda a cada render.
  */
-function colorFor(name?: string | null): string {
+function colorFor(name?: string | null, muted = '#94A3B8'): string {
   const text = (name ?? '').trim();
-  if (!text) return Colors.textMuted;
+  if (!text) return muted;
 
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
@@ -47,6 +47,7 @@ function colorFor(name?: string | null): string {
 }
 
 export default function Avatar({ name, uri, size = 44, ring = false, style }: Props) {
+  const { C, styles } = useTheme(makeStyles);
   // Medidas do círculo. São compatíveis com ViewStyle e ImageStyle, por isso
   // ficam num objeto solto em vez de virem do StyleSheet.
   const box = {
@@ -73,7 +74,7 @@ export default function Avatar({ name, uri, size = 44, ring = false, style }: Pr
   }
 
   return (
-    <View style={[styles.base, box, { backgroundColor: colorFor(name) }, style]}>
+    <View style={[styles.base, box, { backgroundColor: colorFor(name, C.textMuted) }, style]}>
       <Text
         style={[
           styles.initials,
@@ -90,18 +91,18 @@ export default function Avatar({ name, uri, size = 44, ring = false, style }: Pr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.borderSoft,
+    backgroundColor: C.borderSoft,
     overflow: 'hidden',
   },
   image: {
-    backgroundColor: Colors.borderSoft,
+    backgroundColor: C.borderSoft,
   },
   initials: {
-    color: Colors.white,
+    color: C.white,
     fontWeight: '700',
   },
 });

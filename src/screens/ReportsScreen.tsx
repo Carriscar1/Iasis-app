@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import {
   getAdherence, getAdherenceInsights, computeStreak, listRecentDoses,
@@ -26,6 +26,7 @@ const PERIODS = [
 const WEEKDAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export default function ReportsScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -81,7 +82,7 @@ export default function ReportsScreen() {
   const evaluated = summary ? summary.taken + summary.missed : 0;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       {/* Cabeçalho */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -119,12 +120,12 @@ export default function ReportsScreen() {
 
         {loading ? (
           <View style={{ paddingVertical: 60, alignItems: 'center' }}>
-            <ActivityIndicator color={Colors.navy} />
+            <ActivityIndicator color={C.navy} />
           </View>
         ) : !summary || summary.total === 0 ? (
           <View style={styles.card}>
             <View style={{ alignItems: 'center', paddingVertical: 24, gap: 10 }}>
-              <Ionicons name="bar-chart-outline" size={44} color={Colors.textMuted} />
+              <Ionicons name="bar-chart-outline" size={44} color={C.textMuted} />
               <Text style={styles.emptyTitle}>Ainda sem dados neste período</Text>
               <Text style={styles.emptyText}>
                 Cadastre um tratamento na Agenda e os gráficos aparecem aqui conforme as doses
@@ -141,9 +142,9 @@ export default function ReportsScreen() {
                 <DonutChart percentage={summary.percentage} />
               </View>
               <View style={styles.statRow}>
-                <Stat label="No horário" value={onTime}         color={Colors.greenText} />
-                <Stat label="Com atraso" value={summary.late}   color={Colors.amberText} />
-                <Stat label="Perdidas"   value={summary.missed} color={Colors.redText} />
+                <Stat label="No horário" value={onTime}         color={C.greenText} />
+                <Stat label="Com atraso" value={summary.late}   color={C.amberText} />
+                <Stat label="Perdidas"   value={summary.missed} color={C.redText} />
               </View>
               {streak > 0 && (
                 <View style={styles.streakPill}>
@@ -165,9 +166,9 @@ export default function ReportsScreen() {
                       styles.trendBadge,
                       {
                         backgroundColor:
-                          trend.deltaPoints > 0 ? Colors.greenLight
-                          : trend.deltaPoints < 0 ? Colors.redLight
-                          : Colors.borderSoft,
+                          trend.deltaPoints > 0 ? C.greenLight
+                          : trend.deltaPoints < 0 ? C.redLight
+                          : C.borderSoft,
                       },
                     ]}
                   >
@@ -179,9 +180,9 @@ export default function ReportsScreen() {
                       }
                       size={26}
                       color={
-                        trend.deltaPoints > 0 ? Colors.greenText
-                        : trend.deltaPoints < 0 ? Colors.redText
-                        : Colors.textSecondary
+                        trend.deltaPoints > 0 ? C.greenText
+                        : trend.deltaPoints < 0 ? C.redText
+                        : C.textSecondary
                       }
                     />
                   </View>
@@ -191,9 +192,9 @@ export default function ReportsScreen() {
                         styles.trendValue,
                         {
                           color:
-                            trend.deltaPoints > 0 ? Colors.greenText
-                            : trend.deltaPoints < 0 ? Colors.redText
-                            : Colors.textSecondary,
+                            trend.deltaPoints > 0 ? C.greenText
+                            : trend.deltaPoints < 0 ? C.redText
+                            : C.textSecondary,
                         },
                       ]}
                     >
@@ -224,9 +225,9 @@ export default function ReportsScreen() {
               </View>
               <Legend
                 items={[
-                  { color: Colors.green,      label: 'Tomadas' },
-                  { color: Colors.red,        label: 'Perdidas' },
-                  { color: Colors.borderSoft, label: 'Pendentes' },
+                  { color: C.green,      label: 'Tomadas' },
+                  { color: C.red,        label: 'Perdidas' },
+                  { color: C.borderSoft, label: 'Pendentes' },
                 ]}
               />
             </View>
@@ -248,7 +249,7 @@ export default function ReportsScreen() {
                 {insights.worstHour && insights.bestHour &&
                  insights.worstHour.hour !== insights.bestHour.hour && (
                   <View style={styles.insightBox}>
-                    <Ionicons name="bulb-outline" size={18} color={Colors.amberText} />
+                    <Ionicons name="bulb-outline" size={18} color={C.amberText} />
                     <Text style={styles.insightText}>
                       O horário das{' '}
                       <Text style={{ fontWeight: '700' }}>
@@ -326,6 +327,7 @@ export default function ReportsScreen() {
 }
 
 function Stat({ label, value, color }: { label: string; value: number; color: string }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={{ alignItems: 'center', flex: 1 }}>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -334,10 +336,10 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -349,53 +351,53 @@ const styles = StyleSheet.create({
   scroll:   { padding: 16, gap: 14 },
 
   segment: {
-    flexDirection: 'row', backgroundColor: Colors.borderSoft,
+    flexDirection: 'row', backgroundColor: C.borderSoft,
     borderRadius: Radius.md, padding: 4, gap: 4,
   },
   segmentBtn: { flex: 1, paddingVertical: 9, borderRadius: Radius.sm, alignItems: 'center' },
-  segmentBtnActive: { backgroundColor: Colors.surface, ...Shadows.sm },
-  segmentText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
-  segmentTextActive: { color: Colors.navy, fontWeight: '700' },
+  segmentBtnActive: { backgroundColor: C.surface, ...Shadows.sm },
+  segmentText: { fontSize: 14, fontWeight: '600', color: C.textSecondary },
+  segmentTextActive: { color: C.navy, fontWeight: '700' },
 
   card: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 18, ...Shadows.sm,
   },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  cardHint:  { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  cardHint:  { fontSize: 13, color: C.textSecondary, marginTop: 4 },
 
   trendRow:   { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 14 },
   trendBadge: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   trendValue: { fontSize: 20, fontWeight: '800' },
-  trendText:  { fontSize: 14.5, color: Colors.textSecondary, marginTop: 3, lineHeight: 20 },
-  trendHint:  { fontSize: 12.5, color: Colors.textMuted, marginTop: 12 },
+  trendText:  { fontSize: 14.5, color: C.textSecondary, marginTop: 3, lineHeight: 20 },
+  trendHint:  { fontSize: 12.5, color: C.textMuted, marginTop: 12 },
   statRow:   { flexDirection: 'row', width: '100%', marginTop: 12 },
   statValue: { fontSize: 22, fontWeight: '800' },
-  statLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  statLabel: { fontSize: 12, color: C.textSecondary, marginTop: 2 },
 
   streakPill: {
     flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 16,
-    backgroundColor: Colors.amberLight, borderRadius: Radius.full,
+    backgroundColor: C.amberLight, borderRadius: Radius.full,
     paddingHorizontal: 14, paddingVertical: 8,
   },
-  streakText: { fontSize: 13, fontWeight: '700', color: Colors.amberText },
+  streakText: { fontSize: 13, fontWeight: '700', color: C.amberText },
 
   insightBox: {
     flexDirection: 'row', gap: 10, alignItems: 'flex-start', marginTop: 16,
-    backgroundColor: Colors.amberLight, borderRadius: Radius.md, padding: 12,
+    backgroundColor: C.amberLight, borderRadius: Radius.md, padding: 12,
   },
-  insightText: { flex: 1, fontSize: 13.5, color: Colors.amberText, lineHeight: 19 },
+  insightText: { flex: 1, fontSize: 13.5, color: C.amberText, lineHeight: 19 },
 
-  summaryText: { fontSize: 15, color: Colors.textSecondary, lineHeight: 23, marginTop: 10 },
-  b: { fontWeight: '800', color: Colors.textPrimary },
+  summaryText: { fontSize: 15, color: C.textSecondary, lineHeight: 23, marginTop: 10 },
+  b: { fontWeight: '800', color: C.textPrimary },
 
   exportBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.navy, borderRadius: Radius.md, paddingVertical: 14, marginTop: 18,
+    backgroundColor: C.navyBg, borderRadius: Radius.md, paddingVertical: 14, marginTop: 18,
   },
   exportText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  exportHint: { fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 8 },
+  exportHint: { fontSize: 12, color: C.textMuted, textAlign: 'center', marginTop: 8 },
 
-  emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  emptyText:  { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 },
+  emptyTitle: { fontSize: 16, fontWeight: '700', color: C.textPrimary },
+  emptyText:  { fontSize: 14, color: C.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 10 },
 });

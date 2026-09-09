@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { getPatientsOverview, caregiverMarkDoseTaken, type PatientOverview } from '../services/data';
 import type { Dose, DoseStatus } from '../types';
@@ -23,6 +23,7 @@ const adherenceColor = (pct: number) =>
   pct >= 80 ? '#0F6E56' : pct >= 50 ? '#854F0B' : '#A32D2D';
 
 export default function CaregiverScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -74,7 +75,7 @@ export default function CaregiverScreen() {
   const onRefresh = () => { setRefreshing(true); load(); };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -108,7 +109,7 @@ export default function CaregiverScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.navy} /></View>
+        <View style={styles.center}><ActivityIndicator size="large" color={C.navy} /></View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -119,7 +120,7 @@ export default function CaregiverScreen() {
 
             {items.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={42} color={Colors.textMuted} />
+                <Ionicons name="people-outline" size={42} color={C.textMuted} />
                 <Text style={[styles.emptyTitle, { fontSize: fs }]}>Nenhum paciente vinculado</Text>
                 <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>
                   Um paciente aparece aqui quando se cadastra informando o seu e-mail de cuidador.
@@ -153,7 +154,7 @@ export default function CaregiverScreen() {
                         <Text style={[styles.adhPct, { color: adherenceColor(pct), fontSize: isTablet ? 22 : 19 }]}>{pct}%</Text>
                         <Text style={[styles.adhLabel, { fontSize: fs - 4 }]}>adesão 7d</Text>
                       </View>
-                      <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
+                      <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={C.textMuted} />
                     </TouchableOpacity>
 
                     {/* Resumo de hoje */}
@@ -200,8 +201,8 @@ export default function CaregiverScreen() {
                                     accessibilityLabel={`Confirmar dose das ${fmtTime(d.scheduledAt)}`}
                                   >
                                     {confirming === d.id
-                                      ? <ActivityIndicator size="small" color={Colors.greenText} />
-                                      : <Ionicons name="checkmark" size={15} color={Colors.greenText} />}
+                                      ? <ActivityIndicator size="small" color={C.greenText} />
+                                      : <Ionicons name="checkmark" size={15} color={C.greenText} />}
                                     <Text style={styles.confirmText}>Dei</Text>
                                   </TouchableOpacity>
                                 )}
@@ -226,7 +227,7 @@ export default function CaregiverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:    { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   bellBtn: {
     width: 40, height: 40, borderRadius: 14,
@@ -236,41 +237,41 @@ const styles = StyleSheet.create({
   bellBadge: {
     position: 'absolute', top: 3, right: 2,
     minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4,
-    backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: Colors.navy,
+    backgroundColor: C.red, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: C.navy,
   },
   bellBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
   backBtn:   { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:     { fontWeight: '700', color: '#fff' },
   subtitle:  { color: 'rgba(255,255,255,.6)', marginTop: 3 },
   center:    { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyCard: { alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
-  emptyTitle:{ fontWeight: '700', color: Colors.textPrimary, marginTop: 4 },
-  emptySub:  { color: Colors.textSecondary, textAlign: 'center', lineHeight: 19 },
-  card:      { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: Colors.border, marginBottom: 12, ...Shadows.sm, overflow: 'hidden' },
+  emptyCard: { alignItems: 'center', backgroundColor: C.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
+  emptyTitle:{ fontWeight: '700', color: C.textPrimary, marginTop: 4 },
+  emptySub:  { color: C.textSecondary, textAlign: 'center', lineHeight: 19 },
+  card:      { backgroundColor: C.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: C.border, marginBottom: 12, ...Shadows.sm, overflow: 'hidden' },
   cardHead:  { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   avatar:    { backgroundColor: '#2E4A7A', alignItems: 'center', justifyContent: 'center' },
-  patientName:  { fontWeight: '700', color: Colors.textPrimary },
-  patientEmail: { color: Colors.textSecondary, marginTop: 2 },
+  patientName:  { fontWeight: '700', color: C.textPrimary },
+  patientEmail: { color: C.textSecondary, marginTop: 2 },
   adhPct:    { fontWeight: '800' },
-  adhLabel:  { color: Colors.textMuted, marginTop: 1 },
-  statsRow:  { flexDirection: 'row', borderTopWidth: 0.5, borderTopColor: Colors.border, paddingVertical: 12, backgroundColor: '#FAFBFD' },
+  adhLabel:  { color: C.textMuted, marginTop: 1 },
+  statsRow:  { flexDirection: 'row', borderTopWidth: 0.5, borderTopColor: C.border, paddingVertical: 12, backgroundColor: C.bg },
   statItem:  { flex: 1, alignItems: 'center' },
   statNum:   { fontWeight: '700' },
-  statLabel: { color: Colors.textSecondary, marginTop: 2 },
-  statDivider:{ width: 0.5, backgroundColor: Colors.border },
-  dosesBox:  { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14, borderTopWidth: 0.5, borderTopColor: Colors.border },
-  dosesTitle:{ fontWeight: '700', color: Colors.textSecondary, marginVertical: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
-  noDoses:   { color: Colors.textMuted, paddingVertical: 6 },
+  statLabel: { color: C.textSecondary, marginTop: 2 },
+  statDivider:{ width: 0.5, backgroundColor: C.border },
+  dosesBox:  { paddingHorizontal: 14, paddingTop: 6, paddingBottom: 14, borderTopWidth: 0.5, borderTopColor: C.border },
+  dosesTitle:{ fontWeight: '700', color: C.textSecondary, marginVertical: 8, textTransform: 'uppercase', letterSpacing: 0.4 },
+  noDoses:   { color: C.textMuted, paddingVertical: 6 },
   doseRow:   { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 7 },
   doseDot:   { width: 9, height: 9, borderRadius: 5 },
-  doseTime:  { fontWeight: '700', color: Colors.textPrimary, width: 46 },
-  doseName:  { color: Colors.textSecondary, flex: 1 },
+  doseTime:  { fontWeight: '700', color: C.textPrimary, width: 46 },
+  doseName:  { color: C.textSecondary, flex: 1 },
   confirmBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: Colors.greenLight, borderRadius: 999,
+    backgroundColor: C.greenLight, borderRadius: 999,
     paddingHorizontal: 10, paddingVertical: 5,
   },
-  confirmText: { color: Colors.greenText, fontWeight: '700', fontSize: 12 },
-  hint:      { textAlign: 'center', color: Colors.textMuted, marginTop: 8 },
+  confirmText: { color: C.greenText, fontWeight: '700', fontSize: 12 },
+  hint:      { textAlign: 'center', color: C.textMuted, marginTop: 8 },
 });

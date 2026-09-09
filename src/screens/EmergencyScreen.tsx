@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import Avatar from '../components/Avatar';
@@ -28,15 +28,16 @@ import { raiseEmergency, alertByWhatsApp } from '../services/emergency';
 import { listCareTeam, type CareMember } from '../services/careTeam';
 import { savePreferences } from '../services/preferences';
 
-/** Cor do indicador de precisão do GPS. */
-const ACCURACY_COLOR = {
-  high:    { bg: Colors.greenLight, fg: Colors.greenText, dot: Colors.green },
-  medium:  { bg: Colors.amberLight, fg: Colors.amberText, dot: Colors.amber },
-  low:     { bg: Colors.redLight,   fg: Colors.redText,   dot: Colors.red   },
-  unknown: { bg: Colors.borderSoft, fg: Colors.textSecondary, dot: Colors.textMuted },
-} as const;
+/** Cor do indicador de precisão do GPS — depende do tema ativo. */
+const accuracyColor = (C: ThemeColors) => ({
+  high:    { bg: C.greenLight, fg: C.greenText, dot: C.green },
+  medium:  { bg: C.amberLight, fg: C.amberText, dot: C.amber },
+  low:     { bg: C.redLight,   fg: C.redText,   dot: C.red   },
+  unknown: { bg: C.borderSoft, fg: C.textSecondary, dot: C.textMuted },
+}) as const;
 
 export default function EmergencyScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const isElderly = useElderlyMode();
@@ -134,7 +135,7 @@ export default function EmergencyScreen() {
   };
 
   const acc = fix ? fix.accuracy : 'unknown';
-  const tone = ACCURACY_COLOR[acc];
+  const tone = accuracyColor(C)[acc];
   const { label, hint } = accuracyLabel(acc);
 
   return (
@@ -177,7 +178,7 @@ export default function EmergencyScreen() {
 
           {sentTo !== null && sentTo > 0 ? (
             <View style={styles.sentBox}>
-              <Ionicons name="checkmark-circle" size={19} color={Colors.greenText} />
+              <Ionicons name="checkmark-circle" size={19} color={C.greenText} />
               <Text style={[styles.sentText, { fontSize: fs - 1 }]}>
                 {sentTo === 1
                   ? '1 cuidador foi avisado'
@@ -194,8 +195,8 @@ export default function EmergencyScreen() {
               <Text style={[styles.cardTitle, { fontSize: fs }]}>Sua localização</Text>
               <TouchableOpacity onPress={locate} disabled={locating} style={styles.refresh}>
                 {locating
-                  ? <ActivityIndicator size="small" color={Colors.navy} />
-                  : <Ionicons name="refresh" size={17} color={Colors.navy} />}
+                  ? <ActivityIndicator size="small" color={C.navy} />
+                  : <Ionicons name="refresh" size={17} color={C.navy} />}
               </TouchableOpacity>
             </View>
 
@@ -220,7 +221,7 @@ export default function EmergencyScreen() {
 
             {locError ? (
               <View style={styles.warn}>
-                <Ionicons name="warning-outline" size={16} color={Colors.amberText} />
+                <Ionicons name="warning-outline" size={16} color={C.amberText} />
                 <Text style={[styles.warnText, { fontSize: fs - 2 }]}>{locError}</Text>
               </View>
             ) : null}
@@ -235,7 +236,7 @@ export default function EmergencyScreen() {
           <View style={styles.card}>
             <View style={styles.row}>
               <View style={styles.iconBox}>
-                <Ionicons name="body-outline" size={21} color={Colors.navy} />
+                <Ionicons name="body-outline" size={21} color={C.navy} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { fontSize: fs }]}>Detecção de queda</Text>
@@ -250,8 +251,8 @@ export default function EmergencyScreen() {
                 value={fallEnabled && hasSensor !== false}
                 onValueChange={toggleFall}
                 disabled={hasSensor === false}
-                trackColor={{ false: Colors.border, true: Colors.blueLight }}
-                thumbColor={fallEnabled ? Colors.navy : Colors.surface}
+                trackColor={{ false: C.border, true: C.blueLight }}
+                thumbColor={fallEnabled ? C.navy : C.surface}
               />
             </View>
           </View>
@@ -284,7 +285,7 @@ export default function EmergencyScreen() {
                       {m.relation ?? 'Cuidador'}
                     </Text>
                   </View>
-                  <Ionicons name="logo-whatsapp" size={21} color={Colors.greenText} />
+                  <Ionicons name="logo-whatsapp" size={21} color={C.greenText} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -294,7 +295,7 @@ export default function EmergencyScreen() {
               onPress={() => router.push('/care-team')}
               activeOpacity={0.85}
             >
-              <Ionicons name="people-outline" size={26} color={Colors.amberText} />
+              <Ionicons name="people-outline" size={26} color={C.amberText} />
               <Text style={[styles.emptyText, { fontSize: fs - 1 }]}>
                 Você ainda não tem cuidadores. Sem eles, o pedido de socorro não
                 chega a ninguém. Toque para montar sua equipe.
@@ -314,12 +315,12 @@ export default function EmergencyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
   sosWrap: { alignItems: 'center', gap: 12 },
   sos: {
     width: '100%', minHeight: 132, borderRadius: Radius.xl,
-    backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.red, alignItems: 'center', justifyContent: 'center',
     gap: 8, ...Shadows.lg,
   },
   sosText: {
@@ -343,21 +344,21 @@ const styles = StyleSheet.create({
   },
   sentBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.greenLight, paddingHorizontal: 14, paddingVertical: 9,
+    backgroundColor: C.greenLight, paddingHorizontal: 14, paddingVertical: 9,
     borderRadius: Radius.full,
   },
-  sentText: { color: Colors.greenText, fontWeight: '700' },
+  sentText: { color: C.greenText, fontWeight: '700' },
 
   card: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 15, gap: 9, ...Shadows.sm,
   },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { fontWeight: '800', color: Colors.textPrimary },
-  cardDesc:  { color: Colors.textSecondary, lineHeight: 19, marginTop: 2 },
+  cardTitle: { fontWeight: '800', color: C.textPrimary },
+  cardDesc:  { color: C.textSecondary, lineHeight: 19, marginTop: 2 },
 
   refresh: {
-    width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.borderSoft,
+    width: 32, height: 32, borderRadius: 10, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center',
   },
 
@@ -367,36 +368,36 @@ const styles = StyleSheet.create({
   },
   dot: { width: 13, height: 13, borderRadius: 7 },
   accuracyLabel: { fontWeight: '800' },
-  accuracyHint:  { color: Colors.textSecondary, marginTop: 2 },
+  accuracyHint:  { color: C.textSecondary, marginTop: 2 },
 
   coords: {
-    color: Colors.textMuted, fontVariant: ['tabular-nums'], letterSpacing: 0.3,
+    color: C.textMuted, fontVariant: ['tabular-nums'], letterSpacing: 0.3,
   },
 
   row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   iconBox: {
-    width: 42, height: 42, borderRadius: 13, backgroundColor: Colors.borderSoft,
+    width: 42, height: 42, borderRadius: 13, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center',
   },
 
   warn: {
     flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: Colors.amberLight, borderRadius: Radius.sm, padding: 10,
+    backgroundColor: C.amberLight, borderRadius: Radius.sm, padding: 10,
   },
-  warnText: { flex: 1, color: Colors.amberText, lineHeight: 18 },
+  warnText: { flex: 1, color: C.amberText, lineHeight: 18 },
 
-  note: { color: Colors.textMuted, lineHeight: 17 },
+  note: { color: C.textMuted, lineHeight: 17 },
 
   contact: {
     flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9,
-    borderTopWidth: 1, borderTopColor: Colors.borderSoft,
+    borderTopWidth: 1, borderTopColor: C.borderSoft,
   },
-  contactName: { fontWeight: '700', color: Colors.textPrimary },
-  contactMeta: { color: Colors.textSecondary, marginTop: 1 },
+  contactName: { fontWeight: '700', color: C.textPrimary },
+  contactMeta: { color: C.textSecondary, marginTop: 1 },
 
   emptyCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.amberLight, borderRadius: Radius.lg, padding: 15,
+    backgroundColor: C.amberLight, borderRadius: Radius.lg, padding: 15,
   },
-  emptyText: { flex: 1, color: Colors.amberText, lineHeight: 19 },
+  emptyText: { flex: 1, color: C.amberText, lineHeight: 19 },
 });

@@ -14,13 +14,14 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import Avatar from '../components/Avatar';
 import { captureFromCamera, pickFromLibrary, saveAvatar } from '../services/avatar';
 import { classify, shortHint } from '../services/permissions';
 
 export default function EditAvatarScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
   const maxW = width >= 768 ? 560 : undefined;
@@ -129,8 +130,8 @@ export default function EditAvatarScreen() {
           >
             <View style={styles.actionIcon}>
               {busy === 'camera'
-                ? <ActivityIndicator color={Colors.navy} size="small" />
-                : <Ionicons name="camera" size={21} color={Colors.navy} />}
+                ? <ActivityIndicator color={C.navy} size="small" />
+                : <Ionicons name="camera" size={21} color={C.navy} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.actionTitle}>Tirar foto</Text>
@@ -139,9 +140,9 @@ export default function EditAvatarScreen() {
               </Text>
             </View>
             {camOutcome === 'blocked' ? (
-              <Ionicons name="lock-closed" size={17} color={Colors.redText} />
+              <Ionicons name="lock-closed" size={17} color={C.redText} />
             ) : (
-              <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
             )}
           </TouchableOpacity>
 
@@ -153,8 +154,8 @@ export default function EditAvatarScreen() {
           >
             <View style={styles.actionIcon}>
               {busy === 'library'
-                ? <ActivityIndicator color={Colors.navy} size="small" />
-                : <Ionicons name="images" size={20} color={Colors.navy} />}
+                ? <ActivityIndicator color={C.navy} size="small" />
+                : <Ionicons name="images" size={20} color={C.navy} />}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.actionTitle}>Escolher da galeria</Text>
@@ -163,9 +164,9 @@ export default function EditAvatarScreen() {
               </Text>
             </View>
             {libOutcome === 'blocked' ? (
-              <Ionicons name="lock-closed" size={17} color={Colors.redText} />
+              <Ionicons name="lock-closed" size={17} color={C.redText} />
             ) : (
-              <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
             )}
           </TouchableOpacity>
 
@@ -176,11 +177,11 @@ export default function EditAvatarScreen() {
               disabled={busy !== null}
               activeOpacity={0.8}
             >
-              <View style={[styles.actionIcon, { backgroundColor: Colors.redLight }]}>
-                <Ionicons name="trash-outline" size={20} color={Colors.redText} />
+              <View style={[styles.actionIcon, { backgroundColor: C.redLight }]}>
+                <Ionicons name="trash-outline" size={20} color={C.redText} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.actionTitle, { color: Colors.redText }]}>
+                <Text style={[styles.actionTitle, { color: C.redText }]}>
                   Remover foto
                 </Text>
                 <Text style={styles.actionDesc}>Volta a mostrar as iniciais</Text>
@@ -213,12 +214,12 @@ export default function EditAvatarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -232,35 +233,35 @@ const styles = StyleSheet.create({
   scrollLandscape: { flexDirection: 'row', alignItems: 'flex-start', gap: 20 },
 
   previewBox: { alignItems: 'center', gap: 10, paddingVertical: 12 },
-  previewName: { fontSize: 18, fontWeight: '700', color: Colors.textPrimary },
-  previewHint: { fontSize: 13.5, color: Colors.textMuted, textAlign: 'center' },
+  previewName: { fontSize: 18, fontWeight: '700', color: C.textPrimary },
+  previewHint: { fontSize: 13.5, color: C.textMuted, textAlign: 'center' },
 
   actions: { gap: 10 },
   action: {
     flexDirection: 'row', alignItems: 'center', gap: 13,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 15, ...Shadows.sm,
   },
   actionIcon: {
-    width: 42, height: 42, borderRadius: 13, backgroundColor: Colors.borderSoft,
+    width: 42, height: 42, borderRadius: 13, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  actionTitle: { fontSize: 15.5, fontWeight: '700', color: Colors.textPrimary },
-  actionDesc:  { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  actionTitle: { fontSize: 15.5, fontWeight: '700', color: C.textPrimary },
+  actionDesc:  { fontSize: 13, color: C.textSecondary, marginTop: 2 },
 
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.navy, borderRadius: Radius.md,
+    backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 15, marginTop: 6, ...Shadows.sm,
   },
   saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 15.5 },
 
   footnote: {
-    fontSize: 12.5, color: Colors.textMuted, textAlign: 'center',
+    fontSize: 12.5, color: C.textMuted, textAlign: 'center',
     lineHeight: 18, marginTop: 4,
   },
   error: {
-    fontSize: 13.5, color: Colors.redText, backgroundColor: Colors.redLight,
+    fontSize: 13.5, color: C.redText, backgroundColor: C.redLight,
     padding: 11, borderRadius: Radius.sm,
   },
 });

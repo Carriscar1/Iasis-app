@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import {
   listChatContacts, listMessages, sendMessage, markConversationRead,
@@ -29,6 +29,7 @@ const fmtDay = (iso: string) => {
 };
 
 export default function ChatScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const maxW      = width >= 1024 ? 720 : isTablet ? 640 : undefined;
@@ -115,10 +116,10 @@ export default function ChatScreen() {
   // ── Sem vínculo ──────────────────────────────
   if (!loading && contacts.length === 0) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
         <Header title="Conversas" onBack={() => router.back()} />
         <View style={styles.emptyWrap}>
-          <Ionicons name="chatbubbles-outline" size={54} color={Colors.textMuted} />
+          <Ionicons name="chatbubbles-outline" size={54} color={C.textMuted} />
           <Text style={styles.emptyTitle}>Nenhum contato vinculado</Text>
           <Text style={styles.emptyText}>
             O chat conecta o paciente ao seu cuidador. Vincule uma conta de paciente a um
@@ -132,11 +133,11 @@ export default function ChatScreen() {
   // ── Lista de contatos (cuidador com vários pacientes) ──
   if (!active) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
         <Header title="Conversas" onBack={() => router.back()} />
         <ScrollView contentContainerStyle={[styles.listPad, maxW ? { maxWidth: maxW, alignSelf: 'center', width: '100%' } : null]}>
           {loading ? (
-            <ActivityIndicator color={Colors.navy} style={{ marginTop: 40 }} />
+            <ActivityIndicator color={C.navy} style={{ marginTop: 40 }} />
           ) : (
             contacts.map((c) => (
               <TouchableOpacity
@@ -154,7 +155,7 @@ export default function ChatScreen() {
                     {c.role === 'caregiver' ? 'Cuidador' : 'Paciente'}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={20} color={C.textMuted} />
               </TouchableOpacity>
             ))
           )}
@@ -167,7 +168,7 @@ export default function ChatScreen() {
   let lastDay = '';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       {/* Cabeçalho da conversa */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -215,7 +216,7 @@ export default function ChatScreen() {
         >
           {messages.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: 50, gap: 8 }}>
-              <Ionicons name="chatbubble-ellipses-outline" size={40} color={Colors.textMuted} />
+              <Ionicons name="chatbubble-ellipses-outline" size={40} color={C.textMuted} />
               <Text style={styles.emptyText}>
                 Nenhuma mensagem ainda. Diga um oi para {active.name.split(' ')[0]}!
               </Text>
@@ -255,7 +256,7 @@ export default function ChatScreen() {
             value={draft}
             onChangeText={setDraft}
             placeholder="Escreva uma mensagem…"
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={C.textMuted}
             multiline
             maxLength={2000}
             onSubmitEditing={handleSend}
@@ -278,6 +279,7 @@ export default function ChatScreen() {
 }
 
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={onBack} style={styles.backBtn} activeOpacity={0.7}>
@@ -288,10 +290,10 @@ function Header({ title, onBack }: { title: string; onBack: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.navy, paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: C.navyBg, paddingHorizontal: 14, paddingVertical: 12,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -309,52 +311,52 @@ const styles = StyleSheet.create({
   waText: { color: '#fff', fontWeight: '700', fontSize: 12.5 },
 
   avatar: {
-    width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.blueLight,
+    width: 46, height: 46, borderRadius: 23, backgroundColor: C.blueLight,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarSm:   { width: 36, height: 36, borderRadius: 18 },
-  avatarText: { fontSize: 18, fontWeight: '800', color: Colors.navy },
+  avatarText: { fontSize: 18, fontWeight: '800', color: C.navy },
 
   listPad: { padding: 16, gap: 10 },
   contactRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 14, ...Shadows.sm,
   },
-  contactName: { fontSize: 16, fontWeight: '700', color: Colors.textPrimary },
-  contactRole: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  contactName: { fontSize: 16, fontWeight: '700', color: C.textPrimary },
+  contactRole: { fontSize: 13, color: C.textSecondary, marginTop: 2 },
 
   msgPad: { padding: 16, paddingBottom: 8, gap: 4 },
-  dayPill: { alignSelf: 'center', backgroundColor: Colors.borderSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginVertical: 12 },
-  dayText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '600' },
+  dayPill: { alignSelf: 'center', backgroundColor: C.borderSoft, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginVertical: 12 },
+  dayText: { fontSize: 12, color: C.textSecondary, fontWeight: '600' },
 
   bubbleRow: { flexDirection: 'row', marginVertical: 3 },
   bubble: {
     maxWidth: '78%', borderRadius: 18, paddingHorizontal: 14, paddingVertical: 10,
   },
-  bubbleMine:   { backgroundColor: Colors.navy, borderBottomRightRadius: 5 },
-  bubbleTheirs: { backgroundColor: Colors.surface, borderBottomLeftRadius: 5, ...Shadows.sm },
-  bubbleText:   { fontSize: 15.5, color: Colors.textPrimary, lineHeight: 21 },
-  bubbleTime:   { fontSize: 10.5, color: Colors.textMuted, marginTop: 4, alignSelf: 'flex-end' },
+  bubbleMine:   { backgroundColor: C.navyBg, borderBottomRightRadius: 5 },
+  bubbleTheirs: { backgroundColor: C.surface, borderBottomLeftRadius: 5, ...Shadows.sm },
+  bubbleText:   { fontSize: 15.5, color: C.textPrimary, lineHeight: 21 },
+  bubbleTime:   { fontSize: 10.5, color: C.textMuted, marginTop: 4, alignSelf: 'flex-end' },
 
   composer: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 10,
-    padding: 12, backgroundColor: Colors.surface,
-    borderTopWidth: 1, borderTopColor: Colors.border,
+    padding: 12, backgroundColor: C.surface,
+    borderTopWidth: 1, borderTopColor: C.border,
   },
   input: {
     flex: 1, maxHeight: 110, minHeight: 44,
-    backgroundColor: Colors.bg, borderRadius: 22,
+    backgroundColor: C.bg, borderRadius: 22,
     paddingHorizontal: 16, paddingVertical: 11,
-    fontSize: 15.5, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border,
+    fontSize: 15.5, color: C.textPrimary,
+    borderWidth: 1, borderColor: C.border,
   },
   sendBtn: {
-    width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.navy,
+    width: 46, height: 46, borderRadius: 23, backgroundColor: C.navyBg,
     alignItems: 'center', justifyContent: 'center',
   },
 
   emptyWrap:  { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  emptyText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  emptyText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21 },
 });

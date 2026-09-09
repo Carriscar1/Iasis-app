@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore } from '../store';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import ConfirmAction from '../components/ConfirmAction';
 import { deviceActions } from '../hooks/useDevice';
 import { DEMO_WRISTBAND_TAG, deviceService } from '../services/device';
@@ -21,6 +21,7 @@ const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 export default function DeviceScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const user = useStore((s) => s.user);
   const mqttConnected      = useStore((s) => s.mqttConnected);
@@ -123,7 +124,7 @@ export default function DeviceScreen() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
@@ -155,7 +156,7 @@ export default function DeviceScreen() {
             {/* Dose da vez */}
             {doseFlow.step === 'done' ? (
               <View style={styles.flowDone}>
-                <Ionicons name="checkmark-circle" size={30} color={Colors.greenText} />
+                <Ionicons name="checkmark-circle" size={30} color={C.greenText} />
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.flowDoneTitle, { fontSize: fs + 1 }]}>Dose liberada com sucesso!</Text>
                   <Text style={[styles.flowDoneSub, { fontSize: fs - 2 }]}>
@@ -166,7 +167,7 @@ export default function DeviceScreen() {
             ) : nextDose ? (
               <View style={styles.flowDose}>
                 <View style={styles.flowDoseIcon}>
-                  <Ionicons name="medkit" size={20} color={Colors.amberText} />
+                  <Ionicons name="medkit" size={20} color={C.amberText} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.flowDoseName, { fontSize: fs + 1 }]}>
@@ -179,8 +180,8 @@ export default function DeviceScreen() {
               </View>
             ) : (
               <View style={styles.flowDose}>
-                <View style={[styles.flowDoseIcon, { backgroundColor: Colors.borderSoft }]}>
-                  <Ionicons name="time-outline" size={20} color={Colors.textMuted} />
+                <View style={[styles.flowDoseIcon, { backgroundColor: C.borderSoft }]}>
+                  <Ionicons name="time-outline" size={20} color={C.textMuted} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.flowDoseName, { fontSize: fs }]}>Nenhuma dose no horário agora</Text>
@@ -200,21 +201,21 @@ export default function DeviceScreen() {
                     <View style={styles.stepRow}>
                       <View style={[
                         styles.stepDot,
-                        st === 'done'   && { backgroundColor: Colors.greenLight },
-                        st === 'active' && { backgroundColor: Colors.amberLight },
+                        st === 'done'   && { backgroundColor: C.greenLight },
+                        st === 'active' && { backgroundColor: C.amberLight },
                       ]}>
                         {st === 'done'
-                          ? <Ionicons name="checkmark" size={14} color={Colors.greenText} />
+                          ? <Ionicons name="checkmark" size={14} color={C.greenText} />
                           : st === 'active'
-                            ? <ActivityIndicator size={12} color={Colors.amberText} />
-                            : <Text style={{ fontSize: 11, fontWeight: '700', color: Colors.textMuted }}>{s.n}</Text>}
+                            ? <ActivityIndicator size={12} color={C.amberText} />
+                            : <Text style={{ fontSize: 11, fontWeight: '700', color: C.textMuted }}>{s.n}</Text>}
                       </View>
                       <Ionicons name={s.icon as any} size={15}
-                        color={st === 'pending' ? Colors.textMuted : st === 'active' ? Colors.amberText : Colors.greenText} />
+                        color={st === 'pending' ? C.textMuted : st === 'active' ? C.amberText : C.greenText} />
                       <Text style={[
                         styles.stepLabel, { fontSize: fs - 1 },
-                        st === 'done'   && { color: Colors.greenText },
-                        st === 'active' && { color: Colors.amberText, fontWeight: '700' },
+                        st === 'done'   && { color: C.greenText },
+                        st === 'active' && { color: C.amberText, fontWeight: '700' },
                       ]}>
                         {s.label}
                       </Text>
@@ -246,8 +247,8 @@ export default function DeviceScreen() {
                     activeOpacity={0.85}
                   >
                     {creatingDemo
-                      ? <ActivityIndicator size="small" color={Colors.navy} />
-                      : <Ionicons name="add-circle-outline" size={18} color={Colors.navy} />}
+                      ? <ActivityIndicator size="small" color={C.navy} />
+                      : <Ionicons name="add-circle-outline" size={18} color={C.navy} />}
                     <Text style={[styles.flowBtnOutlineText, { fontSize: fs }]}>Criar dose de teste para agora</Text>
                   </TouchableOpacity>
                 )
@@ -257,7 +258,7 @@ export default function DeviceScreen() {
                 <>
                   {isDemo ? (
                     <TouchableOpacity
-                      style={[styles.flowBtn, { backgroundColor: Colors.navy }]}
+                      style={[styles.flowBtn, { backgroundColor: C.navyBg }]}
                       onPress={() => deviceActions.approachWristband(user?.rfid_tag ?? DEMO_WRISTBAND_TAG)}
                       activeOpacity={0.85}
                     >
@@ -280,8 +281,8 @@ export default function DeviceScreen() {
 
               {(doseFlow.step === 'validating' || doseFlow.step === 'dispensing') && (
                 <View style={styles.flowHint}>
-                  <ActivityIndicator size="small" color={Colors.amberText} />
-                  <Text style={[styles.flowHintText, { fontSize: fs - 1, color: Colors.amberText }]}>
+                  <ActivityIndicator size="small" color={C.amberText} />
+                  <Text style={[styles.flowHintText, { fontSize: fs - 1, color: C.amberText }]}>
                     {doseFlow.step === 'validating' ? 'Validando identidade…' : 'Motor NEMA 17 liberando a dose…'}
                   </Text>
                 </View>
@@ -289,7 +290,7 @@ export default function DeviceScreen() {
 
               {doseFlow.step === 'done' && (
                 <TouchableOpacity style={styles.flowBtnOutline} onPress={() => deviceActions.resetFlow()} activeOpacity={0.85}>
-                  <Ionicons name="refresh" size={17} color={Colors.navy} />
+                  <Ionicons name="refresh" size={17} color={C.navy} />
                   <Text style={[styles.flowBtnOutlineText, { fontSize: fs }]}>Concluir demonstração</Text>
                 </TouchableOpacity>
               )}
@@ -303,9 +304,9 @@ export default function DeviceScreen() {
               <Animated.View style={[
                 styles.wristIcon,
                 { transform: [{ scale: pulse }] },
-                wristbandVibrating && { backgroundColor: Colors.amberLight },
+                wristbandVibrating && { backgroundColor: C.amberLight },
               ]}>
-                <Ionicons name="watch" size={22} color={wristbandVibrating ? Colors.amberText : Colors.navy} />
+                <Ionicons name="watch" size={22} color={wristbandVibrating ? C.amberText : C.navy} />
               </Animated.View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.cardTitle, { fontSize: fs + 1 }]}>
@@ -328,14 +329,14 @@ export default function DeviceScreen() {
                 value={wristbandVibrating}
                 onValueChange={(v) => deviceActions.setVibrate(v)}
                 disabled={!mqttConnected}
-                trackColor={{ false: Colors.border, true: '#854F0B' }} thumbColor="#fff"
+                trackColor={{ false: C.border, true: '#854F0B' }} thumbColor="#fff"
               />
             </Row>
             {lastRfid && (
               <>
                 <View style={styles.divider} />
                 <Row label="Última leitura">
-                  <Text style={[styles.rowValue, { fontSize: fs - 2, color: lastRfid.valid ? Colors.greenText : Colors.redText }]}>
+                  <Text style={[styles.rowValue, { fontSize: fs - 2, color: lastRfid.valid ? C.greenText : C.redText }]}>
                     {lastRfid.tag} · {lastRfid.valid ? 'autorizada' : 'negada'} · {fmtTime(lastRfid.at)}
                   </Text>
                 </Row>
@@ -373,8 +374,8 @@ export default function DeviceScreen() {
               <>
                 <View style={styles.divider} />
                 <View style={[styles.row, { alignItems: 'flex-start' }]}>
-                  <Ionicons name="information-circle-outline" size={16} color={Colors.textMuted} style={{ marginTop: 1 }} />
-                  <Text style={{ flex: 1, fontSize: fs - 2, color: Colors.textSecondary, lineHeight: 18 }}>
+                  <Ionicons name="information-circle-outline" size={16} color={C.textMuted} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, fontSize: fs - 2, color: C.textSecondary, lineHeight: 18 }}>
                     Modo demonstração ativo: um simulador fiel do ESP32 responde aos comandos.
                     Configure o broker em src/config/app.ts para usar o hardware real.
                   </Text>
@@ -412,7 +413,7 @@ export default function DeviceScreen() {
             <View style={styles.divider} />
             <Row label="Sensores">
               <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: '#F1F5F9' }, !mqttConnected && { opacity: 0.5 }]}
+                style={[styles.actionBtn, { backgroundColor: C.borderSoft }, !mqttConnected && { opacity: 0.5 }]}
                 onPress={() => deviceActions.requestStatus()}
                 disabled={!mqttConnected}
               >
@@ -449,28 +450,28 @@ export default function DeviceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   title:    { fontWeight: '700', color: '#fff' },
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4 },
   modeBadge:{ flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  section:  { fontWeight: '700', color: Colors.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  card:     { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  section:  { fontWeight: '700', color: C.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card:     { backgroundColor: C.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: 14 },
-  rowLabel: { color: Colors.textSecondary },
-  rowValue: { fontWeight: '500', color: Colors.textPrimary },
+  rowLabel: { color: C.textSecondary },
+  rowValue: { fontWeight: '500', color: C.textPrimary },
   iconBox:  { borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  cardTitle:{ fontWeight: '600', color: Colors.textPrimary },
-  cardSub:  { color: Colors.textSecondary, marginTop: 2 },
+  cardTitle:{ fontWeight: '600', color: C.textPrimary },
+  cardSub:  { color: C.textSecondary, marginTop: 2 },
   badge:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   dot:      { width: 7, height: 7, borderRadius: 4 },
   badgeText:{ fontWeight: '600' },
-  divider:  { height: 0.5, backgroundColor: Colors.border, marginHorizontal: 14 },
-  wristIcon:{ width: 46, height: 46, borderRadius: 14, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  sensorCard: { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 14, borderWidth: 0.5, borderColor: Colors.border, gap: 4, ...Shadows.sm },
-  sensorLabel: { color: Colors.textSecondary, marginTop: 6 },
-  sensorValue: { fontWeight: '700', color: Colors.textPrimary },
-  sensorStatus:{ color: Colors.textMuted },
+  divider:  { height: 0.5, backgroundColor: C.border, marginHorizontal: 14 },
+  wristIcon:{ width: 46, height: 46, borderRadius: 14, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  sensorCard: { backgroundColor: C.surface, borderRadius: Radius.md, padding: 14, borderWidth: 0.5, borderColor: C.border, gap: 4, ...Shadows.sm },
+  sensorLabel: { color: C.textSecondary, marginTop: 6 },
+  sensorValue: { fontWeight: '700', color: C.textPrimary },
+  sensorStatus:{ color: C.textMuted },
   actionBtn:     { borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14 },
   actionBtnText: { fontWeight: '600' },
   logBox:   { backgroundColor: '#1C2B4B', borderRadius: Radius.md, padding: 12, minHeight: 140 },
@@ -478,24 +479,24 @@ const styles = StyleSheet.create({
   logEmpty: { color: 'rgba(255,255,255,.35)', fontFamily: 'monospace' },
 
   // Fluxo de segurança fechado
-  flowCard: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 16, borderWidth: 1, borderColor: '#D9E4F2', ...Shadows.md },
-  flowDose: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#FDF8EE', borderRadius: 12, padding: 12 },
-  flowDoseIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: Colors.amberLight, alignItems: 'center', justifyContent: 'center' },
-  flowDoseName: { fontWeight: '700', color: Colors.textPrimary },
-  flowDoseMeta: { color: Colors.textSecondary, marginTop: 2 },
-  flowDone:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: Colors.greenLight, borderRadius: 12, padding: 12 },
-  flowDoneTitle:{ fontWeight: '800', color: Colors.greenText },
-  flowDoneSub:  { color: Colors.greenText, marginTop: 2, opacity: 0.9 },
+  flowCard: { backgroundColor: C.surface, borderRadius: Radius.lg, padding: 16, borderWidth: 1, borderColor: '#D9E4F2', ...Shadows.md },
+  flowDose: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.amberLight, borderRadius: 12, padding: 12 },
+  flowDoseIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: C.amberLight, alignItems: 'center', justifyContent: 'center' },
+  flowDoseName: { fontWeight: '700', color: C.textPrimary },
+  flowDoseMeta: { color: C.textSecondary, marginTop: 2 },
+  flowDone:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.greenLight, borderRadius: 12, padding: 12 },
+  flowDoneTitle:{ fontWeight: '800', color: C.greenText },
+  flowDoneSub:  { color: C.greenText, marginTop: 2, opacity: 0.9 },
   stepRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  stepDot:  { width: 26, height: 26, borderRadius: 13, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  stepLabel:{ flex: 1, color: Colors.textSecondary, fontWeight: '500' },
-  stepLine: { width: 2, height: 10, backgroundColor: Colors.borderSoft, marginLeft: 12 },
-  flowBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.green, borderRadius: 12, paddingVertical: 14 },
+  stepDot:  { width: 26, height: 26, borderRadius: 13, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  stepLabel:{ flex: 1, color: C.textSecondary, fontWeight: '500' },
+  stepLine: { width: 2, height: 10, backgroundColor: C.borderSoft, marginLeft: 12 },
+  flowBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.green, borderRadius: 12, paddingVertical: 14 },
   flowBtnText: { color: '#fff', fontWeight: '700' },
-  flowBtnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 12, paddingVertical: 13 },
-  flowBtnOutlineText: { color: Colors.navy, fontWeight: '700' },
-  flowHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F0F6FF', borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 },
+  flowBtnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: C.navy, borderRadius: 12, paddingVertical: 13 },
+  flowBtnOutlineText: { color: C.navy, fontWeight: '700' },
+  flowHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: C.borderSoft, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14 },
   flowHintText: { color: '#185FA5', fontWeight: '600' },
   flowCancel: { alignItems: 'center', paddingVertical: 10 },
-  flowCancelText: { color: Colors.textSecondary, fontWeight: '600' },
+  flowCancelText: { color: C.textSecondary, fontWeight: '600' },
 });

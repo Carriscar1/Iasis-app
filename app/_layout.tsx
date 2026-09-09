@@ -19,6 +19,7 @@ export default function RootLayout() {
       const st = useStore.getState();
       st.setLargeText(p.largeText);
       st.setFallDetection(p.fallDetection);
+      st.setThemeMode(p.theme);
     });
 
     // Mantém o app em sincronia com a sessão do Supabase: se a sessão cair

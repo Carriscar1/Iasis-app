@@ -106,3 +106,74 @@ export const Shadows = {
     elevation: 10,
   },
 } as const;
+
+// ─────────────────────────────────────────────
+//  Tema claro / escuro
+//
+//  `StyleSheet.create` congela os valores no momento em que roda, então não
+//  adianta trocar as cores de um objeto global: as folhas de estilo já
+//  nasceram com a cor antiga. A saída é declarar os estilos como FUNÇÃO da
+//  paleta e deixar o hook escolher qual paleta usar.
+// ─────────────────────────────────────────────
+import { useColorScheme } from 'react-native';
+import { LIGHT, DARK, SHADOW_OPACITY, type ThemeColors } from './palette';
+import { useStore } from '../store';
+import type { ThemeMode } from '../services/preferences';
+
+export { LIGHT, DARK, type ThemeColors } from './palette';
+
+/** Qual paleta está valendo agora. */
+export function useThemeColors(): { C: ThemeColors; isDark: boolean } {
+  const mode: ThemeMode = useStore((s) => s.themeMode);
+  // 'system' segue o aparelho e reage quando o usuário troca lá.
+  const system = useColorScheme();
+  const isDark = mode === 'dark' || (mode === 'system' && system === 'dark');
+  return { C: isDark ? DARK : LIGHT, isDark };
+}
+
+/**
+ * Cache das folhas de estilo por (fábrica, tema).
+ *
+ * Sem ele, cada render de cada tela criaria uma folha nova — e são dezenas
+ * de telas. O WeakMap deixa a entrada ser coletada junto com o módulo.
+ */
+const cache = new WeakMap<object, Partial<Record<'light' | 'dark', unknown>>>();
+
+/**
+ * Devolve os estilos já resolvidos para o tema atual, mais a paleta para as
+ * cores usadas direto no JSX (ícones, por exemplo).
+ *
+ *     const { C, styles } = useTheme(makeStyles);
+ */
+export function useTheme<T>(factory: (c: ThemeColors) => T): {
+  C: ThemeColors;
+  styles: T;
+  isDark: boolean;
+} {
+  const { C, isDark } = useThemeColors();
+  const key = isDark ? 'dark' : 'light';
+
+  let entry = cache.get(factory as object);
+  if (!entry) {
+    entry = {};
+    cache.set(factory as object, entry);
+  }
+  if (!entry[key]) {
+    entry[key] = factory(C);
+  }
+
+  return { C, styles: entry[key] as T, isDark };
+}
+
+/**
+ * Sombra some no escuro: sombra preta sobre fundo escuro não aparece e só
+ * custa desempenho. A separação entre cartão e fundo vem do `surface`.
+ */
+export function useShadow(level: keyof typeof Shadows) {
+  const { isDark } = useThemeColors();
+  if (!isDark) return Shadows[level];
+  const { shadowOpacity, elevation, ...rest } = Shadows[level];
+  return { ...rest, shadowOpacity: 0, elevation: 0 };
+}
+
+export { SHADOW_OPACITY };

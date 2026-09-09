@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import {
   loadMqttSettings, saveMqttSettings, clearMqttSettings,
@@ -19,6 +19,7 @@ import { deviceService } from '../services/device';
 type TestState = { status: 'idle' | 'testing' | 'ok' | 'fail'; message?: string };
 
 export default function DispenserSetupScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const maxW = width >= 1024 ? 620 : width >= 768 ? 560 : undefined;
 
@@ -95,14 +96,14 @@ export default function DispenserSetupScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg, justifyContent: 'center' }}>
-        <ActivityIndicator color={Colors.navy} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, justifyContent: 'center' }}>
+        <ActivityIndicator color={C.navy} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -124,10 +125,10 @@ export default function DispenserSetupScreen() {
             <Ionicons
               name={deviceMode === 'mqtt' ? 'hardware-chip' : 'flask'}
               size={22}
-              color={deviceMode === 'mqtt' ? Colors.greenText : Colors.amberText}
+              color={deviceMode === 'mqtt' ? C.greenText : C.amberText}
             />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.statusTitle, { color: deviceMode === 'mqtt' ? Colors.greenText : Colors.amberText }]}>
+              <Text style={[styles.statusTitle, { color: deviceMode === 'mqtt' ? C.greenText : C.amberText }]}>
                 {deviceMode === 'mqtt' ? 'Hardware real conectado' : 'Modo demonstração'}
               </Text>
               <Text style={styles.statusText}>
@@ -167,18 +168,18 @@ export default function DispenserSetupScreen() {
             <View style={{ marginBottom: 16 }}>
               <Text style={styles.label}>Senha</Text>
               <View style={styles.inputWrap}>
-                <Ionicons name="lock-closed-outline" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                <Ionicons name="lock-closed-outline" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
                   value={form.password}
                   onChangeText={set('password')}
                   placeholder="senha do usuário MQTT"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={C.textMuted}
                   secureTextEntry={!showPass}
                   autoCapitalize="none"
                 />
                 <TouchableOpacity onPress={() => setShowPass((v) => !v)} style={{ padding: 4 }}>
-                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color={Colors.textMuted} />
+                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={18} color={C.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -200,17 +201,17 @@ export default function DispenserSetupScreen() {
                 test.status === 'ok' ? styles.testOk : test.status === 'fail' ? styles.testFail : styles.testNeutral,
               ]}>
                 {test.status === 'testing' ? (
-                  <ActivityIndicator size="small" color={Colors.navy} />
+                  <ActivityIndicator size="small" color={C.navy} />
                 ) : (
                   <Ionicons
                     name={test.status === 'ok' ? 'checkmark-circle' : 'alert-circle'}
                     size={18}
-                    color={test.status === 'ok' ? Colors.greenText : Colors.redText}
+                    color={test.status === 'ok' ? C.greenText : C.redText}
                   />
                 )}
                 <Text style={[
                   styles.testText,
-                  { color: test.status === 'ok' ? Colors.greenText : test.status === 'fail' ? Colors.redText : Colors.textSecondary },
+                  { color: test.status === 'ok' ? C.greenText : test.status === 'fail' ? C.redText : C.textSecondary },
                 ]}>
                   {test.status === 'testing' ? 'Testando conexão…' : test.message}
                 </Text>
@@ -223,7 +224,7 @@ export default function DispenserSetupScreen() {
               disabled={test.status === 'testing'}
               activeOpacity={0.85}
             >
-              <Ionicons name="pulse-outline" size={18} color={Colors.navy} />
+              <Ionicons name="pulse-outline" size={18} color={C.navy} />
               <Text style={styles.testBtnText}>Testar conexão</Text>
             </TouchableOpacity>
 
@@ -278,17 +279,18 @@ function Field({
   hint?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={{ marginBottom: 16 }}>
       <Text style={styles.label}>{label}</Text>
       <View style={styles.inputWrap}>
-        <Ionicons name={icon} size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
+        <Ionicons name={icon} size={18} color={C.textMuted} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.input}
           value={value}
           onChangeText={onChange}
           placeholder={placeholder}
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={C.textMuted}
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
         />
@@ -298,10 +300,10 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -316,52 +318,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     borderRadius: Radius.md, padding: 14, borderWidth: 1,
   },
-  statusOn:   { backgroundColor: Colors.greenLight, borderColor: '#B6E3D4' },
-  statusDemo: { backgroundColor: Colors.amberLight, borderColor: '#F2DDB5' },
+  statusOn:   { backgroundColor: C.greenLight, borderColor: '#B6E3D4' },
+  statusDemo: { backgroundColor: C.amberLight, borderColor: '#F2DDB5' },
   statusTitle: { fontWeight: '700', fontSize: 15 },
-  statusText:  { fontSize: 13, color: Colors.textSecondary, marginTop: 3, lineHeight: 18 },
+  statusText:  { fontSize: 13, color: C.textSecondary, marginTop: 3, lineHeight: 18 },
 
-  card: { backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 18, ...Shadows.sm },
-  cardTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  cardHint:  { fontSize: 13.5, color: Colors.textSecondary, marginTop: 4, marginBottom: 18, lineHeight: 19 },
+  card: { backgroundColor: C.surface, borderRadius: Radius.lg, padding: 18, ...Shadows.sm },
+  cardTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  cardHint:  { fontSize: 13.5, color: C.textSecondary, marginTop: 4, marginBottom: 18, lineHeight: 19 },
 
-  label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 7 },
+  label: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: 7 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    backgroundColor: Colors.bg, paddingHorizontal: 13,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 12,
+    backgroundColor: C.bg, paddingHorizontal: 13,
   },
-  input: { flex: 1, color: Colors.textPrimary, fontSize: 15, paddingVertical: 13 },
-  fieldHint: { fontSize: 12, color: Colors.textMuted, marginTop: 6, lineHeight: 17 },
+  input: { flex: 1, color: C.textPrimary, fontSize: 15, paddingVertical: 13 },
+  fieldHint: { fontSize: 12, color: C.textMuted, marginTop: 6, lineHeight: 17 },
 
   testBox: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
     borderRadius: Radius.sm, padding: 12, marginBottom: 14,
   },
-  testOk:      { backgroundColor: Colors.greenLight },
-  testFail:    { backgroundColor: Colors.redLight },
-  testNeutral: { backgroundColor: Colors.borderSoft },
+  testOk:      { backgroundColor: C.greenLight },
+  testFail:    { backgroundColor: C.redLight },
+  testNeutral: { backgroundColor: C.borderSoft },
   testText:    { flex: 1, fontSize: 13.5, lineHeight: 19 },
 
   testBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.md,
-    paddingVertical: 13, backgroundColor: Colors.bg,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: Radius.md,
+    paddingVertical: 13, backgroundColor: C.bg,
   },
-  testBtnText: { color: Colors.navy, fontWeight: '700', fontSize: 15 },
+  testBtnText: { color: C.navy, fontWeight: '700', fontSize: 15 },
 
   saveBtn: {
-    backgroundColor: Colors.navy, borderRadius: Radius.md,
+    backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 15, alignItems: 'center', marginTop: 12,
   },
   saveText:  { color: '#fff', fontWeight: '700', fontSize: 16 },
-  clearText: { color: Colors.redText, fontSize: 13.5, fontWeight: '600' },
+  clearText: { color: C.redText, fontSize: 13.5, fontWeight: '600' },
 
   stepRow:  { flexDirection: 'row', gap: 11, alignItems: 'flex-start', marginTop: 14 },
   stepNum:  {
-    width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.navy,
+    width: 24, height: 24, borderRadius: 12, backgroundColor: C.navyBg,
     alignItems: 'center', justifyContent: 'center', marginTop: 1,
   },
   stepNumText: { color: '#fff', fontWeight: '700', fontSize: 12 },
-  stepText:    { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
+  stepText:    { flex: 1, fontSize: 14, color: C.textSecondary, lineHeight: 20 },
 });

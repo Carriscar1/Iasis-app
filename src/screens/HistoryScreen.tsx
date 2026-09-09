@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { getAdherence, listRecentDoses, syncOverdueDoses, type AdherenceSummary } from '../services/data';
 import { exportAdherenceReport } from '../services/report';
@@ -33,6 +33,7 @@ const fmtWhen = (iso: string) => {
 };
 
 export default function HistoryScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -109,7 +110,7 @@ export default function HistoryScreen() {
   const week   = (adh?.byDay ?? []).slice(-7);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1 }}>
@@ -140,7 +141,7 @@ export default function HistoryScreen() {
               achando que é o de agora. */}
           {offlineAt ? (
             <View style={styles.offlineBar}>
-              <Ionicons name="cloud-offline-outline" size={17} color={Colors.amberText} />
+              <Ionicons name="cloud-offline-outline" size={17} color={C.amberText} />
               <Text style={[styles.offlineText, { fontSize: fs - 1 }]}>
                 Sem conexão — mostrando o histórico salvo {describeAge(offlineAt)}.
               </Text>
@@ -159,10 +160,10 @@ export default function HistoryScreen() {
           </View>
 
           {loading ? (
-            <View style={{ paddingVertical: 60 }}><ActivityIndicator size="large" color={Colors.navy} /></View>
+            <View style={{ paddingVertical: 60 }}><ActivityIndicator size="large" color={C.navy} /></View>
           ) : total === 0 ? (
             <View style={styles.emptyCard}>
-              <Ionicons name="bar-chart-outline" size={40} color={Colors.textMuted} />
+              <Ionicons name="bar-chart-outline" size={40} color={C.textMuted} />
               <Text style={[styles.emptyTitle, { fontSize: fs }]}>Sem dados ainda</Text>
               <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Registre doses na Agenda para ver sua adesão aqui.</Text>
             </View>
@@ -195,12 +196,12 @@ export default function HistoryScreen() {
                     const label = WD[new Date(d.date + 'T00:00:00').getDay()];
                     return (
                       <View key={d.date} style={{ flex: 1, alignItems: 'center', height: '100%' }}>
-                        <Text style={{ fontSize: 9, color: Colors.textMuted, marginBottom: 3 }}>{d.total > 0 ? `${dp}%` : ''}</Text>
-                        <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: Colors.borderSoft, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 9, color: C.textMuted, marginBottom: 3 }}>{d.total > 0 ? `${dp}%` : ''}</Text>
+                        <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: C.borderSoft, borderRadius: 6 }}>
                           <View style={{ width: '100%', height: `${dp}%`, borderRadius: 6, minHeight: d.total > 0 ? 4 : 0,
                             backgroundColor: dp === 100 ? '#0F6E56' : dp >= 50 ? '#1C2B4B' : '#FCEBEB' }} />
                         </View>
-                        <Text style={{ fontSize: 10, color: Colors.textSecondary, marginTop: 5 }}>{label}</Text>
+                        <Text style={{ fontSize: 10, color: C.textSecondary, marginTop: 5 }}>{label}</Text>
                       </View>
                     );
                   })}
@@ -210,7 +211,7 @@ export default function HistoryScreen() {
               <Text style={[styles.sectionTitle, { fontSize: fs - 2 }]}>Linha do tempo</Text>
               <View style={styles.timelineCard}>
                 {recent.length === 0 ? (
-                  <Text style={{ padding: 16, color: Colors.textSecondary, fontSize: fs - 1 }}>Nenhuma dose registrada ainda.</Text>
+                  <Text style={{ padding: 16, color: C.textSecondary, fontSize: fs - 1 }}>Nenhuma dose registrada ainda.</Text>
                 ) : recent.map((d, idx) => {
                   const valid = d.validatedBy === 'rfid' ? 'Pulseira RFID' : d.validatedBy === 'caregiver' ? 'Cuidador' : d.takenAt ? 'Manual' : '—';
                   const lbl = d.status === 'late' ? `+${d.delayMinutes ?? 0} min` : d.status === 'missed' ? 'Perdida' : 'No horário';
@@ -250,8 +251,8 @@ export default function HistoryScreen() {
                 activeOpacity={0.85}
               >
                 {csvBusy
-                  ? <ActivityIndicator color={Colors.navy} size="small" />
-                  : <Ionicons name="grid-outline" size={isTablet ? 19 : 16} color={Colors.navy} />}
+                  ? <ActivityIndicator color={C.navy} size="small" />
+                  : <Ionicons name="grid-outline" size={isTablet ? 19 : 16} color={C.navy} />}
                 <Text style={[styles.csvText, { fontSize: fs }]}>
                   Exportar doses em planilha (CSV)
                 </Text>
@@ -264,7 +265,7 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:   { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   title:    { fontWeight: '700', color: '#fff' },
   subtitle: { color: 'rgba(255,255,255,.6)', marginTop: 4 },
@@ -274,45 +275,45 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 9, borderRadius: 999,
   },
   chartsBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  periodRow:      { flexDirection: 'row', marginTop: 16, marginBottom: 12, backgroundColor: Colors.surface, borderRadius: 10, padding: 3, borderWidth: 0.5, borderColor: Colors.border },
+  periodRow:      { flexDirection: 'row', marginTop: 16, marginBottom: 12, backgroundColor: C.surface, borderRadius: 10, padding: 3, borderWidth: 0.5, borderColor: C.border },
   periodBtn:      { flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center' },
   periodActive:   { backgroundColor: '#1C2B4B' },
-  periodLabel:    { fontWeight: '500', color: Colors.textSecondary },
+  periodLabel:    { fontWeight: '500', color: C.textSecondary },
   periodLabelActive: { color: '#fff' },
-  emptyCard:  { alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
-  emptyTitle: { fontWeight: '700', color: Colors.textPrimary, marginTop: 4 },
-  emptySub:   { color: Colors.textSecondary, textAlign: 'center' },
+  emptyCard:  { alignItems: 'center', backgroundColor: C.surface, borderRadius: Radius.md, padding: 32, gap: 8, ...Shadows.sm },
+  emptyTitle: { fontWeight: '700', color: C.textPrimary, marginTop: 4 },
+  emptySub:   { color: C.textSecondary, textAlign: 'center' },
   scoreCard:  { backgroundColor: '#1C2B4B', borderRadius: Radius.md, alignItems: 'center', paddingVertical: 28, marginBottom: 12, ...Shadows.md },
   scoreLabel: { color: 'rgba(255,255,255,.6)' },
   scoreValue: { fontWeight: '800', marginVertical: 4 },
   scoreSub:   { color: 'rgba(255,255,255,.5)' },
-  metricBox:  { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 14, alignItems: 'center', borderWidth: 0.5, borderColor: Colors.border },
+  metricBox:  { backgroundColor: C.surface, borderRadius: Radius.md, padding: 14, alignItems: 'center', borderWidth: 0.5, borderColor: C.border },
   metricVal:  { fontWeight: '700' },
-  metricLabel:{ color: Colors.textSecondary, marginTop: 3, textAlign: 'center' },
-  sectionTitle: { fontWeight: '700', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  barCard:    { backgroundColor: Colors.surface, borderRadius: Radius.md, padding: 14, marginBottom: 20, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
-  timelineCard:{ backgroundColor: Colors.surface, borderRadius: Radius.md, marginBottom: 16, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  metricLabel:{ color: C.textSecondary, marginTop: 3, textAlign: 'center' },
+  sectionTitle: { fontWeight: '700', color: C.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  barCard:    { backgroundColor: C.surface, borderRadius: Radius.md, padding: 14, marginBottom: 20, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
+  timelineCard:{ backgroundColor: C.surface, borderRadius: Radius.md, marginBottom: 16, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   tlRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   tlDot:      { flexShrink: 0 },
-  tlMed:      { fontWeight: '600', color: Colors.textPrimary },
-  tlTime:     { color: Colors.textSecondary, marginTop: 2 },
-  tlLine:     { height: 0.5, backgroundColor: Colors.border, marginLeft: 36 },
+  tlMed:      { fontWeight: '600', color: C.textPrimary },
+  tlTime:     { color: C.textSecondary, marginTop: 2 },
+  tlLine:     { height: 0.5, backgroundColor: C.border, marginLeft: 36 },
   tlBadge:    { borderRadius: 999, paddingHorizontal: 9, paddingVertical: 3 },
   tlBadgeText:{ fontWeight: '600' },
   offlineBar: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    backgroundColor: Colors.amberLight, borderRadius: Radius.md,
+    backgroundColor: C.amberLight, borderRadius: Radius.md,
     paddingHorizontal: 13, paddingVertical: 11, marginTop: 14,
   },
-  offlineText: { flex: 1, color: Colors.amberText, lineHeight: 18 },
+  offlineText: { flex: 1, color: C.amberText, lineHeight: 18 },
 
   csvBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
-    backgroundColor: Colors.surface, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: C.surface, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: C.border,
     paddingVertical: 14, marginTop: 10,
   },
-  csvText: { color: Colors.navy, fontWeight: '700' },
+  csvText: { color: C.navy, fontWeight: '700' },
 
   exportBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#1C2B4B', borderRadius: 12, paddingVertical: 14 },
   exportText: { color: '#fff', fontWeight: '600' },

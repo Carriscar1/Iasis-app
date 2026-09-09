@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useElderlyMode } from '../hooks/useElderly';
 import Avatar from '../components/Avatar';
 import {
@@ -26,6 +26,7 @@ import { findCaregiverByEmail } from '../services/auth';
 import { openWhatsApp } from '../services/chat';
 
 export default function CareTeamScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isElderly = useElderlyMode();
   const maxW = width >= 1024 ? 700 : width >= 768 ? 580 : undefined;
@@ -124,7 +125,7 @@ export default function CareTeamScreen() {
           onPress={() => openWhatsApp(member.phone!)}
           accessibilityLabel={`Falar com ${member.name} no WhatsApp`}
         >
-          <Ionicons name="logo-whatsapp" size={19} color={Colors.greenText} />
+          <Ionicons name="logo-whatsapp" size={19} color={C.greenText} />
         </TouchableOpacity>
       ) : null}
 
@@ -133,7 +134,7 @@ export default function CareTeamScreen() {
         onPress={() => router.push('/chat')}
         accessibilityLabel={`Conversar com ${member.name}`}
       >
-        <Ionicons name="chatbubble-outline" size={18} color={Colors.navy} />
+        <Ionicons name="chatbubble-outline" size={18} color={C.navy} />
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -141,7 +142,7 @@ export default function CareTeamScreen() {
         onPress={() => confirmRemove(member)}
         accessibilityLabel={`Desfazer vínculo com ${member.name}`}
       >
-        <Ionicons name="close" size={19} color={Colors.textMuted} />
+        <Ionicons name="close" size={19} color={C.textMuted} />
       </TouchableOpacity>
     </View>
   );
@@ -167,13 +168,13 @@ export default function CareTeamScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => { setRefresh(true); load(); }}
-            tintColor={Colors.navy}
+            tintColor={C.navy}
           />
         }
       >
         {loading ? (
           <View style={styles.center}>
-            <ActivityIndicator color={Colors.navy} />
+            <ActivityIndicator color={C.navy} />
           </View>
         ) : (
           <>
@@ -186,7 +187,7 @@ export default function CareTeamScreen() {
               <View style={styles.card}>{caregivers.map(renderMember)}</View>
             ) : (
               <View style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={30} color={Colors.textMuted} />
+                <Ionicons name="people-outline" size={30} color={C.textMuted} />
                 <Text style={[styles.emptyText, { fontSize: fs - 1 }]}>
                   Você ainda não tem cuidadores. Sem ninguém na equipe, os avisos
                   de dose perdida ficam só com você.
@@ -202,7 +203,7 @@ export default function CareTeamScreen() {
                 activeOpacity={0.85}
               >
                 <View style={styles.addIcon}>
-                  <Ionicons name="person-add" size={19} color={Colors.navy} />
+                  <Ionicons name="person-add" size={19} color={C.navy} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.addTitle, { fontSize: fs }]}>
@@ -212,7 +213,7 @@ export default function CareTeamScreen() {
                     Sem digitar número errado
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
               </TouchableOpacity>
             ) : null}
 
@@ -222,7 +223,7 @@ export default function CareTeamScreen() {
               activeOpacity={0.85}
             >
               <View style={styles.addIcon}>
-                <Ionicons name="mail-outline" size={19} color={Colors.navy} />
+                <Ionicons name="mail-outline" size={19} color={C.navy} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.addTitle, { fontSize: fs }]}>
@@ -235,7 +236,7 @@ export default function CareTeamScreen() {
               <Ionicons
                 name={emailOpen ? 'chevron-up' : 'chevron-forward'}
                 size={18}
-                color={Colors.textMuted}
+                color={C.textMuted}
               />
             </TouchableOpacity>
 
@@ -246,7 +247,7 @@ export default function CareTeamScreen() {
                   value={email}
                   onChangeText={setEmail}
                   placeholder="email@exemplo.com"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={C.textMuted}
                   autoCapitalize="none"
                   keyboardType="email-address"
                   autoCorrect={false}
@@ -286,12 +287,12 @@ export default function CareTeamScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -305,60 +306,60 @@ const styles = StyleSheet.create({
   center: { paddingVertical: 60, alignItems: 'center' },
 
   sectionTitle: {
-    fontWeight: '800', color: Colors.textPrimary, marginBottom: 2, marginTop: 4,
+    fontWeight: '800', color: C.textPrimary, marginBottom: 2, marginTop: 4,
   },
 
   card: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     overflow: 'hidden', ...Shadows.sm,
   },
   member: {
     flexDirection: 'row', alignItems: 'center', gap: 11,
     paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderSoft,
+    borderBottomWidth: 1, borderBottomColor: C.borderSoft,
   },
-  memberName: { fontWeight: '700', color: Colors.textPrimary },
-  memberMeta: { color: Colors.textSecondary, marginTop: 2 },
+  memberName: { fontWeight: '700', color: C.textPrimary },
+  memberMeta: { color: C.textSecondary, marginTop: 2 },
 
   iconBtn: {
-    width: 34, height: 34, borderRadius: 11, backgroundColor: Colors.borderSoft,
+    width: 34, height: 34, borderRadius: 11, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center',
   },
 
   emptyCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg, padding: 20,
+    backgroundColor: C.surface, borderRadius: Radius.lg, padding: 20,
     alignItems: 'center', gap: 9, ...Shadows.sm,
   },
-  emptyText: { color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  emptyText: { color: C.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   addBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 14, marginTop: 4, ...Shadows.sm,
   },
   addIcon: {
-    width: 40, height: 40, borderRadius: 13, backgroundColor: Colors.blueLight + '3A',
+    width: 40, height: 40, borderRadius: 13, backgroundColor: C.blueLight + '3A',
     alignItems: 'center', justifyContent: 'center',
   },
-  addTitle: { fontWeight: '700', color: Colors.textPrimary },
-  addDesc:  { color: Colors.textSecondary, marginTop: 2 },
+  addTitle: { fontWeight: '700', color: C.textPrimary },
+  addDesc:  { color: C.textSecondary, marginTop: 2 },
 
   emailBox: { flexDirection: 'row', gap: 9, alignItems: 'center' },
   input: {
-    flex: 1, backgroundColor: Colors.surface, borderRadius: Radius.md,
-    paddingHorizontal: 14, paddingVertical: 12, color: Colors.textPrimary,
-    borderWidth: 1, borderColor: Colors.border,
+    flex: 1, backgroundColor: C.surface, borderRadius: Radius.md,
+    paddingHorizontal: 14, paddingVertical: 12, color: C.textPrimary,
+    borderWidth: 1, borderColor: C.border,
   },
   emailBtn: {
-    width: 46, height: 46, borderRadius: Radius.md, backgroundColor: Colors.navy,
+    width: 46, height: 46, borderRadius: Radius.md, backgroundColor: C.navyBg,
     alignItems: 'center', justifyContent: 'center',
   },
 
   error: {
-    fontSize: 13.5, color: Colors.redText, backgroundColor: Colors.redLight,
+    fontSize: 13.5, color: C.redText, backgroundColor: C.redLight,
     padding: 11, borderRadius: Radius.sm, marginTop: 8,
   },
   footnote: {
-    color: Colors.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 14,
+    color: C.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 14,
   },
 });

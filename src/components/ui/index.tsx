@@ -11,7 +11,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { Colors, Fonts, Spacing, Radius, Shadows } from '../../theme';
+import { Fonts, Spacing, Radius, Shadows, useTheme, type ThemeColors } from '../../theme';
 
 // ─── Card ─────────────────────────────────────
 interface CardProps {
@@ -21,6 +21,7 @@ interface CardProps {
 }
 
 export const Card: React.FC<CardProps> = ({ children, style, onPress }) => {
+  const { C, styles } = useTheme(makeStyles);
   const content = (
     <View style={[styles.card, style]}>{children}</View>
   );
@@ -44,13 +45,14 @@ interface PillProps {
   style?:   ViewStyle;
 }
 
-const pillColors: Record<PillVariant, { bg: string; text: string }> = {
-  success: { bg: Colors.greenLight, text: Colors.greenText },
-  warning: { bg: Colors.amberLight, text: Colors.amberText },
-  error:   { bg: Colors.redLight,   text: Colors.redText   },
-  info:    { bg: '#E6F1FB',         text: '#185FA5'        },
-  neutral: { bg: Colors.borderSoft, text: Colors.textSecondary },
-};
+// Depende do tema, entao e funcao da paleta e nao constante de modulo.
+const pillColors = (C: ThemeColors): Record<PillVariant, { bg: string; text: string }> => ({
+  success: { bg: C.greenLight, text: C.greenText },
+  warning: { bg: C.amberLight, text: C.amberText },
+  error:   { bg: C.redLight,   text: C.redText   },
+  info:    { bg: C.blueLight,  text: C.navy      },
+  neutral: { bg: C.borderSoft, text: C.textSecondary },
+});
 
 export const Pill: React.FC<PillProps> = ({
   label,
@@ -58,7 +60,8 @@ export const Pill: React.FC<PillProps> = ({
   dot,
   style,
 }) => {
-  const { bg, text } = pillColors[variant];
+  const { C, styles } = useTheme(makeStyles);
+  const { bg, text } = pillColors(C)[variant];
   return (
     <View style={[styles.pill, { backgroundColor: bg }, style]}>
       {dot && (
@@ -81,12 +84,14 @@ interface ButtonProps {
   textStyle?: TextStyle;
 }
 
-const btnStyles: Record<string, { bg: string; text: string; border?: string }> = {
-  primary:   { bg: Colors.navy,       text: Colors.white },
-  secondary: { bg: Colors.greenLight, text: Colors.greenText },
-  ghost:     { bg: 'transparent',     text: Colors.navy,    border: Colors.border },
-  danger:    { bg: Colors.redLight,   text: Colors.redText, border: Colors.red },
-};
+// Depende do tema: `navy` como FUNDO precisa ser escuro (texto branco por
+// cima) e como TEXTO precisa ser claro. Por isso primary usa navyBg.
+const btnStyles = (C: ThemeColors): Record<string, { bg: string; text: string; border?: string }> => ({
+  primary:   { bg: C.navyBg,      text: C.white },
+  secondary: { bg: C.greenLight,  text: C.greenText },
+  ghost:     { bg: 'transparent', text: C.navy,    border: C.border },
+  danger:    { bg: C.redLight,    text: C.redText, border: C.red },
+});
 
 export const Button: React.FC<ButtonProps> = ({
   label,
@@ -98,7 +103,8 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
-  const s = btnStyles[variant];
+  const { C, styles } = useTheme(makeStyles);
+  const s = btnStyles(C)[variant];
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -137,7 +143,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   title,
   action,
   onAction,
-}) => (
+}) => {
+  const { styles } = useTheme(makeStyles);
+  return (
   <View style={styles.sectionHeader}>
     <Text style={styles.sectionTitle}>{title}</Text>
     {action && (
@@ -146,7 +154,8 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       </TouchableOpacity>
     )}
   </View>
-);
+  );
+};
 
 // ─── Metric Card ──────────────────────────────
 interface MetricCardProps {
@@ -162,24 +171,28 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   label,
   value,
   sub,
-  color = Colors.navy,
+  color,
   icon,
   style,
-}) => (
+}) => {
+  const { C, styles } = useTheme(makeStyles);
+  return (
   <View style={[styles.metricCard, style]}>
     <View style={styles.metricHeader}>
       {icon}
       <Text style={styles.metricLabel}>{label}</Text>
     </View>
-    <Text style={[styles.metricValue, { color }]}>{value}</Text>
+    <Text style={[styles.metricValue, { color: color ?? C.navy }]}>{value}</Text>
     {sub && <Text style={styles.metricSub}>{sub}</Text>}
   </View>
-);
+  );
+};
 
 // ─── Divider ──────────────────────────────────
-export const Divider: React.FC<{ style?: ViewStyle }> = ({ style }) => (
-  <View style={[styles.divider, style]} />
-);
+export const Divider: React.FC<{ style?: ViewStyle }> = ({ style }) => {
+  const { styles } = useTheme(makeStyles);
+  return <View style={[styles.divider, style]} />;
+};
 
 // ─── Empty State ──────────────────────────────
 interface EmptyProps {
@@ -196,7 +209,9 @@ export const EmptyState: React.FC<EmptyProps> = ({
   message,
   action,
   onAction,
-}) => (
+}) => {
+  const { styles } = useTheme(makeStyles);
+  return (
   <View style={styles.empty}>
     <Text style={styles.emptyIcon}>{icon}</Text>
     <Text style={styles.emptyTitle}>{title}</Text>
@@ -205,18 +220,19 @@ export const EmptyState: React.FC<EmptyProps> = ({
       <Button label={action} onPress={onAction} style={{ marginTop: Spacing.md }} />
     )}
   </View>
-);
+  );
+};
 
 // ─── Styles ───────────────────────────────────
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   card: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius:    Radius.md,
     padding:         Spacing.md,
     marginHorizontal: Spacing.md,
     marginBottom:    Spacing.sm,
     borderWidth:     0.5,
-    borderColor:     Colors.border,
+    borderColor:     C.border,
     ...Shadows.sm,
   },
   pill: {
@@ -259,7 +275,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize:   Fonts.sizes.md,
     fontWeight: Fonts.weights.semibold as any,
-    color:      Colors.textPrimary,
+    color:      C.textPrimary,
   },
   sectionAction: {
     fontSize:   Fonts.sizes.sm,
@@ -267,11 +283,11 @@ const styles = StyleSheet.create({
     fontWeight: Fonts.weights.medium as any,
   },
   metricCard: {
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     borderRadius:    Radius.md,
     padding:         Spacing.md,
     borderWidth:     0.5,
-    borderColor:     Colors.border,
+    borderColor:     C.border,
     ...Shadows.sm,
   },
   metricHeader: {
@@ -282,22 +298,22 @@ const styles = StyleSheet.create({
   },
   metricLabel: {
     fontSize: Fonts.sizes.xs,
-    color:    Colors.textSecondary,
+    color:    C.textSecondary,
     fontWeight: Fonts.weights.medium as any,
   },
   metricValue: {
     fontSize:   Fonts.sizes.xl,
     fontWeight: Fonts.weights.bold as any,
-    color:      Colors.textPrimary,
+    color:      C.textPrimary,
   },
   metricSub: {
     fontSize:  Fonts.sizes.xs,
-    color:     Colors.textMuted,
+    color:     C.textMuted,
     marginTop: 2,
   },
   divider: {
     height:          0.5,
-    backgroundColor: Colors.border,
+    backgroundColor: C.border,
     marginHorizontal: Spacing.md,
   },
   empty: {
@@ -312,13 +328,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize:   Fonts.sizes.md,
     fontWeight: Fonts.weights.semibold as any,
-    color:      Colors.textPrimary,
+    color:      C.textPrimary,
     textAlign:  'center',
     marginBottom: Spacing.xs,
   },
   emptyMessage: {
     fontSize:  Fonts.sizes.sm,
-    color:     Colors.textSecondary,
+    color:     C.textSecondary,
     textAlign: 'center',
     lineHeight: Fonts.sizes.sm * Fonts.lineHeights.loose,
   },

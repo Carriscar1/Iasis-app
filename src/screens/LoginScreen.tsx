@@ -11,10 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { signIn, resendConfirmation } from '../services/auth';
 import { useStore } from '../store';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
 
 export default function LoginScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const { setUser } = useStore();
   const [email,    setEmail]    = useState('');
@@ -102,8 +103,8 @@ export default function LoginScreen() {
 
               {error ? (
                 <View style={[styles.errorBox, needsConfirm && styles.warnBox]}>
-                  <Ionicons name={needsConfirm ? 'mail-unread' : 'alert-circle'} size={15} color={needsConfirm ? Colors.amberText : Colors.redText} />
-                  <Text style={[styles.errorText, { fontSize: fs - 1 }, needsConfirm && { color: Colors.amberText }]}>{error}</Text>
+                  <Ionicons name={needsConfirm ? 'mail-unread' : 'alert-circle'} size={15} color={needsConfirm ? C.amberText : C.redText} />
+                  <Text style={[styles.errorText, { fontSize: fs - 1 }, needsConfirm && { color: C.amberText }]}>{error}</Text>
                 </View>
               ) : null}
 
@@ -119,10 +120,10 @@ export default function LoginScreen() {
                     activeOpacity={0.85}
                   >
                     {resending
-                      ? <ActivityIndicator color={Colors.navy} size="small" />
+                      ? <ActivityIndicator color={C.navy} size="small" />
                       : (
                         <>
-                          <Ionicons name="paper-plane-outline" size={15} color={Colors.navy} />
+                          <Ionicons name="paper-plane-outline" size={15} color={C.navy} />
                           <Text style={[styles.resendText, { fontSize: fs - 1 }]}>Reenviar e-mail de verificação</Text>
                         </>
                       )}
@@ -134,13 +135,13 @@ export default function LoginScreen() {
               {/* E-mail */}
               <Text style={[styles.label, { fontSize: fs - 2 }]}>E-mail</Text>
               <View style={[styles.inputWrap, { marginBottom: 14 }]}>
-                <Ionicons name="mail-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                <Ionicons name="mail-outline" size={17} color={C.textMuted} style={{ marginRight: 8 }} />
                 <TextInput
                   style={[styles.input, { fontSize: fs, paddingVertical: inputPad }]}
                   value={email}
                   onChangeText={setEmail}
                   placeholder="seu@email.com"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={C.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -150,18 +151,18 @@ export default function LoginScreen() {
               {/* Senha */}
               <Text style={[styles.label, { fontSize: fs - 2 }]}>Senha</Text>
               <View style={[styles.inputWrap, { marginBottom: isTablet ? 24 : 18 }]}>
-                <Ionicons name="lock-closed-outline" size={17} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                <Ionicons name="lock-closed-outline" size={17} color={C.textMuted} style={{ marginRight: 8 }} />
                 <TextInput
                   style={[styles.input, { fontSize: fs, paddingVertical: inputPad, flex: 1 }]}
                   value={password}
                   onChangeText={setPassword}
                   placeholder="Sua senha"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={C.textMuted}
                   secureTextEntry={!showPass}
                   onSubmitEditing={handleLogin}
                 />
                 <TouchableOpacity onPress={() => setShowPass(v => !v)} style={{ padding: 4 }}>
-                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={17} color={Colors.textMuted} />
+                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={17} color={C.textMuted} />
                 </TouchableOpacity>
               </View>
 
@@ -195,27 +196,27 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   scroll:    { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 40, paddingHorizontal: 20 },
   logoArea:  { alignItems: 'center', marginBottom: 32 },
   logoBox:   { backgroundColor: 'rgba(255,255,255,.12)', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   appName:   { fontWeight: '800', color: '#fff', letterSpacing: -2 },
   tagline:   { color: 'rgba(255,255,255,.5)', marginTop: 5 },
-  card:      { backgroundColor: Colors.surface, borderRadius: Radius.xl, alignSelf: 'center', ...Shadows.lg },
-  cardTitle: { fontWeight: '700', color: Colors.textPrimary },
-  errorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.redLight, borderRadius: 8, padding: 10, marginBottom: 14 },
-  warnBox:   { backgroundColor: Colors.amberLight },
-  errorText: { color: Colors.redText, flex: 1 },
-  confirmBox:{ backgroundColor: Colors.bg, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, padding: 12, marginBottom: 14, gap: 10 },
-  confirmText:{ color: Colors.textSecondary, lineHeight: 19 },
-  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: Colors.navy, borderRadius: 10, paddingVertical: 11 },
-  resendText:{ color: Colors.navy, fontWeight: '700' },
-  resentMsg: { color: Colors.greenText, textAlign: 'center' },
-  label:     { fontWeight: '600', color: Colors.textSecondary, marginBottom: 6 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, borderRadius: 10, backgroundColor: Colors.bg, paddingHorizontal: 12 },
-  input:     { flex: 1, color: Colors.textPrimary },
-  btnPrimary:{ backgroundColor: Colors.navy, borderRadius: 12, alignItems: 'center' },
+  card:      { backgroundColor: C.surface, borderRadius: Radius.xl, alignSelf: 'center', ...Shadows.lg },
+  cardTitle: { fontWeight: '700', color: C.textPrimary },
+  errorBox:  { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redLight, borderRadius: 8, padding: 10, marginBottom: 14 },
+  warnBox:   { backgroundColor: C.amberLight },
+  errorText: { color: C.redText, flex: 1 },
+  confirmBox:{ backgroundColor: C.bg, borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, marginBottom: 14, gap: 10 },
+  confirmText:{ color: C.textSecondary, lineHeight: 19 },
+  resendBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: C.navy, borderRadius: 10, paddingVertical: 11 },
+  resendText:{ color: C.navy, fontWeight: '700' },
+  resentMsg: { color: C.greenText, textAlign: 'center' },
+  label:     { fontWeight: '600', color: C.textSecondary, marginBottom: 6 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.bg, paddingHorizontal: 12 },
+  input:     { flex: 1, color: C.textPrimary },
+  btnPrimary:{ backgroundColor: C.navyBg, borderRadius: 12, alignItems: 'center' },
   btnText:   { color: '#fff', fontWeight: '700' },
-  linkText:  { color: Colors.textSecondary },
-  linkBold:  { color: Colors.navy, fontWeight: '700' },
+  linkText:  { color: C.textSecondary },
+  linkBold:  { color: C.navy, fontWeight: '700' },
 });

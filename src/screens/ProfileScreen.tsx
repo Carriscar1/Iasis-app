@@ -8,11 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 import Avatar from '../components/Avatar';
 
 export default function ProfileScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const { user, mqttConnected } = useStore();
   const unreadAlerts   = useStore((s) => s.unreadAlerts);
@@ -128,7 +129,7 @@ export default function ProfileScreen() {
     },
     {
       icon:  'accessibility-outline',
-      label: 'Acessibilidade',
+      label: 'Aparência e acessibilidade',
       desc:  'Modo fácil: letras e botões maiores',
       onPress: () => router.push('/accessibility'),
     },
@@ -141,7 +142,7 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={[styles.title, { fontSize: isDesktop ? 26 : isTablet ? 24 : 22 }]}>Perfil</Text>
       </View>
@@ -186,7 +187,7 @@ export default function ProfileScreen() {
               <View key={item.label}>
                 <View style={styles.infoRow}>
                   <View style={[styles.infoIcon, { width: isTablet ? 40 : 34, height: isTablet ? 40 : 34 }]}>
-                    <Ionicons name={item.icon as any} size={isTablet ? 20 : 17} color={Colors.navy} />
+                    <Ionicons name={item.icon as any} size={isTablet ? 20 : 17} color={C.navy} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.infoLabel, { fontSize: fs - 3 }]}>{item.label}</Text>
@@ -205,7 +206,7 @@ export default function ProfileScreen() {
               <View key={item.label}>
                 <TouchableOpacity style={styles.menuRow} onPress={item.onPress} activeOpacity={0.7}>
                   <View style={[styles.menuIcon, { width: isTablet ? 40 : 34, height: isTablet ? 40 : 34 }]}>
-                    <Ionicons name={item.icon as any} size={isTablet ? 20 : 17} color={Colors.navy} />
+                    <Ionicons name={item.icon as any} size={isTablet ? 20 : 17} color={C.navy} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.menuLabel, { fontSize: fs }]}>{item.label}</Text>
@@ -216,7 +217,7 @@ export default function ProfileScreen() {
                       <Text style={styles.badgeText}>{(item as any).badge}</Text>
                     </View>
                   )}
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+                  <Ionicons name="chevron-forward" size={16} color={C.textMuted} />
                 </TouchableOpacity>
                 {idx < menuItems.length - 1 && <View style={styles.divider} />}
               </View>
@@ -236,41 +237,41 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header:       { backgroundColor: '#1C2B4B', paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   title:        { fontWeight: '700', color: '#fff' },
   avatarSection:{ alignItems: 'center', paddingVertical: 28 },
   avatar:       { backgroundColor: '#1C2B4B', alignItems: 'center', justifyContent: 'center', marginBottom: 12, ...Shadows.md },
   avatarEdit:   {
     position: 'absolute', right: -2, bottom: -2,
-    width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.navyLight,
+    width: 28, height: 28, borderRadius: 14, backgroundColor: C.navyLight,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: Colors.bg,
+    borderWidth: 2, borderColor: C.bg,
   },
-  userName:     { fontWeight: '700', color: Colors.textPrimary },
-  roleBadge:    { marginTop: 6, backgroundColor: Colors.borderSoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
-  roleText:     { color: Colors.textSecondary, fontWeight: '500' },
-  mqttRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: Colors.surface, borderRadius: Radius.sm, padding: 12, borderWidth: 0.5, borderColor: Colors.border },
+  userName:     { fontWeight: '700', color: C.textPrimary },
+  roleBadge:    { marginTop: 6, backgroundColor: C.borderSoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
+  roleText:     { color: C.textSecondary, fontWeight: '500' },
+  mqttRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.surface, borderRadius: Radius.sm, padding: 12, borderWidth: 0.5, borderColor: C.border },
   mqttDot:      { width: 8, height: 8, borderRadius: 4 },
-  mqttText:     { color: Colors.textSecondary },
-  section:      { fontWeight: '700', color: Colors.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  card:         { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  mqttText:     { color: C.textSecondary },
+  section:      { fontWeight: '700', color: C.textSecondary, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card:         { backgroundColor: C.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   infoRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  infoIcon:     { backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
-  infoLabel:    { color: Colors.textMuted },
-  infoValue:    { fontWeight: '500', color: Colors.textPrimary, marginTop: 2 },
+  infoIcon:     { backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+  infoLabel:    { color: C.textMuted },
+  infoValue:    { fontWeight: '500', color: C.textPrimary, marginTop: 2 },
   menuRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  menuIcon:     { backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
-  menuLabel:    { fontWeight: '600', color: Colors.textPrimary },
-  menuDesc:     { color: Colors.textSecondary, marginTop: 2 },
+  menuIcon:     { backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+  menuLabel:    { fontWeight: '600', color: C.textPrimary },
+  menuDesc:     { color: C.textSecondary, marginTop: 2 },
   badge: {
     minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
-    backgroundColor: Colors.red, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.red, alignItems: 'center', justifyContent: 'center',
     marginRight: 6,
   },
   badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
-  divider:      { height: 0.5, backgroundColor: Colors.border, marginLeft: 14 },
-  logoutBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#F09595', backgroundColor: '#FCEBEB', marginBottom: 16 },
+  divider:      { height: 0.5, backgroundColor: C.border, marginLeft: 14 },
+  logoutBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#F09595', backgroundColor: C.redLight, marginBottom: 16 },
   logoutText:   { fontWeight: '700', color: '#A32D2D' },
-  version:      { textAlign: 'center', color: Colors.textMuted, marginBottom: 8 },
+  version:      { textAlign: 'center', color: C.textMuted, marginBottom: 8 },
 });

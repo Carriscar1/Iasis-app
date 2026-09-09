@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Contacts from 'expo-contacts';
 
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import Avatar from '../components/Avatar';
 import {
@@ -47,6 +47,7 @@ const DEBOUNCE_MS = 300;
 type RowProps = { item: DeviceContact; onPick: (c: DeviceContact) => void };
 
 const ContactRow = React.memo(function ContactRow({ item, onPick }: RowProps) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <TouchableOpacity
       style={styles.row}
@@ -60,12 +61,13 @@ const ContactRow = React.memo(function ContactRow({ item, onPick }: RowProps) {
           {prettyPhone(item.phone)}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+      <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
     </TouchableOpacity>
   );
 });
 
 export default function ContactPickerScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
 
@@ -243,7 +245,7 @@ export default function ContactPickerScreen() {
     if (paging) {
       return (
         <View style={styles.footer}>
-          <ActivityIndicator color={Colors.navy} size="small" />
+          <ActivityIndicator color={C.navy} size="small" />
           <Text style={styles.footerText}>Carregando mais contatos…</Text>
         </View>
       );
@@ -276,7 +278,7 @@ export default function ContactPickerScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
-          <Ionicons name="desktop-outline" size={54} color={Colors.textMuted} />
+          <Ionicons name="desktop-outline" size={54} color={C.textMuted} />
           <Text style={styles.emptyTitle}>Disponível no celular</Text>
           <Text style={styles.emptyText}>
             A agenda de contatos é do aparelho. No navegador, adicione o cuidador
@@ -298,11 +300,11 @@ export default function ContactPickerScreen() {
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
         {header}
         <View style={styles.center}>
-          <View style={[styles.permIcon, blocked && { backgroundColor: Colors.redLight }]}>
+          <View style={[styles.permIcon, blocked && { backgroundColor: C.redLight }]}>
             <Ionicons
               name={blocked ? 'lock-closed' : 'people-outline'}
               size={38}
-              color={blocked ? Colors.redText : Colors.navy}
+              color={blocked ? C.redText : C.navy}
             />
           </View>
 
@@ -347,19 +349,19 @@ export default function ContactPickerScreen() {
       {header}
 
       <View style={styles.searchWrap}>
-        <Ionicons name="search" size={17} color={Colors.textMuted} />
+        <Ionicons name="search" size={17} color={C.textMuted} />
         <TextInput
           style={styles.search}
           value={query}
           onChangeText={setQuery}
           placeholder="Buscar na agenda"
-          placeholderTextColor={Colors.textMuted}
+          placeholderTextColor={C.textMuted}
           autoCorrect={false}
           returnKeyType="search"
         />
         {query.length > 0 ? (
           <TouchableOpacity onPress={() => setQuery('')} style={{ padding: 4 }}>
-            <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={18} color={C.textMuted} />
           </TouchableOpacity>
         ) : null}
       </View>
@@ -368,7 +370,7 @@ export default function ContactPickerScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator color={Colors.navy} />
+          <ActivityIndicator color={C.navy} />
           <Text style={styles.footerText}>Lendo a agenda…</Text>
         </View>
       ) : (
@@ -384,7 +386,7 @@ export default function ContactPickerScreen() {
           ListFooterComponent={listFooter}
           ListEmptyComponent={
             <View style={styles.center}>
-              <Ionicons name="search-outline" size={44} color={Colors.textMuted} />
+              <Ionicons name="search-outline" size={44} color={C.textMuted} />
               <Text style={styles.emptyTitle}>Nenhum contato encontrado</Text>
               <Text style={styles.emptyText}>
                 {query.trim()
@@ -417,12 +419,12 @@ export default function ContactPickerScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.bg },
 
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -434,50 +436,50 @@ const styles = StyleSheet.create({
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    backgroundColor: Colors.surface, margin: 16, marginBottom: 8,
+    backgroundColor: C.surface, margin: 16, marginBottom: 8,
     paddingHorizontal: 14, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.border, ...Shadows.sm,
+    borderWidth: 1, borderColor: C.border, ...Shadows.sm,
   },
   search: {
-    flex: 1, paddingVertical: 12, fontSize: 15.5, color: Colors.textPrimary,
+    flex: 1, paddingVertical: 12, fontSize: 15.5, color: C.textPrimary,
   },
 
   row: {
     height: ROW_HEIGHT,
     flexDirection: 'row', alignItems: 'center', gap: 12,
     paddingHorizontal: 16,
-    borderBottomWidth: 1, borderBottomColor: Colors.borderSoft,
-    backgroundColor: Colors.bg,
+    borderBottomWidth: 1, borderBottomColor: C.borderSoft,
+    backgroundColor: C.bg,
   },
-  rowName:  { fontSize: 15.5, fontWeight: '600', color: Colors.textPrimary },
-  rowPhone: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  rowName:  { fontSize: 15.5, fontWeight: '600', color: C.textPrimary },
+  rowPhone: { fontSize: 13, color: C.textSecondary, marginTop: 2 },
 
   footer: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 9, paddingVertical: 18,
   },
-  footerText: { fontSize: 13, color: Colors.textMuted },
+  footerText: { fontSize: 13, color: C.textMuted },
 
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 },
 
   permIcon: {
-    width: 84, height: 84, borderRadius: 42, backgroundColor: Colors.borderSoft,
+    width: 84, height: 84, borderRadius: 42, backgroundColor: C.borderSoft,
     alignItems: 'center', justifyContent: 'center', marginBottom: 6,
   },
-  permHint: { fontSize: 12.5, color: Colors.textMuted, textAlign: 'center', marginTop: 10 },
+  permHint: { fontSize: 12.5, color: C.textMuted, textAlign: 'center', marginTop: 10 },
 
-  emptyTitle: { fontSize: 18, fontWeight: '800', color: Colors.textPrimary, textAlign: 'center' },
-  emptyText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21 },
+  emptyTitle: { fontSize: 18, fontWeight: '800', color: C.textPrimary, textAlign: 'center' },
+  emptyText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21 },
 
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.navy, borderRadius: Radius.md,
+    backgroundColor: C.navyBg, borderRadius: Radius.md,
     paddingVertical: 14, paddingHorizontal: 26, marginTop: 8, ...Shadows.sm,
   },
   primaryBtnText: { color: '#fff', fontWeight: '700', fontSize: 15.5 },
 
   error: {
-    fontSize: 13.5, color: Colors.redText, backgroundColor: Colors.redLight,
+    fontSize: 13.5, color: C.redText, backgroundColor: C.redLight,
     padding: 11, borderRadius: Radius.sm, marginHorizontal: 16, marginBottom: 6,
   },
 

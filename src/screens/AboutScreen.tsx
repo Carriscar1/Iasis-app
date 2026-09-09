@@ -5,10 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { APP_META, FOOTER_LABEL } from '../config/app';
 
 export default function AboutScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const isTablet  = width >= 768;
   const isDesktop = width >= 1024;
@@ -34,7 +35,7 @@ export default function AboutScreen() {
       ];
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
@@ -69,7 +70,7 @@ export default function AboutScreen() {
               <View key={s.title}>
                 <View style={styles.stepRow}>
                   <View style={styles.stepIcon}>
-                    <Ionicons name={s.icon as any} size={isElderly ? 24 : 20} color={Colors.navy} />
+                    <Ionicons name={s.icon as any} size={isElderly ? 24 : 20} color={C.navy} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.stepTitle, { fontSize: fs }]}>{s.title}</Text>
@@ -102,6 +103,7 @@ export default function AboutScreen() {
 }
 
 function Info({ label, value, fs }: { label: string; value: string; fs: number }) {
+  const { C, styles } = useTheme(makeStyles);
   return (
     <View style={styles.infoRow}>
       <Text style={[styles.infoLabel, { fontSize: fs - 1 }]}>{label}</Text>
@@ -110,27 +112,27 @@ function Info({ label, value, fs }: { label: string; value: string; fs: number }
   );
 }
 
-const styles = StyleSheet.create({
-  header:    { backgroundColor: Colors.navy, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  header:    { backgroundColor: C.navyBg, paddingHorizontal: 16, paddingBottom: 16, paddingTop: 10 },
   backBtn:   { width: 38, height: 38, borderRadius: 12, backgroundColor: 'rgba(255,255,255,.14)', alignItems: 'center', justifyContent: 'center' },
   title:     { fontWeight: '700', color: '#fff' },
-  brandCard: { alignItems: 'center', backgroundColor: Colors.surface, borderRadius: Radius.lg, paddingVertical: 28, ...Shadows.sm, marginBottom: 18 },
+  brandCard: { alignItems: 'center', backgroundColor: C.surface, borderRadius: Radius.lg, paddingVertical: 28, ...Shadows.sm, marginBottom: 18 },
   brandLogo: { fontSize: 44 },
-  brandName: { fontWeight: '800', color: Colors.navy, letterSpacing: -1, marginTop: 8 },
-  brandTag:  { color: Colors.textSecondary, marginTop: 2 },
-  versionPill:{ marginTop: 12, backgroundColor: Colors.borderSoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 5 },
-  versionText:{ color: Colors.textSecondary, fontWeight: '600' },
-  lead:      { color: Colors.textSecondary, lineHeight: 24, marginBottom: 8 },
-  section:   { fontWeight: '700', color: Colors.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
-  card:      { backgroundColor: Colors.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: Colors.border, ...Shadows.sm },
+  brandName: { fontWeight: '800', color: C.navy, letterSpacing: -1, marginTop: 8 },
+  brandTag:  { color: C.textSecondary, marginTop: 2 },
+  versionPill:{ marginTop: 12, backgroundColor: C.borderSoft, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 5 },
+  versionText:{ color: C.textSecondary, fontWeight: '600' },
+  lead:      { color: C.textSecondary, lineHeight: 24, marginBottom: 8 },
+  section:   { fontWeight: '700', color: C.textSecondary, marginTop: 20, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  card:      { backgroundColor: C.surface, borderRadius: Radius.md, borderWidth: 0.5, borderColor: C.border, ...Shadows.sm },
   stepRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  stepIcon:  { width: 42, height: 42, borderRadius: 12, backgroundColor: Colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
-  stepTitle: { fontWeight: '700', color: Colors.textPrimary },
-  stepDesc:  { color: Colors.textSecondary, marginTop: 3, lineHeight: 19 },
-  divider:   { height: 0.5, backgroundColor: Colors.border, marginLeft: 14 },
+  stepIcon:  { width: 42, height: 42, borderRadius: 12, backgroundColor: C.borderSoft, alignItems: 'center', justifyContent: 'center' },
+  stepTitle: { fontWeight: '700', color: C.textPrimary },
+  stepDesc:  { color: C.textSecondary, marginTop: 3, lineHeight: 19 },
+  divider:   { height: 0.5, backgroundColor: C.border, marginLeft: 14 },
   infoRow:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14 },
-  infoLabel: { color: Colors.textSecondary },
-  infoValue: { fontWeight: '600', color: Colors.textPrimary },
-  disclaimer:{ color: Colors.textMuted, lineHeight: 18, marginTop: 18, textAlign: 'center' },
-  footer:    { textAlign: 'center', color: Colors.textMuted, marginTop: 18 },
+  infoLabel: { color: C.textSecondary },
+  infoValue: { fontWeight: '600', color: C.textPrimary },
+  disclaimer:{ color: C.textMuted, lineHeight: 18, marginTop: 18, textAlign: 'center' },
+  footer:    { textAlign: 'center', color: C.textMuted, marginTop: 18 },
 });

@@ -7,7 +7,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Radius, Shadows } from '../theme';
+import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import {
@@ -20,6 +20,7 @@ import type { Medication } from '../types';
 const QUICK_AMOUNTS = [10, 20, 30, 60];
 
 export default function StockScreen() {
+  const { C, styles } = useTheme(makeStyles);
   const { width } = useWindowDimensions();
   const maxW = width >= 1024 ? 760 : width >= 768 ? 640 : undefined;
 
@@ -91,7 +92,7 @@ export default function StockScreen() {
   const untracked = meds.filter((m) => m.stock == null);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.bg }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={22} color="#fff" />
@@ -108,10 +109,10 @@ export default function StockScreen() {
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
-          <ActivityIndicator color={Colors.navy} style={{ marginTop: 50 }} />
+          <ActivityIndicator color={C.navy} style={{ marginTop: 50 }} />
         ) : meds.length === 0 ? (
           <View style={styles.empty}>
-            <Ionicons name="flask-outline" size={50} color={Colors.textMuted} />
+            <Ionicons name="flask-outline" size={50} color={C.textMuted} />
             <Text style={styles.emptyTitle}>Nenhum medicamento cadastrado</Text>
             <Text style={styles.emptyText}>
               Cadastre um tratamento na Agenda para controlar o estoque por aqui.
@@ -127,8 +128,8 @@ export default function StockScreen() {
                   const days = estimateDaysLeft(m, dpd);
                   const low  = (m.stock ?? 0) <= (m.stockThreshold ?? 5);
                   const zero = (m.stock ?? 0) === 0;
-                  const color = zero ? Colors.redText : low ? Colors.amberText : Colors.greenText;
-                  const bg    = zero ? Colors.redLight : low ? Colors.amberLight : Colors.greenLight;
+                  const color = zero ? C.redText : low ? C.amberText : C.greenText;
+                  const bg    = zero ? C.redLight : low ? C.amberLight : C.greenLight;
 
                   return (
                     <TouchableOpacity
@@ -167,7 +168,7 @@ export default function StockScreen() {
                           </View>
                         )}
                       </View>
-                      <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                      <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
                     </TouchableOpacity>
                   );
                 })}
@@ -184,8 +185,8 @@ export default function StockScreen() {
                     onPress={() => openEditor(m)}
                     activeOpacity={0.8}
                   >
-                    <View style={[styles.pill, { backgroundColor: Colors.borderSoft }]}>
-                      <Ionicons name="add" size={20} color={Colors.textSecondary} />
+                    <View style={[styles.pill, { backgroundColor: C.borderSoft }]}>
+                      <Ionicons name="add" size={20} color={C.textSecondary} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.medName, { fontSize: fs + 1 }]}>
@@ -195,7 +196,7 @@ export default function StockScreen() {
                         Toque para ativar o controle
                       </Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                    <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
                   </TouchableOpacity>
                 ))}
               </>
@@ -247,13 +248,13 @@ export default function StockScreen() {
                 ))}
               </View>
               <View style={styles.inputWrap}>
-                <Ionicons name="cube-outline" size={18} color={Colors.textMuted} style={{ marginRight: 8 }} />
+                <Ionicons name="cube-outline" size={18} color={C.textMuted} style={{ marginRight: 8 }} />
                 <TextInput
                   style={styles.input}
                   value={amount}
                   onChangeText={(t) => setAmount(t.replace(/\D/g, '').slice(0, 4))}
                   placeholder="ex: 30"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={C.textMuted}
                   keyboardType="number-pad"
                 />
               </View>
@@ -268,7 +269,7 @@ export default function StockScreen() {
                       value={threshold}
                       onChangeText={(t) => setThreshold(t.replace(/\D/g, '').slice(0, 3))}
                       placeholder="5"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={C.textMuted}
                       keyboardType="number-pad"
                     />
                   </View>
@@ -281,7 +282,7 @@ export default function StockScreen() {
                       value={units}
                       onChangeText={(t) => setUnits(t.replace(/\D/g, '').slice(0, 2))}
                       placeholder="1"
-                      placeholderTextColor={Colors.textMuted}
+                      placeholderTextColor={C.textMuted}
                       keyboardType="number-pad"
                     />
                   </View>
@@ -334,10 +335,10 @@ export default function StockScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.navy, paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.navyBg, paddingHorizontal: 16, paddingVertical: 14,
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 12,
@@ -348,11 +349,11 @@ const styles = StyleSheet.create({
   subtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 2 },
   scroll:   { padding: 16, gap: 10 },
 
-  section: { fontSize: 12.5, fontWeight: '700', color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 2 },
+  section: { fontSize: 12.5, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 2 },
 
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 13,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
+    backgroundColor: C.surface, borderRadius: Radius.lg,
     padding: 14, ...Shadows.sm,
   },
   pill: {
@@ -361,46 +362,46 @@ const styles = StyleSheet.create({
   },
   pillValue: { fontSize: 20, fontWeight: '800' },
   pillUnit:  { fontSize: 10, fontWeight: '600', marginTop: -2 },
-  medName: { fontWeight: '700', color: Colors.textPrimary },
-  medDose: { fontWeight: '500', color: Colors.textSecondary },
-  medInfo: { color: Colors.textSecondary, marginTop: 3 },
+  medName: { fontWeight: '700', color: C.textPrimary },
+  medDose: { fontWeight: '500', color: C.textSecondary },
+  medInfo: { color: C.textSecondary, marginTop: 3 },
   warn: {
     flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start',
     borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4, marginTop: 6,
   },
   warnText: { fontSize: 11.5, fontWeight: '700' },
 
-  hint: { fontSize: 13, color: Colors.textMuted, lineHeight: 19, marginTop: 14, paddingHorizontal: 4 },
+  hint: { fontSize: 13, color: C.textMuted, lineHeight: 19, marginTop: 14, paddingHorizontal: 4 },
 
   empty:      { alignItems: 'center', paddingVertical: 60, gap: 10, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.textPrimary },
-  emptyText:  { fontSize: 14.5, color: Colors.textSecondary, textAlign: 'center', lineHeight: 21 },
+  emptyTitle: { fontSize: 17, fontWeight: '700', color: C.textPrimary },
+  emptyText:  { fontSize: 14.5, color: C.textSecondary, textAlign: 'center', lineHeight: 21 },
 
   modalWrap:  { flex: 1, backgroundColor: 'rgba(15,28,50,0.45)', justifyContent: 'flex-end' },
-  modalCard:  { backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingBottom: 30 },
-  modalHandle:{ width: 42, height: 4, borderRadius: 2, backgroundColor: Colors.border, alignSelf: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: '800', color: Colors.textPrimary },
-  modalSub:   { fontSize: 14, color: Colors.textSecondary, marginTop: 4, marginBottom: 18 },
+  modalCard:  { backgroundColor: C.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 22, paddingBottom: 30 },
+  modalHandle:{ width: 42, height: 4, borderRadius: 2, backgroundColor: C.border, alignSelf: 'center', marginBottom: 16 },
+  modalTitle: { fontSize: 20, fontWeight: '800', color: C.textPrimary },
+  modalSub:   { fontSize: 14, color: C.textSecondary, marginTop: 4, marginBottom: 18 },
 
-  label: { fontSize: 13, fontWeight: '600', color: Colors.textSecondary, marginBottom: 7, marginTop: 8 },
+  label: { fontSize: 13, fontWeight: '600', color: C.textSecondary, marginBottom: 7, marginTop: 8 },
   quickRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   quickBtn: {
     flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.border, backgroundColor: Colors.bg,
+    borderWidth: 1.5, borderColor: C.border, backgroundColor: C.bg,
   },
-  quickBtnActive: { borderColor: Colors.navy, backgroundColor: Colors.navy },
-  quickText: { fontWeight: '700', color: Colors.textSecondary, fontSize: 14 },
+  quickBtnActive: { borderColor: C.navy, backgroundColor: C.navyBg },
+  quickText: { fontWeight: '700', color: C.textSecondary, fontSize: 14 },
   quickTextActive: { color: '#fff' },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.border, borderRadius: 12,
-    backgroundColor: Colors.bg, paddingHorizontal: 13,
+    borderWidth: 1.5, borderColor: C.border, borderRadius: 12,
+    backgroundColor: C.bg, paddingHorizontal: 13,
   },
-  input: { flex: 1, color: Colors.textPrimary, fontSize: 16, paddingVertical: 13 },
+  input: { flex: 1, color: C.textPrimary, fontSize: 16, paddingVertical: 13 },
 
-  primaryBtn: { backgroundColor: Colors.navy, borderRadius: Radius.md, paddingVertical: 15, alignItems: 'center', marginTop: 18 },
+  primaryBtn: { backgroundColor: C.navyBg, borderRadius: Radius.md, paddingVertical: 15, alignItems: 'center', marginTop: 18 },
   primaryText:{ color: '#fff', fontWeight: '700', fontSize: 16 },
   ghostBtn:   { alignItems: 'center', paddingVertical: 12, marginTop: 4 },
-  ghostText:  { color: Colors.redText, fontSize: 13.5, fontWeight: '600' },
-  cancelText: { color: Colors.textSecondary, fontSize: 14.5 },
+  ghostText:  { color: C.redText, fontSize: 13.5, fontWeight: '600' },
+  cancelText: { color: C.textSecondary, fontSize: 14.5 },
 });

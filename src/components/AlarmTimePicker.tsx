@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
-import { Colors } from '../theme';
+import { useTheme, type ThemeColors } from '../theme';
 
 // ─────────────────────────────────────────────
 //  IASIS — Seletor de horário estilo "despertador"
@@ -28,6 +28,7 @@ const parse = (v: string): [number, number] => {
 };
 
 export default function AlarmTimePicker({ value, onChange, isElderly = false }: Props) {
+  const { C, styles } = useTheme(makeStyles);
   const [h, m] = parse(value);
 
   const setH = (nh: number) => onChange(`${pad(nh)}:${pad(m)}`);
@@ -60,6 +61,7 @@ export default function AlarmTimePicker({ value, onChange, isElderly = false }: 
 function Wheel({
   range, value, onChange, itemH, label,
 }: { range: number; value: number; onChange: (n: number) => void; itemH: number; label: string }) {
+  const { C, styles } = useTheme(makeStyles);
   const ref = useRef<ScrollView>(null);
   const items = Array.from({ length: range }, (_, i) => i);
   const VISIBLE = 3;
@@ -117,16 +119,16 @@ function Wheel({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   wrap:        { alignItems: 'center' },
   display:     { alignItems: 'center', marginBottom: 12 },
-  displayText: { fontWeight: '800', color: Colors.navy, letterSpacing: 1 },
-  displaySub:  { color: Colors.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+  displayText: { fontWeight: '800', color: C.navy, letterSpacing: 1 },
+  displaySub:  { color: C.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
   wheels:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
-  colon:       { fontWeight: '800', color: Colors.navy, marginHorizontal: 4 },
+  colon:       { fontWeight: '800', color: C.navy, marginHorizontal: 4 },
   wheelBox:    { width: 78, overflow: 'hidden', position: 'relative' },
-  centerBand:  { position: 'absolute', left: 0, right: 0, backgroundColor: Colors.greenLight, borderRadius: 12, borderWidth: 1, borderColor: Colors.green },
-  wheelText:   { color: Colors.textMuted, fontWeight: '600' },
-  wheelTextActive: { color: Colors.navy, fontWeight: '800' },
-  wheelLabel:  { fontSize: 11, color: Colors.textMuted, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  centerBand:  { position: 'absolute', left: 0, right: 0, backgroundColor: C.greenLight, borderRadius: 12, borderWidth: 1, borderColor: C.green },
+  wheelText:   { color: C.textMuted, fontWeight: '600' },
+  wheelTextActive: { color: C.navy, fontWeight: '800' },
+  wheelLabel:  { fontSize: 11, color: C.textMuted, marginTop: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
 });
