@@ -12,6 +12,21 @@ export interface UserProfile {
   created_at:    string;
 }
 
+/**
+ * O texto tem formato de e-mail?
+ *
+ * A regex é frouxa de propósito: algo antes do @, algo depois, e um domínio com
+ * ponto e sufixo de pelo menos duas letras. Regex restritiva de e-mail acaba
+ * recusando endereço válido (alias com `+`, domínio novo, acento), e esse erro é
+ * o pior possível — a pessoa não entra e não entende o motivo.
+ *
+ * Quem decide se o endereço existe de verdade é o e-mail de confirmação. Esta
+ * checagem só pega o erro de digitação na hora, na tela, em vez de deixar a
+ * pessoa esperando uma mensagem que nunca vai chegar.
+ */
+export const isValidEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test((email ?? '').trim());
+
 // Atualiza campos editáveis do próprio perfil (telefone, nome, tag RFID).
 export const updateProfile = async (
   userId: string,

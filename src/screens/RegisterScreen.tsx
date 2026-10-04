@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, UserProfile } from '../services/auth';
+import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, isValidEmail, UserProfile } from '../services/auth';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
 import { formatPhoneInput } from '../services/chat';
@@ -91,6 +91,10 @@ export default function RegisterScreen() {
   const handleFindCaregiver = async () => {
     setError('');
     if (!caregiverEmail.trim()) { setError('Informe o e-mail do seu cuidador.'); return; }
+    if (!isValidEmail(caregiverEmail)) {
+      setError('E-mail inválido. Confira se está escrito certo, como nome@email.com');
+      return;
+    }
     setLoading(true);
     const found = await findCaregiverByEmail(caregiverEmail);
     setLoading(false);
@@ -111,6 +115,10 @@ export default function RegisterScreen() {
     }
     if (!name.trim())        { setError('Informe seu nome.');                    return; }
     if (!email.trim())       { setError('Informe seu e-mail.');                  return; }
+    if (!isValidEmail(email)) {
+      setError('E-mail inválido. Confira se está escrito certo, como nome@email.com');
+      return;
+    }
     if (password.length < 6) { setError('Senha deve ter pelo menos 6 dígitos.'); return; }
     if (password !== confirm){ setError('As senhas não coincidem.');             return; }
     if (requiresCode && !activationCode.trim()) {

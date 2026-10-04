@@ -22,7 +22,7 @@ import {
   listCareTeam, removeCareLink, addCareLink, type CareMember,
 } from '../services/careTeam';
 import { contactsSupported } from '../services/contacts';
-import { findCaregiverByEmail } from '../services/auth';
+import { findCaregiverByEmail, isValidEmail } from '../services/auth';
 import { openWhatsApp } from '../services/chat';
 
 export default function CareTeamScreen() {
@@ -58,6 +58,10 @@ export default function CareTeamScreen() {
   const addByEmail = async () => {
     const value = email.trim().toLowerCase();
     if (!value) { setError('Digite o e-mail da pessoa.'); return; }
+    if (!isValidEmail(value)) {
+      setError('E-mail inválido. Confira se está escrito certo, como nome@email.com');
+      return;
+    }
 
     setAdding(true);
     setError(null);

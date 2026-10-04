@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { signIn, resendConfirmation } from '../services/auth';
+import { signIn, resendConfirmation, isValidEmail } from '../services/auth';
 import { useStore } from '../store';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
@@ -38,8 +38,9 @@ export default function LoginScreen() {
     setError('');
     setNeedsConfirm(false);
     setResentMsg('');
-    if (!email.trim()) { setError('Informe seu e-mail.'); return; }
-    if (!password)     { setError('Informe sua senha.'); return; }
+    if (!email.trim())         { setError('Informe seu e-mail.'); return; }
+    if (!isValidEmail(email))  { setError('E-mail inválido. Confira se está escrito certo, como nome@email.com'); return; }
+    if (!password)             { setError('Informe sua senha.'); return; }
 
     setLoading(true);
     try {
