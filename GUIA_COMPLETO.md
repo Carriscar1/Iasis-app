@@ -258,21 +258,35 @@ Vá em **Sketch** → **Include Library** → **Manage Libraries** e instale:
 |---|---|
 | PubSubClient | Nick O'Leary |
 | DHT sensor library | Adafruit |
+| Adafruit Unified Sensor | Adafruit |
 | MFRC522 | GithubCommunity |
-| ArduinoJson | Benoit Blanchon |
+| ArduinoJson (7.x) | Benoit Blanchon |
 
 ### 4.4 Configurar o firmware
 
-Abra `firmware/esp32/iasis_dispenser.ino` e edite estas linhas:
+As credenciais ficam fora do `.ino`, num arquivo que **não vai para o GitHub**
+(o repositório é público):
+
+1. Na pasta `firmware/esp32/`, copie `secrets.example.h` para `secrets.h`
+2. Preencha o `secrets.h`:
 
 ```cpp
-const char* WIFI_SSID     = "NOME_DA_SUA_REDE";      // sua rede Wi-Fi
-const char* WIFI_PASSWORD = "SENHA_DO_WIFI";           // senha do Wi-Fi
-const char* MQTT_BROKER   = "abc123.hivemq.cloud";    // URL do broker
-const char* MQTT_USER     = "iasis_esp32";             // usuário MQTT
-const char* MQTT_PASS     = "SuaSenhaEsp123";          // senha MQTT
-const char* DISPENSER_ID  = "01";                      // ID do dispenser
+#define WIFI_SSID      "NOME_DA_SUA_REDE"
+#define WIFI_PASSWORD  "SENHA_DO_WIFI"
+#define MQTT_BROKER    "abc123.s1.eu.hivemq.cloud"   // sem wss:// e sem porta
+#define MQTT_PORT      8883                          // TLS do HiveMQ Cloud
+#define MQTT_USE_TLS   1
+#define MQTT_USER      "iasis_esp32"
+#define MQTT_PASS      "SuaSenhaEsp123"
+#define DISPENSER_ID   "01"
+#define DEFAULT_TAG    "A3F2910C"                    // UID da pulseira
 ```
+
+Se esquecer de criar o `secrets.h`, a compilação para com um aviso explicando.
+
+Sensores opcionais (no topo do `.ino`): mude `USE_HOME_SENSOR` e
+`USE_DROP_SENSOR` para `1` quando o sensor de posição zero e o sensor IR de
+queda estiverem montados.
 
 ### 4.5 Gravar no ESP32
 
@@ -300,9 +314,23 @@ GPIO 27    →  A4988 (DIR)       Direção do motor
 GPIO 26    →  A4988 (EN)        Habilita motor
 GPIO 32    →  Motor vibratório  Pulseira (via transistor)
 GPIO  2    →  LED onboard       Indicador de status
-3.3V       →  DHT22 + RC522     Alimentação dos sensores
-GND        →  Todos os GNDs     Terra comum
+GPIO 33    →  Hall A3144        Posição zero do disco (opcional)
+GPIO 35    →  Sensor IR         Confirma a queda da dose (opcional)
+3.3V       →  DHT22 + RC522     Alimentação dos sensores (RC522 NUNCA em 5V)
+GND        →  Todos os GNDs     Terra comum (ESP32 + A4988 + fonte 12 V)
 ```
+
+Cuidados elétricos:
+
+- **A4988:** capacitor eletrolítico de 100 µF entre VMOT e GND, o mais perto
+  possível do driver — sem ele o pico ao ligar a fonte de 12 V pode queimar o chip.
+  Ajuste o VREF antes de ligar o motor.
+- **EN (GPIO 26):** resistor de 10 kΩ para 3.3V, para o motor não tremer
+  enquanto o ESP32 dá boot.
+- **Motor vibratório:** diodo 1N4148 em paralelo com o motor (anti-retorno) e
+  resistor de 1 kΩ entre o GPIO 32 e a base do transistor.
+- **Alimentação:** fonte 12 V → A4988 (VMOT) e step-down (LM2596/MP1584) 12 V → 5 V
+  → pino VIN do ESP32. Todos os GND ligados juntos.
 
 ---
 
@@ -317,7 +345,7 @@ Você pode testar o app completamente sem o ESP32:
 
 No painel HiveMQ, vá em **Web Client** e publique manualmente:
 - Tópico: `iasis/dispenser/01/status`
-- Payload: `{"type":"STATUS","online":true,"humidity":48,"temperature":23,"firmware":"2.1.0","uptime":120}`
+- Payload: `{"type":"STATUS","online":true,"humidity":48,"temperature":23,"firmware":"2.2.0","uptime":120}`
 
 O app receberá em tempo real.
 

@@ -195,15 +195,19 @@ npx expo start --tunnel # se o celular não estiver na mesma rede
 3. Configure e grave o firmware (`firmware/esp32/iasis_dispenser.ino`) — use o **mesmo
    `DISPENSER_ID`** que você digitou no app:
 
+   As credenciais ficam em `firmware/esp32/secrets.h` (fora do GitHub): copie o
+   `secrets.example.h` para `secrets.h` e preencha:
+
 ```cpp
-const char* WIFI_SSID     = "NOME_DA_SUA_REDE";
-const char* WIFI_PASSWORD = "SENHA_DO_WIFI";
-const char* MQTT_BROKER   = "SEU_CLUSTER.hivemq.cloud";
-const char* MQTT_USER     = "iasis_esp32";
-const char* MQTT_PASS     = "sua_senha_esp32";
+#define WIFI_SSID      "NOME_DA_SUA_REDE"
+#define WIFI_PASSWORD  "SENHA_DO_WIFI"
+#define MQTT_BROKER    "SEU_CLUSTER.s1.eu.hivemq.cloud"
+#define MQTT_USER      "iasis_esp32"
+#define MQTT_PASS      "sua_senha_esp32"
+#define DISPENSER_ID   "01"
 ```
 
-Bibliotecas (Arduino Library Manager): **PubSubClient**, **DHT sensor library** (Adafruit), **MFRC522**, **ArduinoJson**.
+Bibliotecas (Arduino Library Manager): **PubSubClient**, **DHT sensor library** + **Adafruit Unified Sensor** (Adafruit), **MFRC522**, **ArduinoJson** 7.x.
 
 Com o broker configurado, o app troca o simulador pelo hardware real automaticamente — mesma interface, mesmas telas.
 
@@ -223,6 +227,8 @@ GPIO 27        →  A4988 (DIR)
 GPIO 26        →  A4988 (EN)
 GPIO 32        →  Motor vibratório (via transistor NPN)
 GPIO  2        →  LED onboard (status)
+GPIO 33        →  Hall A3144 — posição zero do disco (opcional)
+GPIO 35        →  Sensor IR — confirma a queda da dose (opcional)
 3.3V           →  DHT22 (VCC), RC522 (VCC)
 GND            →  Todos os GNDs
 ```
