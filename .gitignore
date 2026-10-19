@@ -12,6 +12,3 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
-
-# Credenciais do firmware ESP32
-firmware/esp32/secrets.h
