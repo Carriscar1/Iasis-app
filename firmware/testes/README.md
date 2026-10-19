@@ -101,7 +101,7 @@ bibliotecas. Abaixo está o que está certo, o que falta e o que mudei.
 |---|---|---|
 | 1 — Energia | Certo (5,0 V, medir antes de ligar carga, diodo 1N5819 opcional) | "Isolar as pontas" do ramal de 12 V é arriscado: **desconecte o ramal**. Meça a polaridade da P4. |
 | 2 — RC522 | Certo (só 3V3, DumpInfo, anotar UID) | Conferir soldas da barra de pinos. O teste 1 lê o registrador de versão, que separa "fio errado" de "módulo ruim". |
-| 3 — LCD | Certo (pontas do potenciômetro, RW no GND) | **Mudei o E do GPIO 12 para o 17.** O 12 é pino de boot: se ele estiver em nível alto quando o ESP32 liga, a placa não inicia, e isso parece defeito ou curto. O 17 não tem esse risco. |
+| 3 — LCD | Certo (pontas do potenciômetro, RW no GND) | **Mudei o E do GPIO 12 para o 15.** O 12 é pino de boot: se ele estiver em nível alto quando o ESP32 liga, a placa não inicia, e isso parece defeito ou curto. A placa da equipe não tem GPIO 16/17 (só RX0/TX0, que são o USB), então sobra o 15. |
 | 4 — Servo | Certo (5 V da protoboard, capacitor, testar solto) | O Sweep vai a 180° e pode forçar o servo no batente. Os testes vão de 0° a 90°. Com MG996R travado, o LM2596 não segura a corrente e o ESP32 reinicia (aparece *Brownout* no Serial). |
 | 5 — A4988 | Certo (VDD no 3V3, VREF antes do motor, pares de bobina, nunca a quente) | Conferir a orientação do módulo (item 5 acima) e a polaridade do capacitor. |
 | 11.4 — código do motor | Funciona | O teste 5 faz o que vocês pediram (180° a cada 8 s) e desliga o driver entre os giros. |
@@ -244,7 +244,7 @@ Mantém tudo da etapa 1 e acrescenta:
 | 3 V0 | **meio** do potenciômetro (as pontas no 5 V e no GND) |
 | 4 RS | GPIO 13 |
 | 5 RW | **GND** (obrigatório: impede o LCD de mandar 5 V para o ESP32) |
-| 6 E | **GPIO 17** |
+| 6 E | **GPIO 15** |
 | 7 a 10 (D0–D3) | soltos |
 | 11 D4 | GPIO 14 |
 | 12 D5 | GPIO 25 |
@@ -263,8 +263,8 @@ com **Autorizada** (ou **Tag negada** para outro cartão).
 - Só uma fileira de quadradinhos: gire o potenciômetro.
 - Acende mas não escreve: confira RS, E e D4–D7.
 - Letras estranhas: um dos D4–D7 está trocado.
-- O ESP32 parou de ligar depois do LCD: confira se o E está mesmo no **17** e não
-  no 12.
+- O ESP32 parou de ligar depois do LCD: confira se o E está mesmo no **15** e não
+  no 12. Nunca use RX0/TX0: são a conexão USB com o computador.
 
 ---
 
@@ -279,9 +279,12 @@ Montagem igual à etapa 2. A diferença é a nuvem.
 3. Copie o endereço do cluster (algo como `xxxx.s1.eu.hivemq.cloud`).
 
 **Preparar o código:**
-1. Na pasta `etapa3_nfc_lcd_hivemq`, copie `secrets.example.h` para **`secrets.h`**.
-2. Preencha Wi-Fi (**2,4 GHz**: o ESP32 não enxerga 5 GHz), endereço, usuário,
-   senha e o UID da pulseira. O `secrets.h` não vai para o GitHub.
+1. Abra `etapa3_nfc_lcd_hivemq.ino` e preencha a seção **CONFIGURAÇÕES**, logo
+   abaixo dos `#include`: Wi-Fi (**2,4 GHz**, porque o ESP32 não enxerga 5 GHz),
+   endereço do cluster, usuário, senha e o UID da pulseira. As etapas 4 e 6 têm a
+   mesma seção.
+2. ⚠️ **O repositório é público.** Não faça commit desses arquivos com as senhas
+   reais: preencha só na cópia do computador que grava a placa.
 3. Bibliotecas: + **PubSubClient** (Nick O'Leary) e **ArduinoJson** 7.x.
 
 **Ver chegando na nuvem:** no console do HiveMQ, abra o **Web Client**, conecte
@@ -325,8 +328,8 @@ servo, **listra no GND**.
 
 **Primeiro teste com o servo solto**, fora da trava.
 
-**Código:** `etapa4_nfc_lcd_hivemq_servo` (copie o mesmo `secrets.h` da etapa 3
-para esta pasta). Biblioteca: + **ESP32Servo**.
+**Código:** `etapa4_nfc_lcd_hivemq_servo` (preencha a seção CONFIGURAÇÕES igual à
+etapa 3). Biblioteca: + **ESP32Servo**.
 
 **Passou se:** a pulseira **autorizada** gira o servo para 90°, ele volta para 0°
 depois de 3 s, e a leitura continua chegando no HiveMQ. **Um cartão
@@ -381,7 +384,7 @@ Junte as montagens das etapas 4 e 5. Os pinos não se repetem:
 | Componente | Pinos |
 |---|---|
 | RC522 | SDA 5 · SCK 18 · MOSI 23 · MISO 19 · RST 22 · 3V3 |
-| LCD | RS 13 · **E 17** · D4 14 · D5 25 · D6 33 · D7 32 |
+| LCD | RS 13 · **E 15** · D4 14 · D5 25 · D6 33 · D7 32 |
 | Servo | GPIO 4 (5 V da protoboard) |
 | A4988 | STEP 26 · DIR 27 · EN 21 · VDD no 3V3 |
 
@@ -389,7 +392,7 @@ Junte as montagens das etapas 4 e 5. Os pinos não se repetem:
 **compartimento 1 ficar na saída**. Sem sensor de posição zero, é assim que o
 código sabe onde o disco está.
 
-**Código:** `etapa6_integrado` (+ `secrets.h`). Ele segue o formato de mensagens
+**Código:** `etapa6_integrado` (preencha a seção CONFIGURAÇÕES). Ele segue o formato de mensagens
 do app e **nunca libera dose sozinho**: a pulseira só gera o `RFID_READ`, e o
 disco e a trava só se mexem quando chega um `DISPENSE`.
 

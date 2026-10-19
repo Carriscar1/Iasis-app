@@ -12,5 +12,3 @@ web-build/
 
 expo-env.d.ts
 # @end expo-cli
-# Credenciais do firmware e dos testes de bancada
-firmware/**/secrets.h

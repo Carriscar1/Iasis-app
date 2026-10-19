@@ -7,7 +7,7 @@
  * LCD 16x2 (paralelo, modo 4 bits):
  *   1 VSS → GND           2 VDD → 5V            3 V0 → meio do potenciometro
  *   4 RS  → GPIO 13       5 RW  → GND (obrigatorio)
- *   6 E   → GPIO 17       (veja PIN_LCD_E abaixo)
+ *   6 E   → GPIO 15       (veja PIN_LCD_E abaixo)
  *   11 D4 → GPIO 14       12 D5 → GPIO 25
  *   13 D6 → GPIO 33       14 D7 → GPIO 32
  *   15 A  → resistor 220 Ω → 5V      16 K → GND
@@ -28,8 +28,8 @@ const char* TAG_AUTORIZADA = "A3F2910C";
 #define PIN_RFID_RST  22
 
 #define PIN_LCD_RS  13
-#define PIN_LCD_E   17   // GPIO 12 tambem funciona, mas e pino de boot: se o ESP32
-                         // nao ligar com o LCD conectado, a causa e essa
+#define PIN_LCD_E   15   // a placa nao tem GPIO 16/17; nao use o 12 (impede o boot)
+                         // nem RX0/TX0 (sao a conexao USB com o computador)
 #define PIN_LCD_D4  14
 #define PIN_LCD_D5  25
 #define PIN_LCD_D6  33

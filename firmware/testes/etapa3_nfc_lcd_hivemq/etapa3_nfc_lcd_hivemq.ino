@@ -3,7 +3,7 @@
  * Resultado: na tela, no Monitor Serial (115200 baud) e no HiveMQ
  *
  * Montagem: igual ao teste 2 (nada de fio novo).
- * Antes de gravar: copie secrets.example.h → secrets.h e preencha.
+ * Antes de gravar: preencha a secao CONFIGURACOES logo abaixo dos includes.
  *
  * Como ver chegando na nuvem: no console do HiveMQ Cloud, abra o Web Client,
  * conecte com o usuario iasis_app e assine o topico  iasis/#
@@ -25,11 +25,24 @@
 #include <MFRC522.h>
 #include <LiquidCrystal.h>
 
-#if __has_include("secrets.h")
-  #include "secrets.h"
-#else
-  #error "Copie secrets.example.h para secrets.h (mesma pasta do .ino) e preencha"
-#endif
+// ─────────────────────────────────────────────
+//  CONFIGURACOES — preencha antes de gravar
+//  ⚠️ O repositorio e PUBLICO: nao faca commit deste arquivo com as
+//     senhas reais preenchidas.
+// ─────────────────────────────────────────────
+#define WIFI_SSID      "SUA_REDE_WIFI"        // rede 2,4 GHz (o ESP32 nao enxerga 5 GHz)
+#define WIFI_PASSWORD  "SUA_SENHA_WIFI"
+
+// Endereco do cluster no HiveMQ Cloud, SEM "mqtts://" e SEM a porta
+#define MQTT_HOST      "xxxxxxxx.s1.eu.hivemq.cloud"
+#define MQTT_PORT      8883                   // MQTT com TLS
+#define MQTT_USER      "iasis_esp32"
+#define MQTT_PASS      "SUA_SENHA_MQTT"
+
+#define DISPENSER_ID   "01"                   // igual ao da tela "Configurar dispensador" do app
+
+// UID da pulseira, anotado no teste 1
+#define TAG_AUTORIZADA "A3F2910C"
 
 // 1 = nao confere o certificado do HiveMQ. Use SO para diagnosticar: se com 0
 // nao conecta e com 1 conecta, o problema e o certificado, nao a senha.
@@ -39,7 +52,7 @@
 #define PIN_RFID_RST  22
 
 #define PIN_LCD_RS  13
-#define PIN_LCD_E   17
+#define PIN_LCD_E   15
 #define PIN_LCD_D4  14
 #define PIN_LCD_D5  25
 #define PIN_LCD_D6  33
