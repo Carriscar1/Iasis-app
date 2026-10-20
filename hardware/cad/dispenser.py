@@ -33,7 +33,11 @@ import render             # noqa: E402
 
 PARAMETROS = dict(
     # ── Acabamento da carcaça ──────────────────────────────────────────────
-    raio_frente=30.0, raio_tampa_frente=8.0, raio_bandeja=12.0,
+    raio_frente=30.0, raio_tampa_frente=3.0, raio_bandeja=12.0,
+    # Versão rápida: o enchimento maciço dos originais (bojo da frente e rampa de
+    # trás) sai; a calha já leva o remédio até a bandeja. Por fora nada muda.
+    esvaziar=True,
+    tampa_espessura=5.0,          # era 20 mm maciços
     parede=5.0, parede_bandeja=3.5,
     logo_largura=60.0, logo_centro_z=170.0, logo_relevo=2.0, ecg_profundidade=1.2,
     texto="IASIS", texto_altura=20.0, texto_centro_z=112.0, texto_relevo=1.2,
@@ -41,12 +45,12 @@ PARAMETROS = dict(
 
     # ── Encaixes ───────────────────────────────────────────────────────────
     junta_y=100.0, macho_recuo=1.7, macho_largura=1.6, macho_comprimento=5.0,
-    folga=0.2,                    # por lado. Teste no corpo de prova e ajuste
-    aba_altura=6.0, aba_espessura=2.5, aba_folga=0.25,
+    folga=0.25,                   # por lado (folgada para impressão rápida, sem corpo de prova)
+    aba_altura=6.0, aba_espessura=2.5, aba_folga=0.3,
     corte_z=135.0,                # altura do corte da versão dividida
 
     # ── Tampa: 4 parafusos M3 × 16 ─────────────────────────────────────────
-    tampa_parafusos=[(15, 15), (185, 15), (60, 188), (140, 188)],
+    tampa_parafusos=[(15, 15), (185, 15), (13, 190), (187, 190)],   # M3 × 12 escareado
     furo_guia_m3=2.5,             # furo para parafuso M3 entrar rosqueando no plástico
     furo_passante_m3=3.4,
     rebaixo_cabeca=7.0, rebaixo_tampa=12.0,   # escareado um pouco fundo: nada raspa no disco
@@ -56,7 +60,7 @@ PARAMETROS = dict(
     centro_disco=(100.0, 95.0),
     compartimentos=8,             # o firmware usa 8 (25 passos por compartimento)
     raio_bolsos=45.0, bolso_diametro=22.0,
-    disco_diametro=126.0, disco_altura=20.0,
+    disco_diametro=126.0, disco_altura=16.0,
     disco_folga=0.0,              # o disco apoia na prateleira e gira pelo lado chato do eixo
     # NEMA 17 (medidas da norma; o comprimento do corpo varia de 34 a 48 mm)
     nema_lado=42.3, nema_furos=31.0, nema_ressalto=22.0, nema_comprimento=48.0,
@@ -120,13 +124,18 @@ def carcaca(P):
     frente = cad.carregar_original(orig, "frente")
     tampa = cad.carregar_original(orig, "tampa")
     topo = 280.0
+    te = P["tampa_espessura"]
+    tampa = cad.recortar(tampa, -1, 201, -1, 201, topo, topo + te)
+    if P["esvaziar"]:
+        frente = cad.subtrair(frente, cad.caixa(5, 195, 5, 100.5, 5.5, topo + 1))
+        tras = cad.subtrair(tras, cad.caixa(5, 195, 99.5, 195, 5, topo + 1))
 
     # 1. Frente arredondada
     R, w = P["raio_frente"], P["parede"]
     for canto, sentido in [((0, 0), (1, 1)), ((200, 0), (-1, 1))]:
         frente = cad.arredondar_canto_vertical(frente, canto, sentido, R, 0, topo, parede=w)
-        tampa = cad.arredondar_canto_vertical(tampa, canto, sentido, R, topo, topo + 20)
-    tampa = cad.arredondar_aresta(tampa, "YZ", (0, topo + 20), (1, -1), P["raio_tampa_frente"], 0, 200)
+        tampa = cad.arredondar_canto_vertical(tampa, canto, sentido, R, topo, topo + te)
+    tampa = cad.arredondar_aresta(tampa, "YZ", (0, topo + te), (1, -1), P["raio_tampa_frente"], 0, 200)
     for canto, sentido in [((35, -50), (1, 1)), ((165.1, -50), (-1, 1))]:
         frente = cad.arredondar_canto_vertical(frente, canto, sentido, P["raio_bandeja"], 0, 15.5,
                                                parede=P["parede_bandeja"])
@@ -180,6 +189,10 @@ def carcaca(P):
         fix.append(cad.cilindro(6.0, (x, y, 262), (x, y, 280)))
         fix.append(cad.cone(6.0, 6.0, (x, y, 262.01)))
     frente = cad.unir([frente] + fix)
+    # ressaltos dos parafusos de trás (colados na parede de trás)
+    tras = cad.unir([tras] + [m for (x, y) in P["tampa_parafusos"][2:]
+                              for m in (cad.cilindro(6.0, (x, y, 262), (x, y, 280)),
+                                        cad.cone(6.0, 6.0, (x, y, 262.01)))])
 
     # 5. Apoio da prateleira (as duas metades), aberto no meio da frente para a calha passar
     corpo = cad.unir([tras, frente])
@@ -188,7 +201,7 @@ def carcaca(P):
     frente = cad.unir([frente, cad.intersectar(apoio, cad.caixa(-1, 201, -60, 100, 0, 300))])
     tras = cad.unir([tras, cad.intersectar(apoio, cad.caixa(-1, 201, 100, 201, 0, 300))])
 
-    # 6. Furos-guia dos parafusos da tampa (cantos da frente nos ressaltos; atrás, no maciço)
+    # 6. Furos-guia dos parafusos da tampa (nos ressaltos)
     guias = [cad.cilindro(P["furo_guia_m3"] / 2, (x, y, 281), (x, y, 266))
              for (x, y) in P["tampa_parafusos"]]
     frente = cad.subtrair(frente, guias[:2])
@@ -210,11 +223,8 @@ def carcaca(P):
     aba2d = aba2d.difference(box(55, -1, 145, 25))     # a placa do LCD sobe até perto do topo
     aba = cad.extrudar(aba2d, topo - P["aba_altura"], topo + 0.5)
     tampa = cad.unir([tampa, aba])
-    furos = []
-    for (x, y) in P["tampa_parafusos"]:
-        furos.append(cad.cilindro(P["furo_passante_m3"] / 2, (x, y, 301), (x, y, 270)))
-        furos.append(cad.cilindro(P["rebaixo_cabeca"] / 2, (x, y, 301), (x, y, 300 - P["rebaixo_tampa"])))
-    tampa = cad.subtrair(tampa, furos)
+    tampa = cad.subtrair(tampa, [furo_escareado(x, y, topo + te, P, te)
+                                 for (x, y) in P["tampa_parafusos"]])
 
     return dict(tras=tras, frente=frente, tampa=tampa), dict(entrada_espessura=esp)
 
@@ -300,8 +310,8 @@ def mecanismo(P, carcaca_pecas):
         num = affinity.translate(num, cx + rn * math.cos(math.radians(a)), cy + rn * math.sin(math.radians(a)))
         cortes.append(cad.extrudar(num, z1 - 0.6, z1 + 1))
     # furo do eixo em D (eixo de 5 mm com rebaixo plano)
-    furo = disco_2d((cx, cy), P["eixo_diametro"] / 2 + 0.15).intersection(
-        box(cx - 5, cy - 5, cx + 5, cy - P["eixo_diametro"] / 2 + P["eixo_chato"] + 0.15))
+    furo = disco_2d((cx, cy), P["eixo_diametro"] / 2 + 0.2).intersection(
+        box(cx - 5, cy - 5, cx + 5, cy - P["eixo_diametro"] / 2 + P["eixo_chato"] + 0.2))
     cortes.append(cad.extrudar(furo, z0 - 1, z1 + 1))
     # marca do compartimento 1 na borda
     cortes.append(cad.caixa(cx - 1.2, cx + 1.2, cy - P["disco_diametro"] / 2 - 1,
@@ -416,7 +426,7 @@ def corpos_de_prova(p, P):
     return {
         "1_junta_parte_de_tras": cad.recortar(p["tras"], -1, 30, 94, 112, 140, 165),
         "1_junta_parte_da_frente": cad.recortar(p["frente"], -1, 30, 88, 100.5, 140, 165),
-        "2_tampa_canto": cad.recortar(p["tampa"], -1, 45, -1, 45, 270, 301),
+        "2_tampa_canto": cad.recortar(p["tampa"], -1, 45, -1, 45, 270, 290),
         "2_corpo_canto_topo": cad.recortar(p["frente"], -1, 45, -1, 45, 255, 280),
         "3_divisao_baixo": cad.recortar(p["frente_baixo"], -1, 30, 40, 70, zc - 15, zc + 10),
         "3_divisao_cima": cad.recortar(p["frente_cima"], -1, 30, 40, 70, zc - 1, zc + 15),

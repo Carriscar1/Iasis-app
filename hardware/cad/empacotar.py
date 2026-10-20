@@ -18,42 +18,46 @@ AQUI = Path(__file__).resolve().parent
 SAIDA = AQUI / "saida"
 DENSIDADE_PLA = 1.24  # g/cm³
 
-# arquivo: (quantidade, preenchimento, suporte, observação)
+# arquivo: (quantidade, preenchimento, suporte, observação, prioridade)
 PECAS = {
-    "corpo_parte_da_frente": (1, 0.15, "só na janela de baixo", "ponte de 130 mm na janela da bandeja"),
-    "corpo_frente_baixo":    (1, 0.15, "só na janela de baixo", "ponte de 130 mm na janela da bandeja"),
-    "corpo_frente_cima":     (1, 0.15, "não", ""),
-    "corpo_parte_de_tras":   (1, 0.15, "não", "deitada de costas"),
-    "corpo_tras_baixo":      (1, 0.15, "não", ""),
-    "corpo_tras_cima":       (1, 0.15, "não", ""),
-    "tampa":                 (1, 0.15, "não", "de cabeça para baixo"),
-    "prateleira":            (1, 0.25, "não", ""),
-    "disco":                 (1, 0.25, "não", "números para cima"),
-    "calha":                 (1, 0.15, "não", ""),
-    "suporte_servo":         (1, 0.50, "não", ""),
-    "paleta":                (1, 1.00, "não", "peça fina, 100 % de preenchimento"),
-    "painel_eletronica_x2":  (2, 0.25, "não", "imprimir 2 cópias"),
+    "corpo_parte_da_frente": (1, 0.10, "só na janela de baixo", "ponte de 130 mm na janela da bandeja", 1),
+    "corpo_frente_baixo":    (1, 0.10, "só na janela de baixo", "ponte de 130 mm na janela da bandeja", 1),
+    "corpo_frente_cima":     (1, 0.10, "não", "", 1),
+    "corpo_parte_de_tras":   (1, 0.10, "não", "deitada de costas", 1),
+    "corpo_tras_baixo":      (1, 0.10, "não", "", 1),
+    "corpo_tras_cima":       (1, 0.10, "não", "", 1),
+    "tampa":                 (1, 0.10, "não", "de cabeça para baixo", 1),
+    "prateleira":            (1, 0.15, "não", "", 2),
+    "disco":                 (1, 0.15, "não", "números para cima", 2),
+    "calha":                 (1, 0.10, "não", "", 2),
+    "suporte_servo":         (1, 0.30, "não", "", 2),
+    "paleta":                (1, 1.00, "não", "peça fina, 100 % de preenchimento", 2),
+    "painel_eletronica_x2":  (2, 0.15, "não", "imprimir 2 cópias (opcional)", 3),
 }
 
 
 def gramas(stl: Path, preenchimento: float) -> float:
-    """Estimativa: casca de 1,2 mm (3 perímetros) + preenchimento no miolo."""
+    """Estimativa: casca de 0,8 mm (2 perímetros) + preenchimento no miolo."""
     m = trimesh.load(stl, force="mesh")
     volume = m.volume / 1000                       # cm³
-    casca = min(volume, m.area * 0.12 / 100)       # área (mm²) × 1,2 mm → cm³
+    casca = min(volume, m.area * 0.08 / 100)       # área (mm²) × 0,8 mm → cm³
     return (casca + (volume - casca) * preenchimento) * DENSIDADE_PLA
 
 
 def tabela(pasta: Path):
     linhas, total = [], 0.0
     for stl in sorted(pasta.glob("*.stl")):
-        qtd, preench, suporte, obs = PECAS[stl.stem]
+        qtd, preench, suporte, obs, prio = PECAS[stl.stem]
         g = gramas(stl, preench) * qtd
         total += g
         e = trimesh.load(stl, force="mesh").extents
-        linhas.append(f"  {stl.name:28s} {qtd:>3}   {e[0]:5.0f} x {e[1]:4.0f} x {e[2]:4.0f} mm   "
-                      f"{preench * 100:>4.0f} %   {suporte:22s} ~{g:5.0f} g   {obs}")
-    return "\n".join(linhas), total
+        linhas.append((prio, f"  {prio}  {stl.name:28s} {qtd:>3}   {e[0]:5.0f} x {e[1]:4.0f} x {e[2]:4.0f} mm   "
+                             f"{preench * 100:>4.0f} %   {suporte:22s} ~{g:5.0f} g   {obs}"))
+    return "\n".join(l for _, l in sorted(linhas)), total
+
+
+def horas(g):
+    return f"~{g / 60:.0f} h numa impressora rápida (Bambu/Prusa MK4) ou ~{g / 25:.0f} h numa comum (Ender 3)"
 
 
 def leia_me():
@@ -62,7 +66,8 @@ def leia_me():
     return f"""IASIS — DISPENSADOR DE MEDICAMENTOS — ARQUIVOS PARA IMPRESSÃO 3D
 =================================================================
 
-Projeto: IASIS (TCC — ecossistema de adesão a medicamentos)
+*** URGENTE: precisamos das peças para uma FEIRA. Priorize VELOCIDADE. ***
+*** Acabamento de rascunho está ótimo.                                ***
 
 Todos os STL estão em MILÍMETROS e JÁ DEITADOS NA POSIÇÃO DE IMPRESSÃO
 (é só abrir no fatiador, sem girar nem escalar).
@@ -70,53 +75,55 @@ Todos os STL estão em MILÍMETROS e JÁ DEITADOS NA POSIÇÃO DE IMPRESSÃO
 
 QUAL PASTA IMPRIMIR
 -------------------
-O corpo do dispensador tem 28 cm de altura. Use a pasta que couber na sua impressora:
-
-  imprimir_inteiro/   corpo em 2 peças. Precisa de mesa >= 280 x 200 mm
-                      e altura >= 280 mm.
-  imprimir_dividido/  corpo em 4 peças. Cabe em impressora de 220 x 220 x 150 mm
-                      (ex.: Ender 3, Bambu A1/P1, Prusa MK4).
+  imprimir_dividido/  RECOMENDADO. Corpo em 4 peças que cabem em qualquer
+                      impressora de 220 x 220 x 150 mm. Dá para imprimir as
+                      peças EM PARALELO em várias impressoras — é o mais rápido.
+  imprimir_inteiro/   corpo em 2 peças. Só se tiver impressora com mesa
+                      >= 280 x 200 mm e altura >= 280 mm.
 
 As demais peças (tampa, prateleira, disco etc.) são iguais nas duas pastas.
-Imprima UMA das pastas inteira, não as duas.
+Imprima UMA das pastas, não as duas.
 
 
-CONFIGURAÇÃO
-------------
-  Material ........ PLA (ou PETG)
-  Camada .......... 0,2 mm
-  Perímetros ...... 3 (paredes de 1,2 mm)
-  Topo/fundo ...... 4 camadas
-  Preenchimento ... conforme a tabela abaixo
-  Suporte ......... só onde indicado (corpo da frente: a janela de baixo tem
-                    uma ponte de 130 mm; a janela de cima, de 70 mm, sai sem)
-  Escala .......... 100 % (não redimensionar: há encaixes com folga de 0,2 mm)
+CONFIGURAÇÃO (perfil rápido)
+----------------------------
+  Material ........ PLA
+  Bico ............ 0,4 mm (se tiver 0,6 mm, melhor ainda: use camada 0,3)
+  Camada .......... 0,28 mm ("rascunho"/"draft")
+  Perímetros ...... 2
+  Topo/fundo ...... 3 camadas
+  Preenchimento ... conforme a tabela (10 % nas peças grandes; padrão "grade" ou "giroide")
+  Velocidade ...... a máxima confiável da impressora
+  Suporte ......... só na janela de baixo da peça da frente (ponte de 130 mm),
+                    tocando a mesa ou "em todo lugar" só nessa região
+  Escala .......... 100 % (não redimensionar: há encaixes)
 
+
+ORDEM DE PRIORIDADE (coluna "P")
+--------------------------------
+  1 = corpo e tampa (o dispensador montado)          IMPRIMIR PRIMEIRO
+  2 = mecanismo (prateleira, disco, calha, trava)     em seguida
+  3 = painéis de eletrônica                          opcional (dá para usar fita dupla face)
+
+
+PEÇAS — VERSÃO DIVIDIDA (imprimir_dividido/)  ← recomendada
+  P  arquivo                      qtd   tamanho                   preench.  suporte                 filamento
+{t_dividido}
+  TOTAL: ~{g_dividido:.0f} g  →  {horas(g_dividido)}
+         (dividindo entre várias impressoras, o tempo cai na mesma proporção)
 
 PEÇAS — VERSÃO INTEIRA (imprimir_inteiro/)
-  arquivo                      qtd   tamanho                   preench.  suporte                 filamento
+  P  arquivo                      qtd   tamanho                   preench.  suporte                 filamento
 {t_inteiro}
-  TOTAL APROXIMADO: {g_inteiro:.0f} g de filamento
+  TOTAL: ~{g_inteiro:.0f} g  →  {horas(g_inteiro)}
 
-PEÇAS — VERSÃO DIVIDIDA (imprimir_dividido/)
-  arquivo                      qtd   tamanho                   preench.  suporte                 filamento
-{t_dividido}
-  TOTAL APROXIMADO: {g_dividido:.0f} g de filamento
-
-(A estimativa de filamento é aproximada; o fatiador dá o valor exato.)
+(Filamento e tempo são estimativas; o fatiador dá o valor exato.)
 
 
-CORPOS DE PROVA (corpo_de_prova/) — RECOMENDADO IMPRIMIR PRIMEIRO
------------------------------------------------------------------
-Pedaços pequenos (~50 g no total, poucas horas) que testam os encaixes
-na mesma impressora que vai fazer as peças grandes. Se possível, imprima
-estes primeiro e entregue para a equipe conferir antes das peças grandes:
-
-  1_junta_parte_de_tras + 1_junta_parte_da_frente  encaixe entre as metades do corpo
-  2_corpo_canto_topo + 2_tampa_canto               encaixe da tampa
-  3_divisao_baixo + 3_divisao_cima                 junta da versão dividida
-  4_disco_centro_no_eixo                           furo do disco no eixo do motor
-  5_suporte_servo                                  encaixe do servo SG90
+CORPOS DE PROVA (corpo_de_prova/) — SÓ SE SOBRAR TEMPO
+------------------------------------------------------
+Pedaços pequenos para testar encaixes. Com a feira amanhã, pode pular:
+as folgas já foram deixadas maiores para impressão rápida.
 
 
 IMAGENS (imagens/)

@@ -22,12 +22,13 @@ para conferir, não para imprimir.
 ## 2. Comece pelos corpos de prova (`saida/corpo_de_prova/`)
 
 São pedaços pequenos (~50 g no total) que testam cada encaixe antes de gastar
-~1,7 kg de filamento nas peças grandes.
+~1 kg de filamento nas peças grandes. **Com a feira amanhã, pode pular: as folgas
+já foram deixadas maiores.**
 
 | Arquivo | Testa | Deu certo se... | Se não deu |
 |---|---|---|---|
 | `1_junta_parte_de_tras` + `1_junta_parte_da_frente` | encaixe entre as metades | entram com a mão, sem folga visível | apertado: `folga` 0,25 · frouxo: 0,15 |
-| `2_corpo_canto_topo` + `2_tampa_canto` | aba da tampa e parafuso M3 da tampa | a tampa assenta reta e o M3 × 16 rosqueia firme | apertado: `aba_folga` 0,3 · parafuso solto: `furo_guia_m3` 2,3 |
+| `2_corpo_canto_topo` + `2_tampa_canto` | aba da tampa e parafuso M3 da tampa | a tampa assenta reta e o M3 × 12 rosqueia firme | apertado: `aba_folga` 0,35 · parafuso solto: `furo_guia_m3` 2,3 |
 | `3_divisao_baixo` + `3_divisao_cima` | junta da versão dividida | igual ao 1 | igual ao 1 |
 | `4_disco_centro_no_eixo` | furo em D no eixo do motor | entra no eixo deslizando, sem jogo para girar | apertado: `eixo_diametro` 5,1 · com jogo: `eixo_chato` 4,4 |
 | `5_suporte_servo` | encaixe do SG90 | o corpo do servo passa pela janela e as abas apoiam | meça o servo e ajuste `sg90_*` |
@@ -36,7 +37,9 @@ Mudou algum parâmetro? Rode o script de novo (seção 8) antes de imprimir as p
 
 ## 3. Lista de impressão
 
-PLA, camada 0,2 mm, 3 perímetros. As peças já estão orientadas.
+**Perfil rápido** (versão para a feira): PLA, camada 0,28 mm, 2 perímetros, 10 % de
+preenchimento nas peças grandes. As peças já estão orientadas. O corpo é oco por
+dentro (o enchimento maciço dos originais saiu) e a tampa tem 5 mm: ~1 kg no total.
 
 | Arquivo | Qtd | Preench. | Suporte | Observação |
 |---|---|---|---|---|
@@ -54,7 +57,7 @@ PLA, camada 0,2 mm, 3 perímetros. As peças já estão orientadas.
 
 | Item | Qtd | Onde |
 |---|---|---|
-| Parafuso M3 × 16 cabeça cilíndrica | 4 | tampa |
+| Parafuso M3 × 12 cabeça chata (escareado) | 4 | tampa |
 | Parafuso M3 × 8 cabeça chata (escareado) | 4 | motor na prateleira |
 | Parafuso M3 × 10 cabeça chata (escareado) | 2 | suporte do servo na prateleira |
 | Parafuso M3 × 6 | 4 | LCD |
@@ -86,7 +89,7 @@ Os furos para parafuso no plástico têm 2,5 mm: o M3 entra rosqueando.
 7. **Eletrônica:** ESP32, LM2596 e A4988 nos painéis (abraçadeira ou parafuso),
    painéis nos pinos das laterais. Os fios do motor e do servo sobem pelos rasgos
    da prateleira; a fonte entra pelo furo de trás.
-8. **Tampa:** 4 × M3 × 16.
+8. **Tampa:** 4 × M3 × 12 escareados.
 
 ## 6. Ajustes depois de montar
 
@@ -103,7 +106,7 @@ Os furos para parafuso no plástico têm 2,5 mm: o M3 entra rosqueando.
 
 | Medida | Valor usado | Como conferir |
 |---|---|---|
-| Folgas de encaixe | 0,2 mm por lado | corpos de prova 1, 2 e 3 |
+| Folgas de encaixe | 0,25 mm por lado (0,3 na tampa) | corpos de prova 1, 2 e 3 |
 | Eixo do NEMA 17 | Ø 5 mm, chato a 4,5 mm, 24 mm de comprimento | corpo de prova 4 |
 | SG90 | 22,8 × 12,2 × 22,7 mm, furos das abas a 27,8 mm | corpo de prova 5 |
 | LCD 16×2 | furos a 75 × 31 mm, moldura de 7 mm | régua no LCD |
