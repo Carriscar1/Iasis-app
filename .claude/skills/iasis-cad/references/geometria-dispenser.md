@@ -54,15 +54,29 @@ respiros continuam do lado direito de quem olha a frente.
 | Encaixe entre metades | macho de 1,6 × 5 mm na parte de trás, seguindo a face da junta a 1,7 mm da borda; fêmea de 2,0 × 5,5 mm na parte da frente (folga de 0,2 por lado) | `macho_*`, `folga` |
 | Encaixe da tampa | aba de 2,5 × 6 mm por baixo da tampa, acompanhando a boca do corpo com folga de 0,25 | `aba_*` |
 
+## Mecanismo e eletrônica (versão 2)
+
+| Peça | Posição (mm) | Notas |
+|---|---|---|
+| Apoio da prateleira | anel nas paredes internas, Z 107–119, 12 mm, degraus a 45° | vão em X 72–128 na frente para a calha descer |
+| Prateleira | Z 119–124, contorno = boca(119,5→280) − 0,5 | entra por cima; motor e suporte do servo presos por baixo |
+| Disco | centro (100, 95), Ø 126, Z 124–144, apoiado na prateleira | 8 bolsos Ø 22 no raio 45; nº 1 na frente (saída), numeração horária; furo em D |
+| NEMA 17 | sob a prateleira, centro (100, 95), Z 71–119 | 4 × M3 escareados a 31 mm; eixo até Z 143 |
+| Saída | (100, 50), Ø 22 com chanfro; lábio de 2 mm | rebaixo por baixo onde a paleta gira |
+| Paleta (trava) | eixo do servo em (124,7, 50); Z 119–121,5 | fechada: braço para −X; abre +90° (anti-horário visto de cima) |
+| Servo SG90 | corpo X 118,8–141,6, Y 43,9–56,1, Z 91,8–114,5 | suporte com paredes só em +X e +Y, longe do giro do braço |
+| Calha | X 82–118, Y 6–72,5, Z 5,5–88 | rampa de 39° até a janela; fica sob a saída |
+| LCD | 4 pinos Ø 6 em (100 ± 37,5, Z 257,5 ± 15,5), saindo 7 mm da parede da frente | aba da tampa aberta em X 55–145 por causa da placa |
+| RC522 | trilhos com canal em X 100 ± 30, Z 148–195, placa a 4 mm da parede | atrás do coração da logo |
+| Painéis de eletrônica | esquerdo X 13–16, Y 38–92, Z 165–245; direito X 184–187, Z 140–220 | grade de furos Ø 3,4 a cada 8 mm |
+| Parafusos da tampa | (15, 15), (185, 15) em ressaltos; (60, 188), (140, 188) no maciço de trás | M3 × 16; rebaixo de 12 mm na tampa |
+| Versão dividida | corte em Z = 135, macho embaixo | nada atravessa esse plano além das paredes |
+
 ## Em aberto (perguntar à equipe antes de assumir)
 
 - **Volume da impressora.** As metades têm 280 mm de altura e 200 × 150 de base.
   Se não couber, dá para dividir na altura com outra junta macho-fêmea.
-- **Leiaute interno:** onde ficam o disco de compartimentos, o NEMA 17, o servo da
-  trava, o ESP32, o LM2596 e o RC522. Ainda não há suportes internos. O RC522 lê
-  através de alguns mm de plástico; atrás do coração da logo é um alvo natural
-  para "aproxime a pulseira".
+- **Medidas de componentes** (SG90, eixo do NEMA, LCD, RC522) são valores típicos;
+  os corpos de prova 4 e 5 conferem os críticos.
 - **Conector de energia:** o Ø 12 deixa passar o plugue P4 até o borne interno.
   Com um conector P4 de painel, troque pelo furo que o fabricante indica.
-- **Fixação da tampa:** hoje é só por encaixe. Se precisar travar, o caminho é
-  colocar parafusos ou travas de pressão.

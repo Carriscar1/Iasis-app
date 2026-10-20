@@ -78,8 +78,13 @@ de mexer no corpo, porque ele poupa toda a fase de descoberta.
 | Desenho em outro plano | `extrudar_no_plano(polígono, "XZ" ou "YZ", a0, a1)` |
 | Logo/texto em relevo | `logo_2d(largura)`, `texto_2d(texto, altura)` + `relevo_na_face_frontal(...)` |
 | Encaixe macho-fêmea numa junta | `face = secao(A) ∩ secao(B)` no plano da junta → `macho_femea(face, recuo, largura, comprimento, folga)` |
-| Aba de tampa | `boca(corpo, z0, z1, retângulo)` → `faixa_interna(boca, folga, espessura)` → `extrudar` |
-| Conferir | `relatorio`, `interferencia(a, b)`, `secao`, `espessura_ao_longo`, `render.renderizar` |
+| Aba de tampa, prateleira que desce por cima | `boca(corpo, z0, z1, retângulo)` → `faixa_interna(...)` ou `.buffer(-folga)` → `extrudar` |
+| Furo com chanfro ou escareado | `furo_chanfrado(x, y, r, z_baixo, z_topo, chanfro)` (peça de revolução única) |
+| Base de ressalto sem balanço | `cone(raio, altura, centro_base)` |
+| Peça móvel (conferir o giro) | `girar(m, graus, eixo, ponto)` em passos + `interferencia` |
+| Corpo de prova | `recortar(peça, x0, x1, y0, y1, z0, z1)` |
+| STL já deitado para imprimir | `para_impressao(m, direção_que_fica_para_baixo)` |
+| Conferir | `relatorio`, `interferencia(a, b)`, `secao`, `sombra_xy`, `espessura_ao_longo`, `render.renderizar` |
 
 Detalhes que já custaram tempo:
 - **Boca de tampa:** meça com `boca()`, que pega vários níveis. A parede curva da
@@ -90,15 +95,36 @@ Detalhes que já custaram tempo:
 - **Enchimento maciço:** a parte de trás tem ~1,8 L de plástico nos cantos e no
   fundo curvo. Furo ali precisa de rebaixo por dentro; meça a espessura antes.
 - **Prévia 3D do matplotlib engana a profundidade.** Use `render.py` (z-buffer).
+- **`trimesh.path.polygons.projected` fecha furos** (deu 4× a área real). Para
+  sombra vista de cima, use `sombra_xy`.
+- **STL guarda float32.** Cilindro e cone que se cruzam com número de lados
+  diferente geram triângulos que colapsam ao salvar. `salvar_stl` relê o arquivo
+  e acusa. Para furo com chanfro, use `furo_chanfrado`.
+- **Todo parafuso precisa de caminho para a chave.** Antes de pôr um parafuso,
+  imagine a montagem: por onde ele entra e por onde passa a ferramenta. Um
+  parafuso de trava radial no meio do disco não tinha acesso nenhum, e a solução
+  foi o disco apoiar na prateleira e girar pelo lado chato do eixo.
+- **Ordem de montagem é geometria.** Peça que entra depois de outra precisa
+  passar pela abertura que sobra (`boca` no intervalo de altura do caminho).
+  Abra rebaixos para ela (o apoio da prateleira tem um vão para a calha descer).
 
-## 5. Impressão
+## 5. O dispensador completo (v2)
+
+`dispenser.py` monta carcaça + mecanismo + eletrônica e salva em
+`saida/montagem`, `imprimir_inteiro`, `imprimir_dividido` (corpo em 4) e
+`corpo_de_prova`. As posições de cada peça estão em
+`references/geometria-dispenser.md`. O guia para a equipe (o que imprimir,
+peças compradas, montagem, ajustes) é `hardware/cad/README.md`: atualize-o
+sempre que uma peça mudar.
+
+## 6. Impressão
 
 Folgas, espessuras mínimas, orientação e o limite de tamanho da impressora
 estão em `references/impressao-fdm.md`. O ponto crítico deste projeto é o
 **tamanho**: cada metade do corpo tem 280 mm de altura, o que passa do volume de
 muitas impressoras. Confirme a impressora antes de prometer que uma peça cabe.
 
-## 6. Combinados do projeto que valem aqui
+## 7. Combinados do projeto que valem aqui
 
 - Tudo em português do Brasil, inclusive textos em relevo.
 - A identidade visual é a mesma do app e do site: o coração com ECG vem de

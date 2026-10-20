@@ -92,6 +92,62 @@ def extrudar_no_plano(poligono, plano: str, a0, a1) -> trimesh.Trimesh:
     return m
 
 
+def cone(raio_base, altura, centro_base, para_baixo=True, secoes=64) -> trimesh.Trimesh:
+    """Cone vertical com a base em `centro_base` e a ponta `altura` mm abaixo (ou acima).
+
+    Serve para escareado de parafuso (raio = altura dá 90°) e para a base de
+    ressaltos, que fica sem balanço acima de 45°.
+    """
+    c = trimesh.creation.cone(radius=raio_base, height=altura, sections=secoes)
+    if para_baixo:
+        c.apply_transform(trimesh.transformations.rotation_matrix(np.pi, [1, 0, 0]))
+    c.apply_translation(centro_base)
+    return c
+
+
+def revolucao(perfil_rz, centro_xy, secoes=64) -> trimesh.Trimesh:
+    """Sólido de revolução em torno de um eixo vertical em `centro_xy`.
+
+    `perfil_rz` é a lista de pontos (raio, z) do contorno, começando e terminando
+    no eixo (raio 0). Um furo com chanfro feito assim sai numa peça só; somar um
+    cilindro e um cone gera triângulos finíssimos onde eles se cruzam.
+    """
+    m = trimesh.creation.revolve(np.asarray(perfil_rz, float), sections=secoes)
+    if m.volume < 0:
+        m.invert()
+    m.apply_translation([centro_xy[0], centro_xy[1], 0])
+    return m
+
+
+def furo_chanfrado(x, y, raio, z_baixo, z_topo, chanfro, secoes=64) -> trimesh.Trimesh:
+    """Corte para furo vertical com chanfro de 45° na borda de cima (atravessa 1 mm a mais)."""
+    return revolucao([(0, z_baixo - 1), (raio, z_baixo - 1), (raio, z_topo - chanfro),
+                      (raio + chanfro + 1, z_topo + 1), (0, z_topo + 1)], (x, y), secoes)
+
+
+def girar(malha, graus, eixo=(0, 0, 1), ponto=(0, 0, 0)) -> trimesh.Trimesh:
+    """Cópia da malha girada em torno de um eixo que passa por `ponto`."""
+    m = malha.copy()
+    m.apply_transform(trimesh.transformations.rotation_matrix(np.radians(graus), eixo, ponto))
+    return m
+
+
+def recortar(malha, x0, x1, y0, y1, z0, z1) -> trimesh.Trimesh:
+    """Pedaço da malha dentro de uma caixa (para corpos de prova)."""
+    return intersectar(malha, caixa(x0, x1, y0, y1, z0, z1))
+
+
+def para_impressao(malha, para_baixo=(0, 0, -1)) -> trimesh.Trimesh:
+    """Cópia girada para a face que aponta para `para_baixo` ficar na mesa (Z = 0),
+    centrada em X/Y. Assim o STL já abre no fatiador na posição certa."""
+    m = malha.copy()
+    R = trimesh.geometry.align_vectors(np.asarray(para_baixo, float), [0, 0, -1])
+    m.apply_transform(R)
+    lo, hi = m.bounds
+    m.apply_translation([-(lo[0] + hi[0]) / 2, -(lo[1] + hi[1]) / 2, -lo[2]])
+    return m
+
+
 # ─── Booleanas ───────────────────────────────────────────────────────────────
 def _validas(malhas):
     return [m for m in malhas if m is not None and len(m.faces)]
@@ -216,23 +272,40 @@ def macho_femea(regiao_junta, recuo, largura, comprimento, folga):
     return macho, femea
 
 
-def boca(corpo, z0, z1, contorno, niveis=12):
-    """Abertura livre de uma peça oca entre as alturas z0 e z1.
+def sombra_xy(malha):
+    """Sombra da peça vista de cima (projeção exata em X/Y), como polígono shapely.
 
-    É a interseção das aberturas medidas em vários níveis: uma aba que entra
-    por ela não encosta em parede nenhuma, mesmo onde a parede é curva.
-    `contorno` é um retângulo shapely maior que a peça (na vista de cima).
+    É a união dos triângulos virados para cima. (O `trimesh.path.polygons.projected`
+    fecha furos e regiões finas: deu 4× a área real numa fatia do corpo.)
     """
-    livre = None
-    for z in np.linspace(z0, z1, niveis):
-        a = contorno.difference(secao(corpo, "z", float(z)))
-        livre = a if livre is None else livre.intersection(a)
+    cima = malha.face_normals[:, 2] > 1e-6
+    tris = [Polygon(t) for t in malha.triangles[cima][:, :, :2]]
+    return unary_union([t for t in tris if t.area > 1e-9]).buffer(0)
+
+
+def _maior_interna(livre, contorno):
     partes = [g for g in getattr(livre, "geoms", [livre]) if g.geom_type == "Polygon"]
-    # a boca é a maior região que não encosta na borda do contorno
     cx0, cy0, cx1, cy1 = contorno.bounds
     internas = [g for g in partes if g.bounds[0] > cx0 + 1e-6 and g.bounds[1] > cy0 + 1e-6
                 and g.bounds[2] < cx1 - 1e-6 and g.bounds[3] < cy1 - 1e-6]
     return max(internas or partes, key=lambda g: g.area)
+
+
+def boca(corpo, z0, z1, contorno):
+    """Abertura livre de uma peça oca entre as alturas z0 e z1.
+
+    É o que sobra do `contorno` (retângulo maior que a peça, visto de cima) depois
+    de tirar a sombra de todo o material entre z0 e z1. Uma peça que desce por
+    essa abertura não encosta em nada — parede curva, pino ou ressalto. Com
+    z0 == z1 vira o interior num único nível.
+    """
+    if z1 - z0 < 1e-6:
+        livre = contorno.difference(secao(corpo, "z", float(z0)))
+    else:
+        b = corpo.bounds
+        fatia = intersectar(corpo, caixa(b[0][0] - 1, b[1][0] + 1, b[0][1] - 1, b[1][1] + 1, z0, z1))
+        livre = contorno.difference(sombra_xy(fatia))
+    return _maior_interna(livre, contorno)
 
 
 # ─── Logo e texto ────────────────────────────────────────────────────────────
@@ -321,5 +394,14 @@ def espessura_ao_longo(malha, origem, direcao) -> float | None:
 
 
 def salvar_stl(m: trimesh.Trimesh, caminho):
+    """Salva e relê o STL. O formato guarda as coordenadas em float32, e triângulos
+    finíssimos (de booleanas com círculos de número de lados diferente) podem colapsar
+    e abrir a malha só no arquivo. Se isso acontecer, o erro aparece aqui, não no fatiador.
+    Para evitar: use o mesmo número de `secoes` em cilindros e cones que se cruzam.
+    """
     Path(caminho).parent.mkdir(parents=True, exist_ok=True)
     m.export(caminho)
+    lido = trimesh.load(caminho, force="mesh")
+    if not lido.is_watertight:
+        raise RuntimeError(f"{caminho}: a malha abriu ao salvar (triângulos degenerados). "
+                           "Use o mesmo número de lados nos círculos que se cruzam.")
