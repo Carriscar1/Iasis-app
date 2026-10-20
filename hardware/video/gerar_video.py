@@ -29,10 +29,10 @@ FPS = 30
 SAIDA = AQUI / "saida"
 
 CORES = dict(
-    tras="#d9e2ee", frente="#eef3f9", tampa="#c4d9f0",
+    tras="#7b4bb7", frente="#8d5cc9", tampa="#a47ad9",   # filamento roxo
     prateleira="#afd0ee", disco="#5b93cf", paleta="#ff6b6b", suporte_servo="#9aa5b1",
     calha="#7fd1ae", painel="#4a5d78", motor="#2b2f36", servo="#3b6fb6",
-    lcd="#1f3b2f", rc522="#2e6fd0", coracao="#5b93cf", ecg="#101d33", nome="#2b4a75",
+    lcd="#1f3b2f", rc522="#2e6fd0", coracao="#c9a8f2", ecg="#2a1245", nome="#e3d2fa",
     comprimido="#ff5a5f", pulseira="#5b93cf",
 )
 FOCO = "#ffb547"   # cor de destaque da peça em foco
@@ -237,7 +237,7 @@ def clipe_funcionamento(t, M, ctx):
     alvo = lerp((112, 40, 130), (108, 20, 70), r.suave((t - 11.5) / 3.5))
     if t < 6.5:
         alvo = lerp((95, -20, 175), (112, 40, 130), r.suave((t - 5.0) / 1.5))
-    dist = 480 - 60 * r.suave((t - 5.0) / 1.5) - 70 * r.suave((t - 11.0) / 2.5)
+    dist = 480 - 60 * r.suave((t - 5.0) / 1.5) - 45 * r.suave((t - 11.0) / 2.5)
     olho = r.orbita(alvo, 38 + 6 * math.sin(t / 20 * math.pi), 22, dist)
     img = r.renderizar(it.values(), olho, alvo)
     leg = [("1. Chegou a hora do remédio", "O dispensador avisa na tela e o app avisa o paciente", 0.4, 3.0),
