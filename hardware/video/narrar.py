@@ -1,9 +1,10 @@
 """
 Coloca a voz do Iasinho no vídeo do stand, sincronizada com a legenda.
 
-Lê saida_v2/legendas.srt, gera a fala de cada trecho, acelera de leve o trecho
-que passar do tempo da cena e junta tudo no vídeo:
-saida_v2/IASIS_video_stand_v2_narrado.mp4
+Lê legendas.srt, gera a fala de cada trecho, acelera de leve o trecho que
+passar do tempo da cena e junta tudo em IASIS_video_stand_v2_narrado.mp4.
+Deixe narrar.py, IASIS_video_stand_v2.mp4 e legendas.srt na mesma pasta
+(ou passe --video e --srt).
 
 Precisa de Python 3.10+ e ffmpeg no PATH (Windows: winget install ffmpeg).
 
@@ -27,6 +28,11 @@ from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
 SAIDA = AQUI / "saida_v2"
+
+def _padrao(nome):
+    """Procura o arquivo ao lado do script e, se não achar, em saida_v2/."""
+    return str(AQUI / nome if (AQUI / nome).exists() else SAIDA / nome)
+
 
 # Como a voz deve falar certas palavras (o texto da legenda não muda).
 PRONUNCIA = {
@@ -105,15 +111,16 @@ def main():
     p.add_argument("--lentidao", type=float, default=0.95, help="Piper: < 1 fala mais rápido")
     p.add_argument("--fofo", type=float, default=1.0,
                    help="sobe o tom sem mudar a velocidade (1.06 a 1.12 deixa a voz mais de mascote)")
-    p.add_argument("--video", default=str(SAIDA / "IASIS_video_stand_v2.mp4"))
-    p.add_argument("--srt", default=str(SAIDA / "legendas.srt"))
+    p.add_argument("--video", default=_padrao("IASIS_video_stand_v2.mp4"))
+    p.add_argument("--srt", default=_padrao("legendas.srt"))
     p.add_argument("--musica", help="mp3/wav de fundo opcional (fica baixinho, sem direitos autorais!)")
     args = p.parse_args()
     if args.motor == "piper" and not args.modelo:
         p.error("--motor piper precisa de --modelo arquivo.onnx")
 
     falas = ler_srt(Path(args.srt))
-    pasta = SAIDA / "voz"
+    destino = Path(args.video).resolve().parent      # tudo sai ao lado do vídeo
+    pasta = destino / "voz"
     pasta.mkdir(exist_ok=True)
     total = duracao(args.video)
     entradas, filtros = [], []
@@ -149,7 +156,7 @@ def main():
     narracao = pasta / "narracao.wav"
     subprocess.run(["ffmpeg", "-v", "error", "-y", *entradas, "-filter_complex", ";".join(filtros),
                     "-map", "[saida]", "-ar", "48000", str(narracao)], check=True)
-    final = SAIDA / "IASIS_video_stand_v2_narrado.mp4"
+    final = destino / (Path(args.video).stem + "_narrado.mp4")
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", args.video, "-i", str(narracao), "-map", "0:v",
                     "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest",
                     "-movflags", "+faststart", str(final)], check=True)
