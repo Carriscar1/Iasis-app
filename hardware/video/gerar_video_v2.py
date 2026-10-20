@@ -280,7 +280,8 @@ def _quadro3d(itens, olho, alvo, sombra=True):
 
 def cena_por_fora(t, ctx):
     it = ctx.setdefault("casca", cena(CASCA, ctx["M"]))
-    az = -30 + 360 * t / 14
+    # primeira frase: uma volta inteira; segunda ("Na frente..."): fica de frente, balançando
+    az = -30 + 360 * suave(t / 7.0) + 14 * math.sin(max(t - 7.0, 0) / 7 * math.pi)
     olho = r.orbita((100, 75, 140), az, 16 + 5 * math.sin(t / 14 * 2 * math.pi), 860)
     img = _quadro3d(it.values(), olho, (100, 75, 138))
     alvo = r.projetar((100, -10, 170), olho, (100, 75, 138)) if math.cos(math.radians(az)) > 0.3 else None
