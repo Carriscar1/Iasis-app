@@ -304,6 +304,9 @@ iasis/
 
 ## Dicas para a feira
 
+- **Sem conta?** Na tela de login, *Demo paciente* ou *Demo cuidador* abre o app com
+  dados fictícios (Maria Souza e Carlos Souza, 30 dias de histórico). Tudo fica na
+  memória do aparelho: nada é gravado no banco, e *Sair da conta* volta ao normal
 - A aba **Dispenser** foi feita para a demo: mostre as 4 etapas acendendo em tempo real
 - Sem dose agendada? Use **"Criar dose de teste para agora"** e rode o ciclo na hora
 - O **log do simulador** (embaixo da tela) mostra as mensagens MQTT como no hardware real — ótimo para explicar a arquitetura à banca

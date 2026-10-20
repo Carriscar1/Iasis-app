@@ -9,7 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { signIn, resendConfirmation, isValidEmail } from '../services/auth';
+import { signIn, resendConfirmation, isValidEmail, getProfile } from '../services/auth';
+import { startDemo, demoUserId } from '../services/demo';
+import type { DemoRole } from '../services/demoData';
 import { useStore } from '../store';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
@@ -63,6 +65,17 @@ export default function LoginScreen() {
     } catch (e: any) {
       setError('Erro inesperado: ' + (e?.message ?? 'tente novamente'));
       setLoading(false);
+    }
+  };
+
+  // Abre o app com dados fictícios, sem conta nem código de ativação.
+  const handleDemo = async (role: DemoRole) => {
+    setError('');
+    await startDemo(role);
+    const profile = await getProfile(demoUserId());
+    if (profile) {
+      setUser(profile);
+      router.replace('/(tabs)/home');
     }
   };
 
@@ -189,6 +202,23 @@ export default function LoginScreen() {
                   <Text style={styles.linkBold}>Criar conta</Text>
                 </Text>
               </TouchableOpacity>
+
+              {/* Demonstração: conhecer o app sem conta */}
+              <View style={styles.demoDivider}>
+                <View style={styles.demoLine} />
+                <Text style={[styles.demoLabel, { fontSize: fs - 3 }]}>ou conheça sem conta</Text>
+                <View style={styles.demoLine} />
+              </View>
+              <View style={styles.demoRow}>
+                <TouchableOpacity style={styles.demoBtn} onPress={() => handleDemo('patient')} activeOpacity={0.85}>
+                  <Ionicons name="person-outline" size={16} color={C.navy} />
+                  <Text style={[styles.demoText, { fontSize: fs - 1 }]}>Demo paciente</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.demoBtn} onPress={() => handleDemo('caregiver')} activeOpacity={0.85}>
+                  <Ionicons name="people-outline" size={16} color={C.navy} />
+                  <Text style={[styles.demoText, { fontSize: fs - 1 }]}>Demo cuidador</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -220,4 +250,10 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
   btnText:   { color: '#fff', fontWeight: '700' },
   linkText:  { color: C.textSecondary },
   linkBold:  { color: C.navy, fontWeight: '700' },
+  demoDivider:{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 22, marginBottom: 12 },
+  demoLine:  { flex: 1, height: 1, backgroundColor: C.border },
+  demoLabel: { color: C.textMuted },
+  demoRow:   { flexDirection: 'row', gap: 10 },
+  demoBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1.5, borderColor: C.border, borderRadius: 12, paddingVertical: 11 },
+  demoText:  { color: C.navy, fontWeight: '700' },
 });

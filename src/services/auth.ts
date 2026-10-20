@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { restoreDemo } from './demo';
 
 export interface UserProfile {
   id:            string;
@@ -153,6 +154,7 @@ export const resendConfirmation = async (
 };
 
 export const getSession = async () => {
+  await restoreDemo(); // reabre a demonstração, se ela estava aberta
   const { data } = await supabase.auth.getSession();
   return data.session;
 };
