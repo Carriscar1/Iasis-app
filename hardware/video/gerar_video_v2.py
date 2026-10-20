@@ -562,7 +562,11 @@ def gravar(job):
     ctx = {"M": pecas()}
     partes = SAIDA / "partes"
     partes.mkdir(parents=True, exist_ok=True)
-    g = r.Gravador(partes / f"{nome}_{k:02d}.mp4")
+    destino = partes / f"{nome}_{k:02d}.mp4"
+    if destino.exists():           # retomada: pedaço já gravado inteiro fica como está
+        return job
+    temp = destino.with_suffix(".tmp.mp4")
+    g = r.Gravador(temp)
     estado = {}
     # pré-aquece a posição do mascote para não "pular" na emenda dos pedaços
     for i in range(max(0, int(a * FPS) - 25), int(a * FPS)):
@@ -574,6 +578,7 @@ def gravar(job):
         t = i / FPS
         g.quadro(compor(func(t, ctx), t, dur, estado))
     g.fechar()
+    temp.rename(destino)
     return job
 
 
@@ -605,7 +610,7 @@ def montar():
     lista = SAIDA / "lista.txt"
     arqs = []
     for nome, _, _ in CENAS:
-        arqs += sorted((SAIDA / "partes").glob(f"{nome}_*.mp4"))
+        arqs += sorted(f for f in (SAIDA / "partes").glob(f"{nome}_*.mp4") if ".tmp" not in f.name)
     lista.write_text("".join(f"file '{f.resolve()}'\n" for f in arqs))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lista),
                     "-c", "copy", "-movflags", "+faststart", str(SAIDA / "IASIS_video_stand_v2.mp4")], check=True)
