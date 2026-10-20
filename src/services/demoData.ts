@@ -44,7 +44,7 @@ export const buildDemoTables = (): Tables => {
   const profiles: Row[] = [
     {
       id: DEMO_PATIENT_ID, name: 'Maria Souza', email: 'maria@demo.iasis',
-      role: 'independent', caregiver_id: DEMO_CAREGIVER_ID, rfid_tag: 'A1B2C3D4',
+      role: 'independent', caregiver_id: DEMO_CAREGIVER_ID, rfid_tag: 'A3F2910C', // a pulseira que o simulador do ESP32 aceita
       phone: null, avatar_url: null, created_at: created,
     },
     {
