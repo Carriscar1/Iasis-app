@@ -5,7 +5,11 @@
 //  Broker padrão: HiveMQ Cloud (gratuito até 100 conexões)
 //  Alternativa:   Mosquitto local na mesma rede Wi-Fi
 // ─────────────────────────────────────────────
-import mqtt, { MqttClient, IClientOptions } from 'mqtt';
+// O pacote "mqtt" aponta para a versão de Node.js, que no Android depende de
+// módulos que não existem no celular (url, net, tls) e quebra o build. Este é
+// o bundle que a própria biblioteca publica para React Native e navegador.
+import mqtt from 'mqtt/dist/mqtt.esm';
+import type { MqttClient, IClientOptions } from 'mqtt';
 import {
   MqttPayload,
   MqttCommandPayload,
