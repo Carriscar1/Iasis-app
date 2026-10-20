@@ -96,11 +96,11 @@ export const buildDemoTables = (): Tables => {
   const ago = (min: number) => new Date(now.getTime() - min * 60000).toISOString();
   const alerts: Row[] = [
     { id: 'demo-alert-1', user_id: DEMO_CAREGIVER_ID, patient_id: DEMO_PATIENT_ID, dose_id: null, medication_id: 'demo-med-1',
-      type: 'dose_taken', title: 'Dose tomada', body: 'Dona Maria tomou Losartana 50 mg às 08:04, validada pela pulseira.', read: false, created_at: ago(25) },
+      type: 'dose_taken', title: 'Dose tomada', body: 'Maria Souza tomou Losartana 50 mg às 08:04, validada pela pulseira.', read: false, created_at: ago(25) },
     { id: 'demo-alert-2', user_id: DEMO_CAREGIVER_ID, patient_id: DEMO_PATIENT_ID, dose_id: null, medication_id: 'demo-med-3',
       type: 'low_stock', title: 'Estoque baixo', body: 'Sinvastatina 20 mg: restam 4 comprimidos (cerca de 4 dias).', read: false, created_at: ago(180) },
     { id: 'demo-alert-3', user_id: DEMO_CAREGIVER_ID, patient_id: DEMO_PATIENT_ID, dose_id: null, medication_id: 'demo-med-2',
-      type: 'dose_missed', title: 'Dose perdida', body: 'Dona Maria não tomou Metformina 850 mg das 19:00 de ontem.', read: true, created_at: ago(60 * 20) },
+      type: 'dose_missed', title: 'Dose perdida', body: 'Maria Souza não tomou Metformina 850 mg das 19:00 de ontem.', read: true, created_at: ago(60 * 20) },
     { id: 'demo-alert-4', user_id: DEMO_PATIENT_ID, patient_id: DEMO_PATIENT_ID, dose_id: null, medication_id: 'demo-med-5',
       type: 'info', title: 'Hora do remédio', body: 'Omeprazol 20 mg: está na hora. Use a pulseira no dispensador.', read: false, created_at: ago(2) },
     { id: 'demo-alert-5', user_id: DEMO_PATIENT_ID, patient_id: DEMO_PATIENT_ID, dose_id: null, medication_id: 'demo-med-3',
