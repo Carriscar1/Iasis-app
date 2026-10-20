@@ -21,8 +21,8 @@ para conferir, não para imprimir.
 
 ## 2. Comece pelos corpos de prova (`saida/corpo_de_prova/`)
 
-São pedaços pequenos (menos de 1 hora no total) que testam cada encaixe antes
-de gastar ~1 kg de filamento nas peças grandes.
+São pedaços pequenos (~50 g no total) que testam cada encaixe antes de gastar
+~1,7 kg de filamento nas peças grandes.
 
 | Arquivo | Testa | Deu certo se... | Se não deu |
 |---|---|---|---|

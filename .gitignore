@@ -14,3 +14,6 @@ expo-env.d.ts
 # @end expo-cli
 # Cache do Python (scripts de CAD)
 __pycache__/
+
+# Pacote gerado para a grafica 3D
+hardware/cad/*.zip
