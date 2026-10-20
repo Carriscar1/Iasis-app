@@ -179,7 +179,8 @@ def _braco(lado, ang, t, apontando):
 
 
 # ─── Quadro ─────────────────────────────────────────────────────────────────
-def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0):
+def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0, olha=None):
+    """olha: ângulo (graus) para onde ele vira o corpo e os olhos, sem apontar com o braço."""
     M = _malhas()
     itens = []
     pid = [0]
@@ -193,10 +194,12 @@ def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0):
         itens.append(it)
 
     # postura geral: balanço, leve giro para o lado em que aponta e "respiração"
+    mira = aponta if aponta is not None else olha
     giro = 0.0
-    if aponta is not None:
-        giro = 14 * math.cos(math.radians(aponta))
-    balanco = 5 * math.sin(t * 2 * math.pi / 2.3)
+    if mira is not None:
+        giro = 14 * math.cos(math.radians(mira))
+    # períodos que dividem 72 s: o vídeo em loop emenda sem pulo
+    balanco = 5 * math.sin(t * 2 * math.pi / 2.4)
     resp = 1 + 0.025 * math.sin(t * 2 * math.pi / 1.6)
     G = _rot([0, 0, 1], giro) @ _rot([0, 1, 0], balanco) @ np.diag([1 / math.sqrt(resp), 1, resp, 1])
 
@@ -208,15 +211,15 @@ def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0):
     add("ecg", COR["ecg"], G)
     add("bochechas", COR["bochecha"], G)
 
-    piscando = (t % 3.7) < 0.14
+    piscando = (t % 3.6) < 0.14
     if piscando:
         add("olhos_fechados", COR["traco"], G)
     else:
         esc = 1.12 if humor == "surpreso" else 1.0
         S = np.diag([esc, 1, esc, 1])
         olhar = np.zeros(3)
-        if aponta is not None:
-            a = math.radians(aponta)
+        if mira is not None:
+            a = math.radians(mira)
             olhar = np.array([math.cos(a) * 0.045, 0, math.sin(a) * 0.05]) * U
         add("olhos", COR["olho"], G @ S)
         add("pupilas", COR["pupila"], G @ trimesh.transformations.translation_matrix(olhar) @ S)
@@ -250,7 +253,7 @@ def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0):
         elif lado_aponta is not None:
             ang, apont = (-55 if lado == 1 else 235), False
         else:
-            onda = math.sin(t * 2 * math.pi * 1.3 + lado)
+            onda = math.sin(t * 2 * math.pi * 1.25 + lado)
             ang = 40 + 28 * onda if lado == 1 else 215 + 8 * onda
             apont = False
         braco, mao = _braco(lado, ang, t, apont)
@@ -259,7 +262,7 @@ def mascote(t, falando=False, aponta=None, humor="feliz", escala=1.0):
 
     # pezinhos balançando
     for nome in ("pernas", "sapatos"):
-        P = _rot([1, 0, 0], 8 * math.sin(t * 2 * math.pi / 1.1), (0, 0, -0.7))
+        P = _rot([1, 0, 0], 8 * math.sin(t * 2 * math.pi / 1.2), (0, 0, -0.7))
         add(nome, COR["sapato"] if nome == "sapatos" else COR["braco"], G @ P)
 
     # câmera fixa de frente, um pouco de cima

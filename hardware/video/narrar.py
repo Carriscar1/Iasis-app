@@ -46,6 +46,7 @@ PRONUNCIA = {
     "IASIS": "Iásis",
     "Iasinho": "Iazinho",
     "a trava abre": "aí, a trava se abre",   # sozinha, a frase curta sai embolada
+    "Chegou a hora do remédio": "Hora do remédio",   # cabe na cena sem acelerar demais
 }
 
 
@@ -72,10 +73,15 @@ def duracao(arq):
     return float(out.strip())
 
 
-def para_falar(texto):
+def para_falar(texto, animado=False):
+    # tom de locutor: frase que fecha com ponto vira exclamação (a voz sobe no fim);
+    # frase que continua na próxima legenda fica como está
+    fecha = texto.rstrip().endswith(".") and not texto.rstrip().endswith("…")
     texto = texto.replace("…", ", ").strip(" ,")
     for escrito, falado in PRONUNCIA.items():
         texto = re.sub(rf"\b{escrito}\b", falado, texto)
+    if animado and fecha:
+        texto = texto[:-1] + "!"
     return texto
 
 
@@ -142,6 +148,9 @@ def main():
     p.add_argument("--video", default=_padrao("IASIS_video_stand_v2.mp4"))
     p.add_argument("--srt", default=_padrao("legendas.srt"))
     p.add_argument("--musica", help="mp3/wav de fundo opcional (fica baixinho, sem direitos autorais!)")
+    p.add_argument("--acelerar", type=float, default=1.0,
+                   help="acelera o vídeo (ex.: 1.15 = 15%% mais rápido) e a legenda junto")
+    p.add_argument("--animado", action="store_true", help="entonação de locutor (frases com exclamação)")
     args = p.parse_args()
     if args.motor == "piper" and not args.modelo:
         p.error("--motor piper precisa de --modelo arquivo.onnx")
@@ -150,6 +159,14 @@ def main():
     destino = Path(args.video).resolve().parent      # tudo sai ao lado do vídeo
     pasta = destino / "voz"
     pasta.mkdir(exist_ok=True)
+    if args.acelerar != 1.0:
+        f = args.acelerar
+        rapido = destino / f"{Path(args.video).stem}_rapido.mp4"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", args.video, "-vf", f"setpts=PTS/{f}", "-r", "30",
+                        "-an", "-c:v", "libx264", "-crf", "18", "-preset", "medium", "-pix_fmt", "yuv420p",
+                        str(rapido)], check=True)
+        args.video = str(rapido)
+        falas = [(a / f, b / f, t) for a, b, t in falas]
     total = duracao(args.video)
     TAXA = 48000
     trilha = array("i", bytes(4 * int(total * TAXA)))     # a narração inteira, amostra por amostra
@@ -157,7 +174,7 @@ def main():
         bruto = pasta / f"{i + 1:02d}_bruto.wav"
         pronto = pasta / f"{i + 1:02d}.wav"
         print(f"[{i + 1}/{len(falas)}] {texto}")
-        MOTORES[args.motor](para_falar(texto), bruto, args)
+        MOTORES[args.motor](para_falar(texto, args.animado), bruto, args)
         # tempo disponível: até a próxima fala começar (ou o fim do vídeo)
         prox = falas[i + 1][0] if i + 1 < len(falas) else total
         janela = max(prox - a - 0.15, 0.5)
