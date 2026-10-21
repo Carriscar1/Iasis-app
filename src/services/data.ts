@@ -654,6 +654,7 @@ export interface PatientProfile {
   name:     string;
   email:    string;
   rfidTag?: string;
+  phone?:   string;
 }
 
 export const listPatients = async (
@@ -661,13 +662,13 @@ export const listPatients = async (
 ): Promise<{ data: PatientProfile[]; error: string | null }> => {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, name, email, rfid_tag')
+    .select('id, name, email, rfid_tag, phone')
     .eq('caregiver_id', caregiverId)
     .order('name', { ascending: true });
   if (error) return { data: [], error: error.message };
   return {
     data: (data ?? []).map((r: any) => ({
-      id: r.id, name: r.name, email: r.email, rfidTag: r.rfid_tag ?? undefined,
+      id: r.id, name: r.name, email: r.email, rfidTag: r.rfid_tag ?? undefined, phone: r.phone ?? undefined,
     })),
     error: null,
   };

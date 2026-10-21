@@ -82,12 +82,12 @@ export async function placeCall(raw: string): Promise<CallResult> {
 
 /** Liga para uma pessoa da equipe, avisando quando não há telefone. */
 export async function callPerson(name: string, phone?: string | null): Promise<CallResult> {
-  if (!phone) {
-    notify('Sem telefone', `${name} não tem telefone cadastrado. Ele pode cadastrar em Perfil → Meu telefone.`);
-    return 'failed';
-  }
   if (isDemoActive()) {
     notify('Ligação simulada', `Na demonstração a ligação para ${name} não é feita de verdade.`);
+    return 'failed';
+  }
+  if (!phone) {
+    notify('Sem telefone', `${name} não tem telefone cadastrado. Dá para cadastrar em Perfil → Meu telefone.`);
     return 'failed';
   }
   return placeCall(phone);

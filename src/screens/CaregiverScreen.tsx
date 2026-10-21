@@ -10,6 +10,7 @@ import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { getPatientsOverview, caregiverMarkDoseTaken, type PatientOverview } from '../services/data';
 import type { Dose, DoseStatus } from '../types';
+import { callPerson } from '../services/call';
 
 const fmtTime = (iso: string) =>
   new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -150,6 +151,14 @@ export default function CaregiverScreen() {
                         <Text style={[styles.patientName, { fontSize: fs + 1 }]}>{patient.name}</Text>
                         <Text style={[styles.patientEmail, { fontSize: fs - 2 }]}>{patient.email}</Text>
                       </View>
+                      <TouchableOpacity
+                        style={styles.callBtn}
+                        onPress={() => callPerson(patient.name, patient.phone)}
+                        hitSlop={8}
+                        accessibilityLabel={`Ligar para ${patient.name}`}
+                      >
+                        <Ionicons name="call" size={18} color="#fff" />
+                      </TouchableOpacity>
                       <View style={{ alignItems: 'center' }}>
                         <Text style={[styles.adhPct, { color: adherenceColor(pct), fontSize: isTablet ? 22 : 19 }]}>{pct}%</Text>
                         <Text style={[styles.adhLabel, { fontSize: fs - 4 }]}>adesão 7d</Text>
@@ -274,4 +283,5 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
   },
   confirmText: { color: C.greenText, fontWeight: '700', fontSize: 12 },
   hint:      { textAlign: 'center', color: C.textMuted, marginTop: 8 },
+  callBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.green, alignItems: 'center', justifyContent: 'center' },
 });
