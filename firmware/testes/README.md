@@ -12,6 +12,7 @@ por vez. Cada etapa tem um código próprio nesta pasta:
 | 4 | `etapa4_nfc_lcd_hivemq_servo` | + a pulseira autorizada abre a trava |
 | 5 | `etapa5_motor_passo` | Motor de passo sozinho: 180° a cada 8 s |
 | 6 | `etapa6_integrado` | Tudo junto, falando o protocolo do app |
+| 6b | `etapa6_vibracao_disco` | Módulo de vibração + pulseira + disco; responde o DISPENSE do app em `.../dispense` (`DISPENSE_ACK` com o mesmo `slot` e `doseId`) |
 
 > **Situação dos códigos:** todos compilam sem erro e sem aviso no core ESP32
 > 2.0.17 e 3.0.7. **Nenhum foi rodado numa placa ainda**: o primeiro teste real
