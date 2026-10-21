@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, activationCodeError, isValidEmail, UserProfile } from '../services/auth';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
-import { formatPhoneInput } from '../services/chat';
+import { formatPhoneInput, normalizePhone } from '../services/chat';
 import { REQUIRE_ACTIVATION_CODE } from '../config/app';
 
 type Step = 'role' | 'form' | 'link' | 'success';
@@ -123,6 +123,11 @@ export default function RegisterScreen() {
     }
     if (password.length < 6) { setError('Senha deve ter pelo menos 6 dígitos.'); return; }
     if (password !== confirm){ setError('As senhas não coincidem.');             return; }
+    // O telefone do cuidador é o número que o app liga numa queda ou socorro.
+    if (role === 'caregiver' && !normalizePhone(phone)) {
+      setError('Informe seu telefone com DDD: é para ele que o app liga quando o paciente cai ou pede socorro.');
+      return;
+    }
     if (requiresCode && !activationCode.trim()) {
       setError('Informe o código de ativação que você recebeu ao comprar o dispenser.');
       return;
@@ -436,7 +441,9 @@ export default function RegisterScreen() {
                   />
                 </View>
                 <Text style={{ fontSize: fs - 3, color: C.textMuted, marginTop: 6 }}>
-                  Opcional — permite conversar pelo WhatsApp com {role === 'caregiver' ? 'o paciente' : 'seu cuidador'}.
+                  {role === 'caregiver'
+                    ? 'Obrigatório — vira o contato de emergência dos seus pacientes: numa queda ou pedido de socorro, o app liga para este número.'
+                    : 'Opcional — permite que seu cuidador ligue e converse com você pelo WhatsApp.'}
                 </Text>
               </View>
 

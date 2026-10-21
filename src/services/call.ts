@@ -13,8 +13,10 @@ import { isDemoActive } from './demo';
 
 export type CallResult = 'calling' | 'dialer' | 'failed';
 
+// Última instância, depois de tentar o cuidador.
 export const EMERGENCY_NUMBERS = [
   { label: 'SAMU', number: '192' },
+  { label: 'Polícia', number: '190' },
   { label: 'Bombeiros', number: '193' },
 ] as const;
 
@@ -25,9 +27,16 @@ const isDesktopWeb = () =>
   Platform.OS === 'web' &&
   !(typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
 
+/**
+ * Pede a permissão de telefone com antecedência (ao abrir o app/Emergência):
+ * na hora da queda não pode aparecer pergunta, a ligação tem que sair.
+ */
+export const ensureCallPermission = () => canCallDirectly();
+
 async function canCallDirectly(): Promise<boolean> {
   if (Platform.OS !== 'android') return false;
   try {
+    if (await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.CALL_PHONE)) return true;
     const result = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.CALL_PHONE, {
       title: 'Ligar em emergências',
       message:

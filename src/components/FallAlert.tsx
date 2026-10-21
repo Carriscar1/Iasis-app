@@ -26,7 +26,7 @@ import { getCurrentFix } from '../services/location';
 import { raiseEmergency } from '../services/emergency';
 import { listCareTeam, type CareMember } from '../services/careTeam';
 import { sendMessage } from '../services/chat';
-import { callPerson, callEmergencyService, EMERGENCY_NUMBERS } from '../services/call';
+import { callPerson, callEmergencyService, ensureCallPermission, EMERGENCY_NUMBERS } from '../services/call';
 
 /** Segundos para cancelar antes de avisar a família. */
 const COUNTDOWN = 30;
@@ -63,6 +63,13 @@ export default function FallAlert() {
     Vibration.vibrate([0, 700, 300, 700, 300, 700]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
   };
+
+  // Permissão de telefone pedida já ao entrar (não na hora da queda): assim a
+  // ligação de emergência sai direto, sem pergunta no meio.
+  const role = useStore((s) => s.user?.role);
+  useEffect(() => {
+    if (loggedIn && role && role !== 'caregiver') void ensureCallPermission();
+  }, [loggedIn, role]);
 
   // ── Monitor do acelerômetro ──
   useEffect(() => {
@@ -104,21 +111,21 @@ export default function FallAlert() {
   const notifyTeam = async () => {
     Vibration.cancel();
 
-    // A posição é buscada só agora, e com prazo curto: a contagem já
-    // consumiu 30 segundos e o aviso não pode esperar o GPS.
-    const { fix } = await getCurrentFix(undefined, 8000);
-    const { notified } = await raiseEmergency(fix, 'fall');
-
-    setSent(notified);
-
-    // Ninguém respondeu: além do aviso no app do cuidador, liga para o
-    // primeiro da equipe que tem telefone. A ligação é de verdade.
+    // Primeiro a ligação: liga na hora para o primeiro cuidador com telefone,
+    // sem esperar GPS nem servidor. Sem cuidador com telefone, a tela mostra
+    // SAMU, Polícia e Bombeiros como última instância.
     const caregivers = team.length ? team : (await listCareTeam()).data.filter((m) => m.side === 'caregiver');
     const first = caregivers.find((m) => m.phone);
-    if (notified > 0 && first) {
+    if (first) {
       setCalling(first.name);
       void callPerson(first.name, first.phone);
     }
+
+    // Em paralelo, o aviso no app de toda a equipe, com a posição se o GPS
+    // responder em até 8 s (a contagem já consumiu o tempo de espera).
+    const { fix } = await getCurrentFix(undefined, 8000);
+    const { notified } = await raiseEmergency(fix, 'fall');
+    setSent(notified);
   };
 
   // "Estou bem": o cuidador fica sabendo do susto, sem alarme.

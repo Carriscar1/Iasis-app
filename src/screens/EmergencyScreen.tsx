@@ -27,7 +27,7 @@ import { motionSupported, IMPACT_THRESHOLD_G } from '../services/motion';
 import { raiseEmergency, alertByWhatsApp } from '../services/emergency';
 import { listCareTeam, type CareMember } from '../services/careTeam';
 import { savePreferences } from '../services/preferences';
-import { callPerson, callEmergencyService, EMERGENCY_NUMBERS } from '../services/call';
+import { callPerson, callEmergencyService, ensureCallPermission, EMERGENCY_NUMBERS } from '../services/call';
 
 /** Cor do indicador de precisão do GPS — depende do tema ativo. */
 const accuracyColor = (C: ThemeColors) => ({
@@ -81,6 +81,8 @@ export default function EmergencyScreen() {
   useFocusEffect(
     useCallback(() => {
       locate();
+      // Permissão de telefone já ao abrir: no socorro a ligação sai direto.
+      void ensureCallPermission();
       listCareTeam().then(({ data }) => {
         if (mounted.current) setTeam(data.filter((m) => m.side === 'caregiver'));
       });
@@ -94,6 +96,11 @@ export default function EmergencyScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
     // Vibração longa: confirma o toque sem a pessoa precisar olhar a tela.
     Vibration.vibrate(600);
+
+    // Primeiro a ligação para o primeiro cuidador com telefone — na hora,
+    // sem esperar GPS nem servidor. O aviso no app vai logo em seguida.
+    const first = team.find((m) => m.phone);
+    if (first) void callPerson(first.name, first.phone);
 
     // Uma última tentativa de posição, caso a tela tenha aberto sem sinal.
     let current = fix;
@@ -118,11 +125,6 @@ export default function EmergencyScreen() {
     }
 
     setSentTo(notified);
-
-    // Além do aviso no app do cuidador, liga para o primeiro da equipe que
-    // tem telefone — a ligação é de verdade.
-    const first = team.find((m) => m.phone);
-    if (notified > 0 && first) void callPerson(first.name, first.phone);
 
     if (notified === 0) {
       RNAlert.alert(
