@@ -155,6 +155,7 @@ npm install
    - `supabase_update9.sql` (emergência: socorro e detecção de queda)
    - `supabase_update10.sql` (excluir a própria conta pelo app)
    - `supabase_update11.sql` (cuidador do cadastro vira equipe de cuidado e contato de emergência)
+   - `supabase_update12.sql` (cuidador achado pelo e-mail também como "uso independente")
 3. Copie a **URL** e a **anon key** (Settings → API) para:
    - `src/services/supabase.ts`
    - `app.json` (campo `extra`)
