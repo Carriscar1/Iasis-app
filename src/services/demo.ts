@@ -20,15 +20,16 @@ let restored: Promise<void> | null = null;
 export const isDemoActive = () => role !== null;
 export const demoUserId = () => (role === 'caregiver' ? DEMO_CAREGIVER_ID : DEMO_PATIENT_ID);
 
+// Os dados ficam na memória até o app fechar: dá para tomar a dose como
+// paciente, sair e entrar como cuidador para ver a mesma dose como tomada.
 export const startDemo = async (r: DemoRole) => {
   role = r;
-  tables = buildDemoTables();
+  if (!Object.keys(tables).length) tables = buildDemoTables();
   await AsyncStorage.setItem(KEY, r).catch(() => {});
 };
 
 export const stopDemo = async () => {
   role = null;
-  tables = {};
   await AsyncStorage.removeItem(KEY).catch(() => {});
 };
 
@@ -146,6 +147,7 @@ class DemoQuery implements PromiseLike<any> {
     } else if (this.op === 'update') {
       rows = all.filter(match);
       rows.forEach((r) => Object.assign(r, this.payload));
+      if (this.table === 'doses') rows.forEach(notifyCaregiver);
     } else if (this.op === 'delete') {
       rows = all.filter(match);
       tables[this.table] = all.filter((r) => !match(r));
@@ -175,6 +177,23 @@ class DemoQuery implements PromiseLike<any> {
 
 // ── Funções do banco (RPC) com comportamento de demonstração ──
 const profile = (id: string) => (tables.profiles ?? []).find((p) => p.id === id);
+
+// Faz o papel do gatilho do banco: dose tomada vira alerta para o cuidador.
+function notifyCaregiver(dose: Row) {
+  if (dose.status !== 'taken' && dose.status !== 'late') return;
+  const patient = profile(dose.user_id);
+  const med = (tables.medications ?? []).find((m) => m.id === dose.medication_id);
+  if (!patient?.caregiver_id || !med) return;
+  const when = new Date(dose.taken_at ?? Date.now());
+  const hhmm = `${String(when.getHours()).padStart(2, '0')}:${String(when.getMinutes()).padStart(2, '0')}`;
+  const how = dose.validated_by === 'rfid' ? ', validada pela pulseira' : '';
+  (tables.alerts ??= []).unshift({
+    id: newId(), user_id: patient.caregiver_id, patient_id: patient.id, dose_id: dose.id,
+    medication_id: med.id, type: 'dose_taken', title: 'Dose tomada',
+    body: `${patient.name} tomou ${med.name} ${med.dosage} às ${hhmm}${how}.`,
+    read: false, created_at: when.toISOString(),
+  });
+}
 
 const rpc = async (fn: string, args: Row = {}) => {
   const me = demoUserId();
