@@ -14,6 +14,7 @@ Saídas em hardware/video/saida_v2/:
 from __future__ import annotations
 
 import math
+import os
 import pickle
 import subprocess
 import sys
@@ -32,7 +33,9 @@ import mascote3d as m3    # noqa: E402
 from gerar_video import pecas, mover, girar_z, lerp   # noqa: E402
 
 W, H, FPS = 1920, 1080, 30
-SAIDA = AQUI / "saida_v2"
+# IASIS_LIMPO=1: sem legenda nem título (as animações viram slides, quem explica é o apresentador)
+LIMPO = os.environ.get("IASIS_LIMPO") == "1"
+SAIDA = AQUI / ("saida_slides" if LIMPO else "saida_v2")
 
 r.tema("#1f1611", "#3a2a20", "#4a3a30", contraluz=[1.0, 0.85, 0.6], brilho=[0.9, 0.7, 0.45])
 
@@ -525,7 +528,7 @@ def compor(q, t, dur, estado):
     px, py = px + (mx - px) * 0.12, py + (my - py) * 0.12
     estado["pos"] = (px, py)
     py += 14 * math.sin(t * 2 * math.pi / 1.6)
-    falando = any(a <= t <= b for a, b, _ in q["narracao"])
+    falando = not LIMPO and any(a <= t <= b for a, b, _ in q["narracao"])
     aponta = None
     if alvo is not None:
         aponta = math.degrees(math.atan2(-(alvo[1] - py), alvo[0] - px))
@@ -533,8 +536,9 @@ def compor(q, t, dur, estado):
     camada.alpha_composite(m, (int(px - m.width / 2), int(py - m.height / 2)))
     # título da cena e legenda da narração
     tj = q.get("titulo_janela", (0.3, dur - 0.3))
-    e.titulo_cena(camada, q["titulo"][0], q["titulo"][1], r.janela(t, tj[0], tj[1], 0.5))
-    for a, b, txt in q["narracao"]:
+    if not LIMPO:
+        e.titulo_cena(camada, q["titulo"][0], q["titulo"][1], r.janela(t, tj[0], tj[1], 0.5))
+    for a, b, txt in ([] if LIMPO else q["narracao"]):
         al = r.janela(t, a, b, 0.25)
         if al > 0:
             e.legenda_narracao(camada, txt, al)
