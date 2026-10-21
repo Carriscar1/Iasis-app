@@ -137,6 +137,22 @@ export const signOut = async (): Promise<void> => {
   await supabase.auth.signOut();
 };
 
+// Exclui a conta e tudo dela no banco (função delete_my_account,
+// supabase_update10.sql). A sessão some junto com o usuário, então só
+// limpamos a local.
+export const deleteAccount = async (): Promise<{ error: string | null }> => {
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) {
+    const msg = error.message ?? '';
+    if (/function .*delete_my_account|Could not find the function/i.test(msg)) {
+      return { error: 'A exclusão de conta ainda não foi ativada no servidor. Avise o suporte do IASIS.' };
+    }
+    return { error: 'Não foi possível excluir a conta agora. Verifique a internet e tente de novo.' };
+  }
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  return { error: null };
+};
+
 // Reenvia o e-mail de confirmação de cadastro (link de verificação).
 export const resendConfirmation = async (
   email: string

@@ -251,6 +251,11 @@ const rpc = async (fn: string, args: Row = {}) => {
       });
       return { data: 1, error: null };
     }
+    case 'delete_my_account':
+      // Na demonstração não há conta: só encerra e volta os dados ao início.
+      await stopDemo();
+      tables = {};
+      return { data: null, error: null };
     case 'check_access_code':
       return { data: [{ valid: false, reason: 'not_found' }], error: null };
     default:

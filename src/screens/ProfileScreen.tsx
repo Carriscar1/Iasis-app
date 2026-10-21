@@ -230,6 +230,12 @@ export default function ProfileScreen() {
             <Text style={[styles.logoutText, { fontSize: fs + 1 }]}>Sair da conta</Text>
           </TouchableOpacity>
 
+          {/* Excluir a conta: discreto, abaixo do sair, com tela própria de confirmação */}
+          <TouchableOpacity style={styles.deleteBtn} onPress={() => router.push('/delete-account')} activeOpacity={0.7}>
+            <Ionicons name="trash-outline" size={16} color={C.textMuted} />
+            <Text style={[styles.deleteText, { fontSize: fs - 1 }]}>Excluir conta</Text>
+          </TouchableOpacity>
+
           <Text style={[styles.version, { fontSize: fs - 3 }]}>{FOOTER_LABEL}</Text>
         </View>
       </ScrollView>
@@ -273,5 +279,7 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
   divider:      { height: 0.5, backgroundColor: C.border, marginLeft: 14 },
   logoutBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, padding: 16, borderWidth: 1.5, borderColor: '#F09595', backgroundColor: C.redLight, marginBottom: 16 },
   logoutText:   { fontWeight: '700', color: '#A32D2D' },
+  deleteBtn:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8, marginTop: -6, marginBottom: 14 },
+  deleteText:   { fontWeight: '600', color: C.textMuted, textDecorationLine: 'underline' },
   version:      { textAlign: 'center', color: C.textMuted, marginBottom: 8 },
 });
