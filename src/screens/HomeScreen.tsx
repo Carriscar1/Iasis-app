@@ -11,6 +11,7 @@ import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
+import Appear from '../components/Appear';
 import {
   listDosesForDay, computeLiveStatus, syncOverdueDoses,
   getAdherence, computeStreak, listMedications,
@@ -175,6 +176,7 @@ export default function HomeScreen() {
 
           {/* Banner do cuidador */}
           {user?.role === 'caregiver' && (
+            <Appear index={0}>
             <TouchableOpacity style={styles.caregiverBanner} onPress={() => router.push('/patients')} activeOpacity={0.85}>
               <View style={styles.caregiverIcon}>
                 <Ionicons name="people" size={isTablet ? 26 : 22} color="#fff" />
@@ -185,11 +187,12 @@ export default function HomeScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,.7)" />
             </TouchableOpacity>
+            </Appear>
           )}
 
           {/* Precisa de atenção: alertas não lidos + estoque acabando */}
           {(unreadAlerts > 0 || lowStock.length > 0) && (
-            <View style={{ marginTop: 18, gap: 10 }}>
+            <Appear index={1} style={{ marginTop: 18, gap: 10 }}>
               {unreadAlerts > 0 && (
                 <TouchableOpacity
                   style={styles.attentionCard}
@@ -235,12 +238,12 @@ export default function HomeScreen() {
                   <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
                 </TouchableOpacity>
               )}
-            </View>
+            </Appear>
           )}
 
           {/* Próximo remédio — foco principal */}
           {showsDoses && (
-            <View style={{ marginTop: 20 }}>
+            <Appear index={2} style={{ marginTop: 20 }}>
               <Text style={[styles.sectionTitle, { fontSize: fs - 2 }]}>Próximo remédio</Text>
               {nextDose ? (
                 <TouchableOpacity
@@ -283,12 +286,12 @@ export default function HomeScreen() {
                   </View>
                 </TouchableOpacity>
               )}
-            </View>
+            </Appear>
           )}
 
           {/* Resumo de hoje */}
           {showsDoses && total > 0 && (
-            <View style={{ marginTop: 22 }}>
+            <Appear index={3} style={{ marginTop: 22 }}>
               <Text style={[styles.sectionTitle, { fontSize: fs - 2 }]}>Resumo de hoje</Text>
               <View style={styles.summaryCard}>
                 <View style={styles.summaryRow}>
@@ -311,15 +314,15 @@ export default function HomeScreen() {
                 </View>
                 <Text style={[styles.progressText, { fontSize: fs - 2 }]}>{pct}% das doses de hoje concluídas</Text>
               </View>
-            </View>
+            </Appear>
           )}
 
           {/* Atalhos */}
           <Text style={[styles.sectionTitle, { fontSize: fs - 2, marginTop: 24 }]}>Acesso rápido</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
-            {shortcuts.map(item => (
+            {shortcuts.map((item, i) => (
+              <Appear key={item.label} index={4 + i}>
               <TouchableOpacity
-                key={item.label}
                 style={[styles.gridCard, { width: cardW }]}
                 onPress={() => router.push(item.route as any)}
                 activeOpacity={0.8}
@@ -330,18 +333,19 @@ export default function HomeScreen() {
                 <Text style={[styles.gridLabel, { fontSize: fs }]}>{item.label}</Text>
                 <Text style={[styles.gridSub, { fontSize: fs - 3 }]}>{item.sub}</Text>
               </TouchableOpacity>
+              </Appear>
             ))}
           </View>
 
           {/* Dica do dia */}
-          <View style={styles.tipCard}>
+          <Appear index={8} style={styles.tipCard}>
             <Ionicons name="heart" size={isElderly ? 22 : 18} color={C.redText} />
             <Text style={[styles.tipText, { fontSize: fs - 1 }]}>
               {isElderly
                 ? 'Tome seus remédios sempre no mesmo horário. Se tiver dúvida, chame seu cuidador.'
                 : 'Manter o horário certo dos remédios faz toda a diferença no tratamento.'}
             </Text>
-          </View>
+          </Appear>
 
           <Text style={[styles.version, { fontSize: fs - 3 }]}>{FOOTER_LABEL}</Text>
         </View>

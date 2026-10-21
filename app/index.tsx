@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
 import { Redirect } from 'expo-router';
 import { getSession, getProfile } from '../src/services/auth';
 import { useStore } from '../src/store';
+import LoadingSplash from '../src/components/LoadingSplash';
 
 // Tela de entrada: restaura a sessão salva. Se houver usuário logado, vai
 // direto para o app; senão, manda para o login.
@@ -31,13 +31,7 @@ export default function Index() {
     return () => { mounted = false; };
   }, []);
 
-  if (!target) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#1C2B4B' }}>
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
+  if (!target) return <LoadingSplash />;
 
   return <Redirect href={target} />;
 }

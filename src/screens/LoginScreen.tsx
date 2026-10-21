@@ -15,6 +15,7 @@ import type { DemoRole } from '../services/demoData';
 import { useStore } from '../store';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
+import Appear from '../components/Appear';
 
 export default function LoginScreen() {
   const { C, styles } = useTheme(makeStyles);
@@ -101,16 +102,16 @@ export default function LoginScreen() {
             showsVerticalScrollIndicator={false}
           >
             {/* Logo */}
-            <View style={styles.logoArea}>
+            <Appear index={0} style={styles.logoArea}>
               <View style={{ marginBottom: 14 }}>
                 <LogoMark size={isDesktop ? 88 : 76} />
               </View>
               <Text style={[styles.appName, { fontSize: isDesktop ? 52 : isTablet ? 44 : 38 }]}>Iasis</Text>
               <Text style={[styles.tagline, { fontSize: fs - 2 }]}>Sua saúde em dia</Text>
-            </View>
+            </Appear>
 
             {/* Card */}
-            <View style={[styles.card, { width: cardWidth, padding: isDesktop ? 36 : isTablet ? 28 : 24 }]}>
+            <Appear index={2} style={[styles.card, { width: cardWidth, padding: isDesktop ? 36 : isTablet ? 28 : 24 }]}>
               <Text style={[styles.cardTitle, { fontSize: titleSize, marginBottom: isTablet ? 22 : 16 }]}>
                 Entrar na conta
               </Text>
@@ -219,7 +220,7 @@ export default function LoginScreen() {
                   <Text style={[styles.demoText, { fontSize: fs - 1 }]}>Demo cuidador</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </Appear>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

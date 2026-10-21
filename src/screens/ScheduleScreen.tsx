@@ -20,6 +20,7 @@ import {
   requestPermission, scheduleRemindersForDoses, cancelDoseReminder,
 } from '../services/notifications';
 import AlarmTimePicker from '../components/AlarmTimePicker';
+import Appear from '../components/Appear';
 import DateStrip from '../components/DateStrip';
 import ConfirmAction from '../components/ConfirmAction';
 import type { Dose, DoseStatus, Medication, MedForm } from '../types';
@@ -266,12 +267,12 @@ export default function ScheduleScreen() {
                     <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar um medicamento.</Text>
                   </View>
                 ) : (
-                  doses.map((dose) => {
+                  doses.map((dose, i) => {
                     const cfg = CFG[dose.status];
                     const med = dose.medication;
                     return (
+                      <Appear key={dose.id} index={i}>
                       <TouchableOpacity
-                        key={dose.id}
                         style={[styles.doseCard, (dose.status === 'upcoming' || dose.status === 'due') && { borderColor: '#93B4DA', backgroundColor: C.borderSoft }]}
                         onPress={() => setSel(dose)}
                         activeOpacity={0.8}
@@ -288,6 +289,7 @@ export default function ScheduleScreen() {
                           <Text style={[styles.badgeText, { color: cfg.tc, fontSize: fs - 3 }]}>{cfg.label}</Text>
                         </View>
                       </TouchableOpacity>
+                      </Appear>
                     );
                   })
                 )}
@@ -306,8 +308,8 @@ export default function ScheduleScreen() {
                     <Text style={[styles.emptySub, { fontSize: fs - 2 }]}>Toque em + para adicionar seu primeiro medicamento.</Text>
                   </View>
                 ) : (
-                  meds.map((med) => (
-                    <View key={med.id} style={styles.medCard}>
+                  meds.map((med, i) => (
+                    <Appear key={med.id} index={i} style={styles.medCard}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                         <View style={styles.medIcon}>
                           <Ionicons name={(FORM_ICON[med.form] ?? 'medkit-outline') as any} size={20} color={C.navy} />
@@ -343,7 +345,7 @@ export default function ScheduleScreen() {
                           bg={C.redLight} txtColor={C.redText} fs={fs - 2}
                         />
                       </View>
-                    </View>
+                    </Appear>
                   ))
                 )}
               </>

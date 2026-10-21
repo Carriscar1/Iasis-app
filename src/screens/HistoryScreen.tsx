@@ -13,6 +13,7 @@ import { exportAdherenceReport } from '../services/report';
 import { exportDosesCsv } from '../services/export';
 import { withCache, describeAge } from '../services/offline';
 import type { Dose } from '../types';
+import Appear, { GrowBar } from '../components/Appear';
 
 type Period = '7d' | '30d' | '3m';
 const DAYS: Record<Period, number> = { '7d': 7, '30d': 30, '3m': 90 };
@@ -169,13 +170,13 @@ export default function HistoryScreen() {
             </View>
           ) : (
             <>
-              <View style={styles.scoreCard}>
+              <Appear index={0} style={styles.scoreCard}>
                 <Text style={[styles.scoreLabel, { fontSize: fs - 1 }]}>Adesão geral</Text>
                 <Text style={[styles.scoreValue, { fontSize: isDesktop ? 72 : isTablet ? 64 : 56, color: pct >= 80 ? '#5DCAA5' : '#FAC775' }]}>{pct}%</Text>
                 <Text style={[styles.scoreSub, { fontSize: fs - 1 }]}>{taken + late} de {total} doses tomadas</Text>
-              </View>
+              </Appear>
 
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+              <Appear index={1} style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
                 {[
                   { label: 'No horário', val: taken,  color: '#0F6E56' },
                   { label: 'Atrasadas',  val: late,   color: '#854F0B' },
@@ -186,19 +187,19 @@ export default function HistoryScreen() {
                     <Text style={[styles.metricLabel, { fontSize: fs - 3 }]}>{m.label}</Text>
                   </View>
                 ))}
-              </View>
+              </Appear>
 
               <Text style={[styles.sectionTitle, { fontSize: fs - 2 }]}>Últimos 7 dias</Text>
-              <View style={styles.barCard}>
+              <Appear index={2} style={styles.barCard}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: isTablet ? 140 : 110, gap: 6 }}>
-                  {week.map((d) => {
+                  {week.map((d, i) => {
                     const dp = d.total ? Math.round((d.taken / d.total) * 100) : 0;
                     const label = WD[new Date(d.date + 'T00:00:00').getDay()];
                     return (
                       <View key={d.date} style={{ flex: 1, alignItems: 'center', height: '100%' }}>
                         <Text style={{ fontSize: 9, color: C.textMuted, marginBottom: 3 }}>{d.total > 0 ? `${dp}%` : ''}</Text>
                         <View style={{ flex: 1, width: '100%', justifyContent: 'flex-end', backgroundColor: C.borderSoft, borderRadius: 6 }}>
-                          <View style={{ width: '100%', height: `${dp}%`, borderRadius: 6, minHeight: d.total > 0 ? 4 : 0,
+                          <GrowBar pct={dp} delay={250 + i * 60} style={{ width: '100%', borderRadius: 6, minHeight: d.total > 0 ? 4 : 0,
                             backgroundColor: dp === 100 ? '#0F6E56' : dp >= 50 ? '#1C2B4B' : '#FCEBEB' }} />
                         </View>
                         <Text style={{ fontSize: 10, color: C.textSecondary, marginTop: 5 }}>{label}</Text>
@@ -206,10 +207,10 @@ export default function HistoryScreen() {
                     );
                   })}
                 </View>
-              </View>
+              </Appear>
 
               <Text style={[styles.sectionTitle, { fontSize: fs - 2 }]}>Linha do tempo</Text>
-              <View style={styles.timelineCard}>
+              <Appear index={3} style={styles.timelineCard}>
                 {recent.length === 0 ? (
                   <Text style={{ padding: 16, color: C.textSecondary, fontSize: fs - 1 }}>Nenhuma dose registrada ainda.</Text>
                 ) : recent.map((d, idx) => {
@@ -231,7 +232,7 @@ export default function HistoryScreen() {
                     </View>
                   );
                 })}
-              </View>
+              </Appear>
 
               <TouchableOpacity style={[styles.exportBtn, exporting && { opacity: 0.7 }]} onPress={handleExport} disabled={exporting} activeOpacity={0.85}>
                 {exporting

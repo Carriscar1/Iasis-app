@@ -8,6 +8,7 @@ import { useFocusEffect, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
+import Appear from '../components/Appear';
 import {
   listAlerts, markAlertRead, markAllAlertsRead, deleteAlert,
   syncOverdueDoses, type AppAlert,
@@ -128,12 +129,12 @@ export default function AlertsScreen() {
             </Text>
           </View>
         ) : (
-          items.map((a) => {
+          items.map((a, i) => {
             const ICON = iconFor(C);
             const ic = ICON[a.type] ?? ICON.info;
             return (
+              <Appear key={a.id} index={i}>
               <TouchableOpacity
-                key={a.id}
                 style={[styles.card, !a.read && styles.cardUnread]}
                 onPress={() => handleOpen(a)}
                 onLongPress={() => handleDelete(a)}
@@ -151,6 +152,7 @@ export default function AlertsScreen() {
                   <Text style={styles.cardWhen}>{fmtWhen(a.createdAt)}</Text>
                 </View>
               </TouchableOpacity>
+              </Appear>
             );
           })
         )}
