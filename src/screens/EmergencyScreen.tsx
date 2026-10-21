@@ -27,6 +27,7 @@ import { motionSupported, IMPACT_THRESHOLD_G } from '../services/motion';
 import { raiseEmergency, alertByWhatsApp } from '../services/emergency';
 import { listCareTeam, type CareMember } from '../services/careTeam';
 import { savePreferences } from '../services/preferences';
+import { callPerson, callEmergencyService, EMERGENCY_NUMBERS } from '../services/call';
 
 /** Cor do indicador de precisão do GPS — depende do tema ativo. */
 const accuracyColor = (C: ThemeColors) => ({
@@ -47,6 +48,7 @@ export default function EmergencyScreen() {
   const user = useStore((s) => s.user);
   const fallEnabled = useStore((s) => s.fallDetection);
   const setFallEnabled = useStore((s) => s.setFallDetection);
+  const simulateFall = useStore((s) => s.simulateFall);
 
   const [permission] = Location.useForegroundPermissions();
 
@@ -116,6 +118,11 @@ export default function EmergencyScreen() {
     }
 
     setSentTo(notified);
+
+    // Além do aviso no app do cuidador, liga para o primeiro da equipe que
+    // tem telefone — a ligação é de verdade.
+    const first = team.find((m) => m.phone);
+    if (notified > 0 && first) void callPerson(first.name, first.phone);
 
     if (notified === 0) {
       RNAlert.alert(
@@ -255,6 +262,26 @@ export default function EmergencyScreen() {
                 thumbColor={fallEnabled ? C.navy : C.surface}
               />
             </View>
+            {/* Ensaia o aviso sem precisar derrubar o celular (e funciona no computador). */}
+            <TouchableOpacity style={styles.testBtn} onPress={simulateFall} activeOpacity={0.85}>
+              <Ionicons name="play-circle-outline" size={18} color={C.navy} />
+              <Text style={[styles.testText, { fontSize: fs - 1.5 }]}>Testar aviso de queda</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── SAMU e Bombeiros ── */}
+          <View style={styles.sosRow}>
+            {EMERGENCY_NUMBERS.map((e) => (
+              <TouchableOpacity
+                key={e.number}
+                style={styles.sosNum}
+                onPress={() => callEmergencyService(e.label, e.number)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="call" size={18} color={C.redText} />
+                <Text style={[styles.sosNumText, { fontSize: fs }]}>{e.label} {e.number}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           {/* ── Ligar direto ── */}
@@ -264,7 +291,7 @@ export default function EmergencyScreen() {
                 Falar agora
               </Text>
               <Text style={[styles.cardDesc, { fontSize: fs - 2.5, marginBottom: 10 }]}>
-                Se a internet falhar, o WhatsApp abre com a sua localização pronta.
+                Ligue direto, ou mande sua localização pelo WhatsApp se a internet falhar.
               </Text>
 
               {team.map((m) => (
@@ -285,6 +312,14 @@ export default function EmergencyScreen() {
                       {m.relation ?? 'Cuidador'}
                     </Text>
                   </View>
+                  <TouchableOpacity
+                    onPress={() => callPerson(m.name, m.phone)}
+                    style={styles.callIcon}
+                    hitSlop={8}
+                    accessibilityLabel={`Ligar para ${m.name}`}
+                  >
+                    <Ionicons name="call" size={18} color="#fff" />
+                  </TouchableOpacity>
                   <Ionicons name="logo-whatsapp" size={21} color={C.greenText} />
                 </TouchableOpacity>
               ))}
@@ -400,4 +435,19 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
     backgroundColor: C.amberLight, borderRadius: Radius.lg, padding: 15,
   },
   emptyText: { flex: 1, color: C.amberText, lineHeight: 19 },
+  testBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: 12, borderWidth: 1.5, borderColor: C.border, borderRadius: Radius.md, paddingVertical: 11,
+  },
+  testText: { color: C.navy, fontWeight: '700' },
+  callIcon: {
+    width: 34, height: 34, borderRadius: 17, backgroundColor: C.green,
+    alignItems: 'center', justifyContent: 'center', marginRight: 6,
+  },
+  sosRow: { flexDirection: 'row', gap: 10 },
+  sosNum: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: C.redLight, borderRadius: Radius.md, paddingVertical: 14,
+  },
+  sosNumText: { color: C.redText, fontWeight: '800' },
 });

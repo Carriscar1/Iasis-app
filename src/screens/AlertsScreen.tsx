@@ -11,7 +11,7 @@ import { useStore } from '../store';
 import Appear from '../components/Appear';
 import {
   listAlerts, markAlertRead, markAllAlertsRead, deleteAlert,
-  syncOverdueDoses, type AppAlert,
+  syncOverdueDoses, isUrgent, type AppAlert,
 } from '../services/alerts';
 
 // Depende do tema, entao e funcao da paleta e nao constante de modulo.
@@ -21,6 +21,8 @@ const iconFor = (C: ThemeColors): Record<AppAlert['type'], { name: any; bg: stri
   dispenser_offline: { name: 'cloud-offline',   bg: C.amberLight, fg: C.amberText },
   low_stock:         { name: 'flask',           bg: C.amberLight, fg: C.amberText },
   info:              { name: 'information-circle', bg: C.borderSoft, fg: C.textSecondary },
+  fall:              { name: 'body',            bg: C.redLight,   fg: C.redText },
+  emergency:         { name: 'warning',         bg: C.redLight,   fg: C.redText },
 });
 
 const fmtWhen = (iso: string) => {
@@ -65,6 +67,8 @@ export default function AlertsScreen() {
       setItems((prev) => prev.map((x) => (x.id === a.id ? { ...x, read: true } : x)));
       setUnreadAlerts(Math.max(0, items.filter((x) => !x.read).length - 1));
     }
+    // Queda/socorro reabre o aviso com os botões de ligar e ver no mapa.
+    if (isUrgent(a)) { useStore.getState().setUrgentAlert(a); return; }
     // Alerta de dose leva para o acompanhamento do paciente.
     if (a.type === 'dose_missed' && user?.role === 'caregiver') router.push('/patients');
   };

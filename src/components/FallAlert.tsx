@@ -24,6 +24,9 @@ import { useStore } from '../store';
 import { startFallMonitor, type FallEvent } from '../services/motion';
 import { getCurrentFix } from '../services/location';
 import { raiseEmergency } from '../services/emergency';
+import { listCareTeam, type CareMember } from '../services/careTeam';
+import { sendMessage } from '../services/chat';
+import { callPerson, callEmergencyService, EMERGENCY_NUMBERS } from '../services/call';
 
 /** Segundos para cancelar antes de avisar a família. */
 const COUNTDOWN = 30;
@@ -36,9 +39,30 @@ export default function FallAlert() {
   const [event, setEvent]   = useState<FallEvent | null>(null);
   const [left, setLeft]     = useState(COUNTDOWN);
   const [sent, setSent]     = useState<number | null>(null);
+  const [team, setTeam]     = useState<CareMember[]>([]);
+  const [calling, setCalling] = useState<string | null>(null);
+  const fallTestAt = useStore((s) => s.fallTestAt);
 
   // Guarda o evento em ref para o timer não depender do estado do React.
   const firing = useRef(false);
+
+  const open = (e: FallEvent) => {
+    // Já há uma contagem em andamento: o quique do mesmo tombo não abre
+    // uma segunda janela.
+    if (firing.current) return;
+
+    firing.current = true;
+    setEvent(e);
+    setLeft(COUNTDOWN);
+    setSent(null);
+    setCalling(null);
+    listCareTeam().then(({ data }) => setTeam(data.filter((m) => m.side === 'caregiver')));
+
+    // Vibração longa e insistente: a pessoa pode estar no chão sem
+    // conseguir olhar a tela.
+    Vibration.vibrate([0, 700, 300, 700, 300, 700]);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+  };
 
   // ── Monitor do acelerômetro ──
   useEffect(() => {
@@ -46,24 +70,14 @@ export default function FallAlert() {
     // para quem mandar o aviso, e o sensor gastaria bateria à toa.
     if (!enabled || !loggedIn) return;
 
-    const stop = startFallMonitor((e) => {
-      // Já há uma contagem em andamento: o quique do mesmo tombo não abre
-      // uma segunda janela.
-      if (firing.current) return;
-
-      firing.current = true;
-      setEvent(e);
-      setLeft(COUNTDOWN);
-      setSent(null);
-
-      // Vibração longa e insistente: a pessoa pode estar no chão sem
-      // conseguir olhar a tela.
-      Vibration.vibrate([0, 700, 300, 700, 300, 700]);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-    });
-
-    return stop;
+    return startFallMonitor(open);
   }, [enabled, loggedIn]);
+
+  // "Testar aviso de queda" (tela Emergência): mesmo fluxo, sem impacto.
+  // Serve para ensaiar com a família e para apresentar o app no computador.
+  useEffect(() => {
+    if (fallTestAt && loggedIn) open({ peakG: 3.4, at: new Date().toISOString() });
+  }, [fallTestAt]);
 
   // ── Contagem regressiva ──
   useEffect(() => {
@@ -96,6 +110,26 @@ export default function FallAlert() {
     const { notified } = await raiseEmergency(fix, 'fall');
 
     setSent(notified);
+
+    // Ninguém respondeu: além do aviso no app do cuidador, liga para o
+    // primeiro da equipe que tem telefone. A ligação é de verdade.
+    const caregivers = team.length ? team : (await listCareTeam()).data.filter((m) => m.side === 'caregiver');
+    const first = caregivers.find((m) => m.phone);
+    if (notified > 0 && first) {
+      setCalling(first.name);
+      void callPerson(first.name, first.phone);
+    }
+  };
+
+  // "Estou bem": o cuidador fica sabendo do susto, sem alarme.
+  const imOk = () => {
+    const me = useStore.getState().user;
+    if (me) {
+      for (const m of team) {
+        void sendMessage(me.id, m.personId, 'O IASIS registrou um impacto forte agora, mas estou bem. 👍');
+      }
+    }
+    dismiss();
   };
 
   const dismiss = () => {
@@ -134,7 +168,7 @@ export default function FallAlert() {
                 Sem resposta, seus cuidadores serão avisados com a sua localização.
               </Text>
 
-              <TouchableOpacity style={styles.okBtn} onPress={dismiss} activeOpacity={0.85}>
+              <TouchableOpacity style={styles.okBtn} onPress={imOk} activeOpacity={0.85}>
                 <Text style={styles.okText}>Estou bem</Text>
               </TouchableOpacity>
 
@@ -159,6 +193,22 @@ export default function FallAlert() {
                   : 'Você ainda não tem cuidadores cadastrados, então o aviso não ' +
                     'chegou a ninguém. Monte sua equipe de cuidado no perfil.'}
               </Text>
+
+              {calling ? <Text style={styles.calling}>📞 Ligando para {calling}…</Text> : null}
+
+              {team.filter((m) => m.phone).map((m) => (
+                <TouchableOpacity key={m.linkId} style={styles.callBtn} onPress={() => callPerson(m.name, m.phone)} activeOpacity={0.85}>
+                  <Text style={styles.callText}>Ligar para {m.name}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <View style={styles.sosRow}>
+                {EMERGENCY_NUMBERS.map((e) => (
+                  <TouchableOpacity key={e.number} style={styles.sosBtn} onPress={() => callEmergencyService(e.label, e.number)} activeOpacity={0.85}>
+                    <Text style={styles.sosText}>{e.label} {e.number}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <TouchableOpacity style={styles.okBtn} onPress={dismiss} activeOpacity={0.85}>
                 <Text style={styles.okText}>Fechar</Text>
@@ -226,4 +276,14 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
     paddingVertical: 15, alignItems: 'center',
   },
   helpText: { color: C.redText, fontWeight: '800', fontSize: 15.5 },
+
+  calling: { fontSize: 15, fontWeight: '700', color: C.greenText },
+  callBtn: {
+    width: '100%', backgroundColor: C.green, borderRadius: Radius.md,
+    paddingVertical: 15, alignItems: 'center',
+  },
+  callText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  sosRow: { flexDirection: 'row', gap: 10, width: '100%' },
+  sosBtn: { flex: 1, backgroundColor: C.redLight, borderRadius: Radius.md, paddingVertical: 12, alignItems: 'center' },
+  sosText: { color: C.redText, fontWeight: '800', fontSize: 14.5 },
 });

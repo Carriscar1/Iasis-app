@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { UserProfile } from '../services/auth';
 import type { MedForm } from '../types';
 import type { ThemeMode } from '../services/preferences';
+import type { AppAlert } from '../services/alerts';
 
 export interface MqttLog {
   id:        string;
@@ -57,6 +58,13 @@ interface AppStore {
   // Acelerômetro vigiando queda (rede de proteção do paciente)
   fallDetection:    boolean;
   setFallDetection: (v: boolean) => void;
+  // Abre o aviso "Você caiu?" sem impacto de verdade (teste e apresentação)
+  fallTestAt:   number;
+  simulateFall: () => void;
+
+  // Queda/socorro recebido que ainda está aberto em tela cheia (cuidador)
+  urgentAlert:    AppAlert | null;
+  setUrgentAlert: (a: AppAlert | null) => void;
 
   // Aparência: claro, escuro ou seguir o aparelho
   themeMode:    ThemeMode;
@@ -96,7 +104,7 @@ export const useStore = create<AppStore>((set) => ({
   isLoggedIn: false,
   setUser:    (user) => set({ user, isLoggedIn: !!user, isLoading: false }),
   setLoading: (isLoading) => set({ isLoading }),
-  logout:     () => set({ user: null, isLoggedIn: false, isLoading: false }),
+  logout:     () => set({ user: null, isLoggedIn: false, isLoading: false, urgentAlert: null }),
 
   mqttConnected:    false,
   setMqttConnected: (mqttConnected) => set({ mqttConnected }),
@@ -116,6 +124,11 @@ export const useStore = create<AppStore>((set) => ({
 
   fallDetection:    true,
   setFallDetection: (fallDetection) => set({ fallDetection }),
+  fallTestAt:   0,
+  simulateFall: () => set({ fallTestAt: Date.now() }),
+
+  urgentAlert:    null,
+  setUrgentAlert: (urgentAlert) => set({ urgentAlert }),
 
   themeMode:    'system',
   setThemeMode: (themeMode) => set({ themeMode }),

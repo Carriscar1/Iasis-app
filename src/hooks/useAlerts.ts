@@ -14,11 +14,11 @@ import { Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useStore } from '../store';
 import {
-  countUnreadAlerts, subscribeToAlerts, syncOverdueDoses,
+  countUnreadAlerts, subscribeToAlerts, syncOverdueDoses, findOpenEmergency, isUrgent,
 } from '../services/alerts';
 import { countUnread as countUnreadMessages } from '../services/chat';
 import { supabase } from '../services/supabase';
-import { sendLocalNotification } from '../services/notifications';
+import { sendLocalNotification, sendEmergencyNotification, requestPermission } from '../services/notifications';
 
 // Reconferência periódica: cobre o caso do app ficar aberto por horas.
 const RESYNC_MS = 15 * 60 * 1000;
@@ -30,7 +30,15 @@ export const useAlerts = () => {
     if (!userId) return;
     let cancelled = false;
 
-    const { setUnreadAlerts, setUnreadMessages } = useStore.getState();
+    const { setUnreadAlerts, setUnreadMessages, setUrgentAlert } = useStore.getState();
+
+    // Sem permissão o Android não mostra o aviso fora do app — pede logo.
+    requestPermission().catch(() => {});
+
+    // Emergência que chegou com o app fechado (ou antes de abrir esta tela).
+    findOpenEmergency(userId).then((a) => {
+      if (!cancelled && a && !useStore.getState().urgentAlert) setUrgentAlert(a);
+    });
 
     const refresh = async () => {
       // Marca doses vencidas (minhas e dos pacientes vinculados). É isso que
@@ -56,7 +64,12 @@ export const useAlerts = () => {
       if (Platform.OS !== 'web') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       }
-      sendLocalNotification(`⚠️ ${alert.title}`, alert.body);
+      if (isUrgent(alert)) {
+        setUrgentAlert(alert);
+        sendEmergencyNotification(`🚨 ${alert.title}`, alert.body);
+      } else {
+        sendLocalNotification(`⚠️ ${alert.title}`, alert.body);
+      }
     });
 
     // Mensagens novas: só atualizam o contador (a conversa em si é escutada

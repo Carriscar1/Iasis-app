@@ -7,6 +7,7 @@ import { supabase } from '../src/services/supabase';
 import { useStore } from '../src/store';
 import { loadPreferences } from '../src/services/preferences';
 import FallAlert from '../src/components/FallAlert';
+import EmergencyPopup from '../src/components/EmergencyPopup';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,6 +52,8 @@ export default function RootLayout() {
         {/* Vigia queda por cima de qualquer tela — inclusive com o app aberto
             em outra aba. Só age quando há sessão e o recurso está ligado. */}
         <FallAlert />
+        {/* Queda/socorro de um paciente: abre em tela cheia para o cuidador. */}
+        <EmergencyPopup />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

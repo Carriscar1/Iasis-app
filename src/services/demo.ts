@@ -230,8 +230,27 @@ const rpc = async (fn: string, args: Row = {}) => {
         error: null,
       };
     }
-    case 'raise_emergency':
+    case 'raise_emergency': {
+      // Mesmo texto da função do banco (supabase_update9.sql).
+      const me = profile(demoUserId());
+      if (!me?.caregiver_id) return { data: 0, error: null };
+      const lat = args.p_lat ?? null, lon = args.p_lon ?? null, acc = args.p_accuracy ?? null;
+      const where = lat == null ? ' A localização não estava disponível.'
+        : acc == null ? ' Localização enviada.'
+        : ` Localização com precisão de ${Math.round(acc)} m.`;
+      const fall = args.p_kind === 'fall';
+      (tables.alerts ??= []).unshift({
+        id: newId(), user_id: me.caregiver_id, patient_id: me.id, dose_id: null, medication_id: null,
+        type: fall ? 'fall' : 'emergency',
+        title: fall ? 'Possível queda detectada' : 'Pedido de socorro',
+        body: fall
+          ? `${me.name} pode ter sofrido uma queda e não respondeu ao aviso do aplicativo.${where}`
+          : `${me.name} acionou a emergência pelo IASIS.${where}`,
+        latitude: lat, longitude: lon, accuracy_meters: acc,
+        read: false, created_at: new Date().toISOString(),
+      });
       return { data: 1, error: null };
+    }
     case 'check_access_code':
       return { data: [{ valid: false, reason: 'not_found' }], error: null };
     default:

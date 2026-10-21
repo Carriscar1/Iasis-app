@@ -43,6 +43,32 @@ export const sendLocalNotification = async (title: string, body: string) => {
   });
 };
 
+// Canal próprio para queda/socorro: importância máxima faz o Android mostrar
+// o aviso por cima de qualquer app (heads-up) e na tela de bloqueio.
+const EMERGENCY_CHANNEL = 'emergencia';
+
+export const sendEmergencyNotification = async (title: string, body: string) => {
+  if (!SUPPORTED) return;
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync(EMERGENCY_CHANNEL, {
+      name: 'Emergências (queda e socorro)',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 800, 400, 800, 400, 800],
+      lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      bypassDnd: true,
+      sound: 'default',
+    }).catch(() => {});
+  }
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title, body, sound: 'default',
+      priority: Notifications.AndroidNotificationPriority.MAX,
+      data: { kind: 'emergency' },
+    },
+    trigger: Platform.OS === 'android' ? { channelId: EMERGENCY_CHANNEL } : null,
+  });
+};
+
 // Os ids dos agendamentos são derivados do id da dose, então dá para
 // cancelar depois (dose tomada/excluída) sem guardar mapeamento à parte.
 const reminderId  = (doseId: string) => `dose-${doseId}`;

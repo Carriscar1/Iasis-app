@@ -7,7 +7,9 @@
 // ─────────────────────────────────────────────
 import { supabase } from './supabase';
 
-export type AlertType = 'dose_missed' | 'dose_taken' | 'dispenser_offline' | 'low_stock' | 'info';
+export type AlertType =
+  | 'dose_missed' | 'dose_taken' | 'dispenser_offline' | 'low_stock' | 'info'
+  | 'fall' | 'emergency'; // criados pela função raise_emergency
 
 export interface AppAlert {
   id:        string;
@@ -20,7 +22,12 @@ export interface AppAlert {
   body:      string;
   read:      boolean;
   createdAt: string;
+  latitude?:  number | null;
+  longitude?: number | null;
 }
+
+/** Queda ou pedido de socorro: abre o aviso em tela cheia para o cuidador. */
+export const isUrgent = (a: Pick<AppAlert, 'type'>) => a.type === 'fall' || a.type === 'emergency';
 
 const mapRow = (r: any): AppAlert => ({
   id:        r.id,
@@ -33,7 +40,26 @@ const mapRow = (r: any): AppAlert => ({
   body:      r.body,
   read:      r.read,
   createdAt: r.created_at,
+  latitude:  r.latitude ?? null,
+  longitude: r.longitude ?? null,
 });
+
+// ── Emergência ainda sem resposta ─────────────
+// O aviso mais recente de queda/socorro não lido (últimos 30 min). Cobre quem
+// abre o app depois — pela notificação, por exemplo — e não viu o tempo real.
+export const findOpenEmergency = async (userId: string): Promise<AppAlert | null> => {
+  const since = new Date(Date.now() - 30 * 60000).toISOString();
+  const { data } = await supabase
+    .from('alerts')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('read', false)
+    .in('type', ['fall', 'emergency'])
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  return data && data[0] ? mapRow(data[0]) : null;
+};
 
 // ── Listar alertas recebidos ──────────────────
 export const listAlerts = async (
