@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useTheme, type ThemeColors } from '../theme';
 
@@ -33,14 +33,14 @@ export default function DateStrip({ value, onChange, days = 30, pastDays = 0, is
   const chipW = (isElderly ? 76 : 64) + 8; // largura + gap para centralizar
 
   // Com dias passados, começa rolado até "hoje" (senão o usuário abre no passado).
-  useEffect(() => {
-    if (pastDays > 0) {
-      const id = setTimeout(() => {
-        scrollRef.current?.scrollTo({ x: Math.max(0, pastDays * chipW - chipW), animated: false });
-      }, 0);
-      return () => clearTimeout(id);
+  // Rola quando a lista ganha tamanho: no Android, rolar antes disso é ignorado.
+  const positioned = useRef(false);
+  const handleSize = () => {
+    if (pastDays > 0 && !positioned.current) {
+      scrollRef.current?.scrollTo({ x: Math.max(0, pastDays * chipW - chipW), animated: false });
+      positioned.current = true;
     }
-  }, [pastDays, chipW]);
+  };
 
   const diffDays = (d: Date) => Math.round((d.getTime() - today.getTime()) / 86400000);
 
@@ -57,6 +57,7 @@ export default function DateStrip({ value, onChange, days = 30, pastDays = 0, is
       ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
+      onContentSizeChange={handleSize}
       contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
     >
       {list.map((d) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform,
   NativeSyntheticEvent, NativeScrollEvent,
 } from 'react-native';
 import { useTheme, type ThemeColors } from '../theme';
@@ -67,20 +67,44 @@ function Wheel({
   const VISIBLE = 3;
   const height = itemH * VISIBLE;
 
-  // Posiciona na opção atual ao montar / quando muda externamente.
+  // Posiciona na opção atual quando muda externamente. Na abertura quem
+  // posiciona é o onContentSizeChange: no Android, rolar antes de a lista
+  // ter tamanho não faz nada e a roda abria sempre em 00.
+  const ready = useRef(false);
   useEffect(() => {
-    const id = setTimeout(() => {
-      ref.current?.scrollTo({ y: value * itemH, animated: false });
-    }, 0);
-    return () => clearTimeout(id);
+    if (ready.current) ref.current?.scrollTo({ y: value * itemH, animated: false });
   }, [value, itemH]);
 
-  const handleEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
+  const handleSize = () => {
+    ref.current?.scrollTo({ y: value * itemH, animated: false });
+    ready.current = true;
+  };
+
+  const settle = (y: number) => {
     const idx = Math.min(range - 1, Math.max(0, Math.round(y / itemH)));
     if (idx !== value) onChange(idx);
     // encaixa exatamente na opção
     ref.current?.scrollTo({ y: idx * itemH, animated: true });
+  };
+
+  // Soltou o dedo sem embalo: encaixa já. Com embalo, espera o fim do
+  // deslize (onMomentumScrollEnd) — encaixar no meio cortava o giro no Android.
+  const handleDragEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const v = e.nativeEvent.velocity?.y ?? 0;
+    if (Math.abs(v) < 0.05) settle(e.nativeEvent.contentOffset.y);
+  };
+  const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => settle(e.nativeEvent.contentOffset.y);
+
+  // Na web não existe "fim do deslize" (a roda do mouse e o arrastar no
+  // navegador não disparam esses eventos): considera parado quando a rolagem
+  // fica 150 ms quieta.
+  const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (idle.current) clearTimeout(idle.current); }, []);
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (Platform.OS !== 'web') return;
+    const y = e.nativeEvent.contentOffset.y;
+    if (idle.current) clearTimeout(idle.current);
+    idle.current = setTimeout(() => settle(y), 150);
   };
 
   return (
@@ -91,10 +115,16 @@ function Wheel({
         <ScrollView
           ref={ref}
           showsVerticalScrollIndicator={false}
+          // A roda fica dentro do formulário, que também rola: sem isto o
+          // Android entrega o gesto para o formulário e a roda não gira.
+          nestedScrollEnabled
           snapToInterval={itemH}
           decelerationRate="fast"
-          onMomentumScrollEnd={handleEnd}
-          onScrollEndDrag={handleEnd}
+          onContentSizeChange={handleSize}
+          onMomentumScrollEnd={handleMomentumEnd}
+          onScrollEndDrag={handleDragEnd}
+          onScroll={handleScroll}
+          scrollEventThrottle={32}
           contentContainerStyle={{ paddingVertical: itemH }}
         >
           {items.map((n) => {
