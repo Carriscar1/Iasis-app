@@ -2,7 +2,7 @@
   "expo": {
     "name": "IASIS",
     "slug": "iasis",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "scheme": "iasis",
@@ -21,7 +21,7 @@
       "bundleIdentifier": "com.iasis.app"
     },
     "android": {
-      "versionCode": 6,
+      "versionCode": 7,
       "package": "com.iasis.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
