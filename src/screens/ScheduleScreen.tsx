@@ -443,7 +443,9 @@ function AddMedicationModal({
   const [form, setForm]         = useState<MedForm>('comprimido');
   const [dosage, setDosage]     = useState('');
   const [times, setTimes]       = useState<string[]>(['08:00']);
-  const [timeDraft, setTimeDraft] = useState('08:00');
+  // Qual horário as rodas estão editando (toque num horário para escolher).
+  const [editing, setEditing]   = useState(0);
+  const uniqTimes = Array.from(new Set(times)).sort();
   const [duration, setDuration] = useState(7);
   const [startDate, setStart]   = useState<Date>(midnight());
   const [compartment, setComp]  = useState(1);
@@ -456,7 +458,7 @@ function AddMedicationModal({
 
   const reset = () => {
     setQuery(''); setSelected(null); setCustom(false); setName('');
-    setForm('comprimido'); setDosage(''); setTimes(['08:00']); setTimeDraft('08:00');
+    setForm('comprimido'); setDosage(''); setTimes(['08:00']); setEditing(0);
     setDuration(7); setStart(midnight()); setComp(1); setInstr(''); setFormError('');
   };
 
@@ -492,18 +494,27 @@ function AddMedicationModal({
     setSelected(null); setCustom(false); setName(''); setDosage(''); setQuery('');
   };
 
+  // As rodas mudam o horário selecionado na hora: escolher 09:30 troca o
+  // 08:00 do começo, sem precisar adicionar e depois apagar.
+  const setEditingTime = (v: string) =>
+    setTimes((arr) => arr.map((x, i) => (i === editing ? v : x)));
   const addTime = () => {
-    if (times.includes(timeDraft)) return;
-    setTimes((t) => [...t, timeDraft].sort());
+    const [h, m] = (times[times.length - 1] ?? '08:00').split(':').map(Number);
+    const next = `${String((h + 4) % 24).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    setTimes((arr) => [...arr, next]);
+    setEditing(times.length);
   };
-  const removeTime = (t: string) => setTimes((arr) => arr.filter((x) => x !== t));
-  const applyPreset = (preset: readonly string[]) => setTimes([...preset]);
+  const removeTime = (idx: number) => {
+    setTimes((arr) => arr.filter((_, i) => i !== idx));
+    setEditing((e) => Math.max(0, e > idx || e === times.length - 1 ? e - 1 : e));
+  };
+  const applyPreset = (preset: readonly string[]) => { setTimes([...preset]); setEditing(0); };
 
   const handleSave = async () => {
     setFormError('');
     if (!userId) { setFormError('Sessão expirada. Entre novamente.'); return; }
     if (!name.trim() || !dosage.trim()) { setFormError('Escolha um remédio e a dosagem.'); return; }
-    if (times.length === 0) { setFormError('Adicione pelo menos um horário.'); return; }
+    if (uniqTimes.length === 0) { setFormError('Adicione pelo menos um horário.'); return; }
 
     setSaving(true);
     const med = await createMedication(userId, { name, dosage, form, compartment, instructions: instr });
@@ -520,7 +531,7 @@ function AddMedicationModal({
     const isoList: string[] = [];
     const cutoff = Date.now() - 15 * 60000;
     for (let d = 0; d < duration; d++) {
-      for (const t of times) {
+      for (const t of uniqTimes) {
         const [h, m] = t.split(':').map(Number);
         const when = new Date(startDate);
         when.setDate(when.getDate() + d);
@@ -555,7 +566,7 @@ function AddMedicationModal({
     );
 
     const n = dosesRes.data.length;
-    const freq = `${times.length}×/dia`;
+    const freq = `${uniqTimes.length}×/dia`;
     const durLabel = duration === 1 ? 'hoje' : `por ${duration} dias`;
     const msg = `${name} ${dosage}: ${n} ${n === 1 ? 'dose agendada' : 'doses agendadas'} (${freq} ${durLabel}).`;
 
@@ -691,21 +702,30 @@ function AddMedicationModal({
                   </View>
                 </Field>
 
-                <Field label={`Horários (${times.length})`} fs={fs}>
+                <Field label={`Horários (${uniqTimes.length})`} fs={fs}>
                   <View style={[styles.chipRow, { marginBottom: 10 }]}>
-                    {times.map((t) => (
-                      <TouchableOpacity key={t} style={styles.timeChip} onPress={() => removeTime(t)} activeOpacity={0.7}>
-                        <Ionicons name="alarm-outline" size={14} color={C.greenText} />
-                        <Text style={[styles.timeChipText, { fontSize: fs - 1 }]}>{t}</Text>
-                        {times.length > 1 && <Ionicons name="close-circle" size={15} color={C.greenText} />}
+                    {times.map((t, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        style={[styles.timeChip, i === editing && styles.timeChipActive]}
+                        onPress={() => setEditing(i)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="alarm-outline" size={14} color={i === editing ? '#fff' : C.greenText} />
+                        <Text style={[styles.timeChipText, { fontSize: fs - 1 }, i === editing && { color: '#fff' }]}>{t}</Text>
+                        {times.length > 1 && (
+                          <TouchableOpacity onPress={() => removeTime(i)} hitSlop={10} accessibilityLabel={`Remover ${t}`}>
+                            <Ionicons name="close-circle" size={16} color={i === editing ? '#fff' : C.greenText} />
+                          </TouchableOpacity>
+                        )}
                       </TouchableOpacity>
                     ))}
                   </View>
                   <View style={styles.pickerCard}>
-                    <AlarmTimePicker value={timeDraft} onChange={setTimeDraft} isElderly={isElderly} />
+                    <AlarmTimePicker value={times[editing] ?? '08:00'} onChange={setEditingTime} isElderly={isElderly} />
                     <TouchableOpacity style={styles.addTimeBtn} onPress={addTime} activeOpacity={0.85}>
                       <Ionicons name="add" size={16} color={C.navy} />
-                      <Text style={[styles.addTimeText, { fontSize: fs - 1 }]}>Adicionar este horário</Text>
+                      <Text style={[styles.addTimeText, { fontSize: fs - 1 }]}>Adicionar outro horário</Text>
                     </TouchableOpacity>
                   </View>
                 </Field>
@@ -746,7 +766,7 @@ function AddMedicationModal({
                 <View style={styles.previewBox}>
                   <Ionicons name="information-circle" size={16} color="#185FA5" />
                   <Text style={[styles.previewText, { fontSize: fs - 2 }]}>
-                    Serão agendadas {times.length * duration} doses: {times.join(', ')} · {duration === 1 ? 'só hoje' : `${duration} dias`}
+                    Serão agendadas {uniqTimes.length * duration} doses: {uniqTimes.join(', ')} · {duration === 1 ? 'só hoje' : `${duration} dias`}
                   </Text>
                 </View>
 
@@ -911,6 +931,7 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
   addTimeText:    { color: C.navy, fontWeight: '700' },
   timeChip:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: C.greenLight, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
   timeChipText:   { color: C.greenText, fontWeight: '700' },
+  timeChipActive: { backgroundColor: C.green },
   previewBox:     { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.borderSoft, borderRadius: 10, padding: 12, marginBottom: 8 },
   previewText:    { flex: 1, color: '#185FA5', fontWeight: '500' },
   formError:      { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: C.redLight, borderRadius: 10, padding: 12, marginTop: 8 },
