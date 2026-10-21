@@ -24,6 +24,7 @@ sys.path.insert(0, str(AQUI))
 import render3d as r                      # noqa: E402
 import estilo as e                        # noqa: E402
 import mascote3d as m3                    # noqa: E402
+import qr_voto                            # noqa: E402
 from gerar_video import pecas, mover, girar_z, lerp   # noqa: E402
 from gerar_video_v2 import TUDO, cena, suave, volta, _quadro3d   # noqa: E402  (também aplica o tema quente)
 
@@ -151,6 +152,9 @@ def quadro(t, ctx):
         ponto = meio
     olha = math.degrees(math.atan2(-(ponto[1] - my), ponto[0] - mx)) if ponto else None
     humor = "surpreso" if T_ABRE - 0.2 < t < T_ABRE + 1.6 else "feliz"
+    # QR de votação fixo no canto inferior esquerdo (o Iasinho passa por cima dele)
+    qr = qr_voto.cartao()
+    camada.alpha_composite(qr, (8, H - qr.height + 4))
     m = m3.mascote(t, False, None, humor, escala=0.7, olha=olha)
     camada.alpha_composite(m, (int(mx - m.width / 2), int(my - m.height / 2)))
     e.marca(camada)
