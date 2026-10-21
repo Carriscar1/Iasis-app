@@ -26,8 +26,8 @@ export default function EditPhoneScreen() {
     if (!user) return;
     const trimmed = phone.trim();
 
-    // Permite apagar o telefone (campo vazio) ou exige um número válido.
-    if (trimmed && !normalizePhone(trimmed)) {
+    // Obrigatório: sem telefone, a ligação de emergência não tem para onde ir.
+    if (!normalizePhone(trimmed)) {
       RNAlert.alert('Telefone inválido', 'Informe o número com DDD. Ex: (11) 99999-8888');
       return;
     }

@@ -101,7 +101,7 @@ export default function RegisterScreen() {
     const found = await findCaregiverByEmail(caregiverEmail);
     setLoading(false);
     if (!found) {
-      setError('Cuidador não encontrado. Verifique o e-mail ou peça para ele criar uma conta primeiro.');
+      setError('Cuidador não encontrado. Digite o e-mail completo dele (ex.: nome@gmail.com) e confira se ele já criou a conta no IASIS.');
       return;
     }
     setCaregiverId(found.id);
@@ -123,9 +123,12 @@ export default function RegisterScreen() {
     }
     if (password.length < 6) { setError('Senha deve ter pelo menos 6 dígitos.'); return; }
     if (password !== confirm){ setError('As senhas não coincidem.');             return; }
-    // O telefone do cuidador é o número que o app liga numa queda ou socorro.
-    if (role === 'caregiver' && !normalizePhone(phone)) {
-      setError('Informe seu telefone com DDD: é para ele que o app liga quando o paciente cai ou pede socorro.');
+    // Telefone de todo mundo: o do cuidador recebe a ligação de emergência, o
+    // do paciente é para onde o cuidador liga quando chega o aviso de queda.
+    if (!normalizePhone(phone)) {
+      setError(role === 'caregiver'
+        ? 'Informe seu telefone com DDD: é para ele que o app liga quando o paciente cai ou pede socorro.'
+        : 'Informe seu telefone com DDD: é para ele que seu cuidador liga quando recebe um aviso seu.');
       return;
     }
     if (requiresCode && !activationCode.trim()) {
@@ -443,7 +446,7 @@ export default function RegisterScreen() {
                 <Text style={{ fontSize: fs - 3, color: C.textMuted, marginTop: 6 }}>
                   {role === 'caregiver'
                     ? 'Obrigatório — vira o contato de emergência dos seus pacientes: numa queda ou pedido de socorro, o app liga para este número.'
-                    : 'Opcional — permite que seu cuidador ligue e converse com você pelo WhatsApp.'}
+                    : 'Obrigatório — é para este número que seu cuidador liga quando recebe um aviso seu.'}
                 </Text>
               </View>
 

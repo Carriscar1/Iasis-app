@@ -12,6 +12,7 @@ import { useElderlyMode } from '../hooks/useElderly';
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { FOOTER_LABEL } from '../config/app';
 import Appear from '../components/Appear';
+import { isDemoActive } from '../services/demo';
 import {
   listDosesForDay, computeLiveStatus, syncOverdueDoses,
   getAdherence, computeStreak, listMedications,
@@ -187,6 +188,27 @@ export default function HomeScreen() {
               </View>
               <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,.7)" />
             </TouchableOpacity>
+            </Appear>
+          )}
+
+          {/* Conta sem telefone (criada antes de ele ser obrigatório): a
+              emergência não tem para onde ligar até ele ser cadastrado. */}
+          {user && !user.phone && !isDemoActive() && (
+            <Appear index={1} style={{ marginTop: 18 }}>
+              <TouchableOpacity style={styles.attentionCard} onPress={() => router.push('/edit-phone')} activeOpacity={0.85}>
+                <View style={[styles.attentionIcon, { backgroundColor: C.redLight }]}>
+                  <Ionicons name="call" size={isElderly ? 24 : 20} color={C.redText} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.attentionTitle, { fontSize: fs }]}>Cadastre seu telefone</Text>
+                  <Text style={[styles.attentionSub, { fontSize: fs - 3 }]}>
+                    {user.role === 'caregiver'
+                      ? 'Sem ele, o app não consegue ligar para você numa emergência'
+                      : 'Sem ele, seu cuidador não consegue ligar para você'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={C.textMuted} />
+              </TouchableOpacity>
             </Appear>
           )}
 

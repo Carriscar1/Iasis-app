@@ -287,6 +287,16 @@ export default function EmergencyScreen() {
           </View>
 
           {/* ── Ligar direto ── */}
+          {team.length > 0 && !team.some((m) => m.phone) ? (
+            <View style={styles.warn}>
+              <Ionicons name="warning-outline" size={16} color={C.amberText} />
+              <Text style={[styles.warnText, { fontSize: fs - 2 }]}>
+                Nenhum cuidador tem telefone cadastrado, então a ligação automática não
+                consegue sair. Peça para cadastrarem em Perfil → Meu telefone.
+              </Text>
+            </View>
+          ) : null}
+
           {team.length > 0 ? (
             <View style={styles.card}>
               <Text style={[styles.cardTitle, { fontSize: fs, marginBottom: 4 }]}>
