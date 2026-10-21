@@ -6,7 +6,7 @@
 
 export const APP_META = {
   name:    'IASIS',
-  version: '1.0.4',
+  version: '1.0.5',
   // Ano do TCC — atualize ao virar o ano letivo.
   year:    2026,
   tagline: 'Sua saúde em dia',
