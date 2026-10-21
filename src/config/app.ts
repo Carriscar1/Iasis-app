@@ -30,6 +30,11 @@ export const MQTT_CONFIG = {
   dispenserId: '01',
 } as const;
 
+// Código de ativação da compra no cadastro. Desligado enquanto as contas são
+// criadas na hora (feira e apresentações); volte para true quando as vendas
+// começarem — o resto do fluxo (validar e queimar o código) continua pronto.
+export const REQUIRE_ACTIVATION_CODE = false;
+
 // true quando o broker real foi configurado (deixa de usar o simulador).
 export const isMqttConfigured = () =>
   !MQTT_CONFIG.brokerUrl.includes('SEU_BROKER') &&

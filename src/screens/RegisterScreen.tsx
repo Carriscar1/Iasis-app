@@ -12,6 +12,7 @@ import { signUp, findCaregiverByEmail, resendConfirmation, checkAccessCode, acti
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { LogoMark } from '../components/Logo';
 import { formatPhoneInput } from '../services/chat';
+import { REQUIRE_ACTIVATION_CODE } from '../config/app';
 
 type Step = 'role' | 'form' | 'link' | 'success';
 type Role = UserProfile['role'];
@@ -79,7 +80,8 @@ export default function RegisterScreen() {
 
   // Quem "possui" o dispenser (independente/cuidador) precisa do código de
   // ativação da compra. Paciente entra vinculado ao cuidador que já comprou.
-  const requiresCode = role !== 'patient';
+  // Enquanto REQUIRE_ACTIVATION_CODE estiver desligado, ninguém precisa.
+  const requiresCode = REQUIRE_ACTIVATION_CODE && role !== 'patient';
 
   const handleRoleSelect = (r: Role) => {
     setRole(r);
