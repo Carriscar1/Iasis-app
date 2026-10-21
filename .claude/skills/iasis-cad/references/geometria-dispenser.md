@@ -60,12 +60,12 @@ respiros continuam do lado direito de quem olha a frente.
 |---|---|---|
 | Apoio da prateleira | anel nas paredes internas, Z 107–119, 12 mm, degraus a 45° | vão em X 72–128 na frente para a calha descer |
 | Prateleira | Z 119–124, contorno = boca(119,5→280) − 0,5 | entra por cima; motor e suporte do servo presos por baixo |
-| Disco | centro (100, 95), Ø 126, Z 124–144, apoiado na prateleira | 8 bolsos Ø 22 no raio 45; nº 1 na frente (saída), numeração horária; furo em D |
+| Disco (v3) | centro (100, 95), Ø 140, Z 124,8–146,8; cubo Ø 13 de Z 121 (ressalto do motor) até o disco | 7 bolsos Ø 30/31,5 no raio 48 + posição de descanso (coração) na frente; numeração horária; furo em D |
 | NEMA 17 | sob a prateleira, centro (100, 95), Z 71–119 | 4 × M3 escareados a 31 mm; eixo até Z 143 |
-| Saída | (100, 50), Ø 22 com chanfro; lábio de 2 mm | rebaixo por baixo onde a paleta gira |
-| Paleta (trava) | eixo do servo em (124,7, 50); Z 119–121,5 | fechada: braço para −X; abre +90° (anti-horário visto de cima) |
-| Servo SG90 | corpo X 118,8–141,6, Y 43,9–56,1, Z 91,8–114,5 | suporte com paredes só em +X e +Y, longe do giro do braço |
-| Calha | X 82–118, Y 6–72,5, Z 5,5–88 | rampa de 39° até a janela; fica sob a saída |
+| Saída (v3) | (100, 47), Ø 34 com chanfro de 2 | sem rebaixo: a trava está desligada (`trava=False`) |
+| Paleta e servo | só com `trava=True` (geometria da v2, não conferida com a saída de Ø 34) | com Ø 34, a paleta girando 90° bate na parede da frente; precisa de outro eixo |
+| Calha (v3) | X 76–124, Y 6–72,5, Z 5,5–112 | chapa de 3 mm a 50°; a queda inteira da saída (Y 30–64) cai nela |
+| Portinha (v3) | abertura X 40–160, Y 35–155 embaixo da tampa, R 18, 45° até o topo | tampinha cônica com folga de 0,4 e furo de dedo Ø 24 |
 | LCD | 4 pinos Ø 6 em (100 ± 37,5, Z 257,5 ± 15,5), saindo 7 mm da parede da frente | aba da tampa aberta em X 55–145 por causa da placa |
 | RC522 | trilhos com canal em X 100 ± 30, Z 148–195, placa a 4 mm da parede | atrás do coração da logo |
 | Painéis de eletrônica | esquerdo X 13–16, Y 38–92, Z 165–245; direito X 184–187, Z 140–220 | grade de furos Ø 3,4 a cada 8 mm |

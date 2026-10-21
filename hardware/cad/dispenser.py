@@ -59,14 +59,30 @@ PARAMETROS = dict(
     prateleira_topo=124.0, prateleira_espessura=5.0, apoio_largura=12,
     centro_disco=(100.0, 95.0),
     compartimentos=8,             # o firmware usa 8 (25 passos por compartimento)
-    raio_bolsos=45.0, bolso_diametro=22.0,
-    disco_diametro=126.0, disco_altura=16.0,
-    disco_folga=0.0,              # o disco apoia na prateleira e gira pelo lado chato do eixo
+    # v3: bolsos grandes (cabe bala e bala de goma) e mais largos embaixo que em
+    # cima, para nada encunhar; a saída é maior que o bolso.
+    raio_bolsos=48.0, bolso_diametro=30.0, bolso_alivio=1.5,   # Ø 30 em cima, Ø 31,5 embaixo
+    saida_diametro=34.0, saida_chanfro=2.0,
+    descanso=True,                # posição 1 sem bolso: parado em casa, nada cai sozinho
+    disco_diametro=140.0, disco_altura=22.0,
+    # o disco não arrasta na prateleira: o cubo apoia no ressalto do motor e o
+    # disco fica `disco_folga` acima (menor que qualquer comprimido)
+    disco_folga=0.8, cubo_raio=6.5, nema_ressalto_altura=2.0, furo_eixo_folga=0.25,
     # NEMA 17 (medidas da norma; o comprimento do corpo varia de 34 a 48 mm)
     nema_lado=42.3, nema_furos=31.0, nema_ressalto=22.0, nema_comprimento=48.0,
     eixo_diametro=5.0, eixo_chato=4.5, eixo_comprimento=24.0,
 
+    # ── Calha ──────────────────────────────────────────────────────────────
+    calha_x=(76.0, 124.0), calha_angulo=50.0, calha_parede=2.5, calha_topo=112.0,
+
+    # ── Portinha de abastecimento na tampa (encaixe cônico, sai com o dedo) ─
+    portinha=(40.0, 160.0, 35.0, 155.0),   # abertura embaixo da tampa: x0, x1, y0, y1
+    portinha_raio=18.0, portinha_folga=0.4, portinha_furo_dedo=24.0,
+
     # ── Trava (servo SG90) ─────────────────────────────────────────────────
+    # v3: desligada. O firmware atual não move o servo e, fechada, a paleta
+    # seguraria a dose. Com a posição de descanso, o disco já é a trava.
+    trava=False,
     # Medidas típicas do SG90: confira com o corpo de prova "suporte_servo".
     sg90_corpo=(22.8, 12.2, 22.7),   # comprimento, largura, altura
     sg90_eixo_da_ponta=5.9,          # do eixo até a ponta mais próxima do corpo
@@ -226,7 +242,35 @@ def carcaca(P):
     tampa = cad.subtrair(tampa, [furo_escareado(x, y, topo + te, P, te)
                                  for (x, y) in P["tampa_parafusos"]])
 
-    return dict(tras=tras, frente=frente, tampa=tampa), dict(entrada_espessura=esp)
+    # 9. Abertura de abastecimento: cone de 45° (mais larga em cima) e portinha que assenta nela
+    tampa = cad.subtrair(tampa, tronco_portinha(P, topo - 1, topo + te + 1, 0.0))
+    folga_p = P["portinha_folga"]
+    portinha = tronco_portinha(P, topo + folga_p, topo + te, -folga_p)
+    xd = (P["portinha"][0] + P["portinha"][1]) / 2
+    yd = P["portinha"][3] - P["portinha_furo_dedo"] / 2 - 8
+    portinha = cad.subtrair(portinha, cad.cilindro(P["portinha_furo_dedo"] / 2, (xd, yd, topo - 1),
+                                                   (xd, yd, topo + te + 1)))
+
+    return dict(tras=tras, frente=frente, tampa=tampa, portinha=portinha), dict(entrada_espessura=esp)
+
+
+def retangulo_arredondado(x0, x1, y0, y1, r):
+    return box(x0 + r, y0 + r, x1 - r, y1 - r).buffer(r, resolution=16)
+
+
+def tronco_portinha(P, z0, z1, recuo):
+    """Tronco de pirâmide de 45° com a forma da abertura da tampa (z = topo da casca é a medida
+    `portinha`). `recuo` negativo encolhe (folga da portinha). Convexo: casca convexa de duas camadas."""
+    import trimesh
+    x0, x1, y0, y1 = P["portinha"]
+    topo = 280.0
+    camadas = []
+    for z in (z0, z1):
+        d = (z - topo) + recuo           # 45°: cresce 1 mm para cada 1 mm de altura
+        f = retangulo_arredondado(x0 - d, x1 + d, y0 - d, y1 + d, P["portinha_raio"] + d)
+        xy = np.asarray(f.exterior.coords)[:-1]
+        camadas.append(np.column_stack([xy, np.full(len(xy), z)]))
+    return trimesh.convex.convex_hull(np.vstack(camadas))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -274,18 +318,18 @@ def mecanismo(P, carcaca_pecas):
     for sx in (-1, 1):
         for sy in (-1, 1):
             cortes.append(furo_escareado(cx + sx * h, cy + sy * h, zt, P, P["prateleira_espessura"]))
-    # saída dos remédios, com chanfro em cima para nada enroscar
-    rb = P["bolso_diametro"] / 2
-    cortes.append(cad.furo_chanfrado(*saida, rb, zb, zt, 1.2))
-    # rebaixo por baixo onde a paleta gira (deixa só o lábio em volta da saída)
-    varredura = unary_union([paleta_2d(P, a) for a in range(0, 91, 5)]).buffer(1.5)
-    cortes.append(cad.extrudar(varredura, zb - 1, zt - P["labio_saida"]))
-    # passagem de fios do motor e do servo
-    for x in (25.0, 175.0):
-        cortes.append(cad.caixa(x - 8, x + 8, cy - 12, cy + 12, zb - 1, zt + 1))
-    # parafusos do suporte do servo
-    for (x, y) in furos_suporte:
-        cortes.append(furo_escareado(x, y, zt, P, P["prateleira_espessura"]))
+    # saída dos remédios: maior que o bolso, com chanfro em cima para nada enroscar
+    cortes.append(cad.furo_chanfrado(*saida, P["saida_diametro"] / 2, zb, zt, P["saida_chanfro"]))
+    if P["trava"]:
+        # rebaixo por baixo onde a paleta gira (deixa só o lábio em volta da saída)
+        varredura = unary_union([paleta_2d(P, a) for a in range(0, 91, 5)]).buffer(1.5)
+        cortes.append(cad.extrudar(varredura, zb - 1, zt - P["labio_saida"]))
+        # parafusos do suporte do servo
+        for (x, y) in furos_suporte:
+            cortes.append(furo_escareado(x, y, zt, P, P["prateleira_espessura"]))
+    # passagem de fios do motor e do servo, fora do giro do disco
+    for x in (22.0, 178.0):
+        cortes.append(cad.caixa(x - 6, x + 6, cy - 12, cy + 12, zb - 1, zt + 1))
     prat = cad.subtrair(prat, cortes)
     # marca do compartimento 1 (seta gravada na frente do disco)
     seta = Polygon([(cx - 4, cy - P["disco_diametro"] / 2 - 9), (cx + 4, cy - P["disco_diametro"] / 2 - 9),
@@ -293,26 +337,39 @@ def mecanismo(P, carcaca_pecas):
     prat = cad.subtrair(prat, cad.extrudar(seta, zt - 0.6, zt + 1))
 
     # ── Disco de compartimentos ────────────────────────────────────────────
+    from shapely import affinity
     z0 = zt + P["disco_folga"]
     z1 = z0 + P["disco_altura"]
     n = P["compartimentos"]
     disco = cad.cilindro(P["disco_diametro"] / 2, (cx, cy, z0), (cx, cy, z1), secoes=128)
+    # cubo por baixo: entra no furo da prateleira e apoia no ressalto do motor
+    z_cubo = zb + P["nema_ressalto_altura"]
+    disco = cad.unir([disco, cad.cilindro(P["cubo_raio"], (cx, cy, z_cubo), (cx, cy, z0 + 0.5))])
     cortes = []
-    angulos = [-90 - k * 360 / n for k in range(n)]   # 1 na saída; numeração no sentido horário
+    rb = P["bolso_diametro"] / 2
+    rbb = rb + P["bolso_alivio"] / 2
+    angulos = [-90 - k * 360 / n for k in range(n)]   # posição 1 na saída; sentido horário
     for k, a in enumerate(angulos):
         px = cx + P["raio_bolsos"] * math.cos(math.radians(a))
         py = cy + P["raio_bolsos"] * math.sin(math.radians(a))
-        cortes.append(cad.furo_chanfrado(px, py, rb, z0, z1, 1.0))
-        from shapely import affinity
-        num = cad.texto_2d(str(k + 1), 6.0)
-        rn = P["disco_diametro"] / 2 - 4.5
+        if k == 0 and P["descanso"]:
+            # posição de descanso (fica sobre a saída quando o disco está em casa): coração gravado
+            coracao, _ = cad.logo_2d(18.0)
+            cortes.append(cad.extrudar(affinity.translate(coracao, px, py), z1 - 0.8, z1 + 1))
+            continue
+        # bolso passante, 0,75 mm mais largo embaixo: o que entra solto sai solto
+        cortes.append(cad.revolucao([(0, z0 - 1), (rbb, z0 - 1), (rbb, z0), (rb, z1 - 1.0),
+                                     (rb + 2.0, z1 + 1), (0, z1 + 1)], (px, py)))
+        num = cad.texto_2d(str(k if P["descanso"] else k + 1), 5.0)
+        rn = P["disco_diametro"] / 2 - 3.5
         num = affinity.rotate(num, a + 90, origin=(0, 0))
         num = affinity.translate(num, cx + rn * math.cos(math.radians(a)), cy + rn * math.sin(math.radians(a)))
         cortes.append(cad.extrudar(num, z1 - 0.6, z1 + 1))
     # furo do eixo em D (eixo de 5 mm com rebaixo plano)
-    furo = disco_2d((cx, cy), P["eixo_diametro"] / 2 + 0.2).intersection(
-        box(cx - 5, cy - 5, cx + 5, cy - P["eixo_diametro"] / 2 + P["eixo_chato"] + 0.2))
-    cortes.append(cad.extrudar(furo, z0 - 1, z1 + 1))
+    fe = P["furo_eixo_folga"]
+    furo = disco_2d((cx, cy), P["eixo_diametro"] / 2 + fe).intersection(
+        box(cx - 5, cy - 5, cx + 5, cy - P["eixo_diametro"] / 2 + P["eixo_chato"] + fe))
+    cortes.append(cad.extrudar(furo, z_cubo - 1, z1 + 1))
     # marca do compartimento 1 na borda
     cortes.append(cad.caixa(cx - 1.2, cx + 1.2, cy - P["disco_diametro"] / 2 - 1,
                             cy - P["disco_diametro"] / 2 + 2.5, z0 - 1, z1 + 1))
@@ -350,14 +407,22 @@ def mecanismo(P, carcaca_pecas):
                             for (x, y) in furos_suporte])
 
     # ── Calha: leva o remédio da saída até a janela da bandeja ─────────────
-    xa, xb = 82.0, 118.0
-    rampa = cad.extrudar_no_plano(Polygon([(6, 5.5), (70, 5.5), (70, 58.5), (6, 6.5)]), "YZ", xa + 2.5, xb - 2.5)
-    lado = Polygon([(6, 5.5), (72.5, 5.5), (72.5, 88), (30, 88), (6, 20)])
+    # Rampa de chapa a 50° (bala de goma desliza em PLA a partir de ~40°), mais
+    # larga que a saída e com paredes altas para nada quicar para fora.
+    xa, xb = P["calha_x"]
+    pc, ct = P["calha_parede"], P["calha_topo"]
+    tg = math.tan(math.radians(P["calha_angulo"]))
+    y_fim = 70.0
+    z_fim = 6.5 + (y_fim - 6) * tg
+    grossura = 3.0 / math.cos(math.radians(P["calha_angulo"]))     # chapa de 3 mm
+    rampa2d = Polygon([(6, 5.5), (6 + (grossura - 1) / tg, 5.5), (y_fim, z_fim - grossura),
+                       (y_fim, z_fim), (6, 6.5)])
+    lado = Polygon([(6, 5.5), (y_fim + pc, 5.5), (y_fim + pc, ct), (30, ct), (6, 30)])
     calha = cad.unir([
-        rampa,
-        cad.extrudar_no_plano(lado, "YZ", xa, xa + 2.5),
-        cad.extrudar_no_plano(lado, "YZ", xb - 2.5, xb),
-        cad.caixa(xa, xb, 70, 72.5, 5.5, 88),
+        cad.extrudar_no_plano(rampa2d, "YZ", xa + pc - 0.5, xb - pc + 0.5),
+        cad.extrudar_no_plano(lado, "YZ", xa, xa + pc),
+        cad.extrudar_no_plano(lado, "YZ", xb - pc, xb),
+        cad.caixa(xa, xb, y_fim, y_fim + pc, 5.5, ct),
     ])
 
     # ── Painéis de eletrônica (2 iguais): grade de furos para M3 ou abraçadeira
@@ -383,7 +448,7 @@ def mecanismo(P, carcaca_pecas):
     nl, ncomp = P["nema_lado"], P["nema_comprimento"]
     fant = dict(
         motor=cad.unir([cad.caixa(cx - nl / 2, cx + nl / 2, cy - nl / 2, cy + nl / 2, zb - ncomp, zb),
-                        cad.cilindro(P["nema_ressalto"] / 2, (cx, cy, zb), (cx, cy, zb + 2)),
+                        cad.cilindro(P["nema_ressalto"] / 2, (cx, cy, zb), (cx, cy, zb + P["nema_ressalto_altura"])),
                         cad.extrudar(disco_2d((cx, cy), P["eixo_diametro"] / 2).intersection(
                             box(cx - 5, cy - 5, cx + 5, cy - P["eixo_diametro"] / 2 + P["eixo_chato"])),
                             zb, zb + P["eixo_comprimento"])]),
@@ -394,6 +459,10 @@ def mecanismo(P, carcaca_pecas):
         rc522=cad.caixa(100 - P["rc522_placa"][0] / 2, 100 + P["rc522_placa"][0] / 2,
                         5 + P["rc522_distancia_parede"], 6.6 + P["rc522_distancia_parede"], 150, 150 + P["rc522_placa"][1]),
     )
+    if not P["trava"]:
+        for k in ("paleta", "suporte_servo"):
+            pecas.pop(k)
+        fant.pop("servo")
     info = dict(saida=saida, eixo=eixo, contorno_prateleira=contorno, furos_suporte=furos_suporte)
     return pecas, fant, info
 
@@ -431,7 +500,9 @@ def corpos_de_prova(p, P):
         "3_divisao_baixo": cad.recortar(p["frente_baixo"], -1, 30, 40, 70, zc - 15, zc + 10),
         "3_divisao_cima": cad.recortar(p["frente_cima"], -1, 30, 40, 70, zc - 1, zc + 15),
         "4_disco_centro_no_eixo": cad.intersectar(p["disco"], cad.cilindro(16, (cx, cy, 100), (cx, cy, 200), secoes=128)),
-        "5_suporte_servo": p["suporte_servo"],
+        "5_tampa_portinha_canto": cad.recortar(p["tampa"], 20, 75, 15, 70, 270, 290),
+        "5_portinha_canto": cad.recortar(p["portinha"], 20, 75, 15, 70, 270, 290),
+        **({"6_suporte_servo": p["suporte_servo"]} if "suporte_servo" in p else {}),
     }
 
 
@@ -469,7 +540,7 @@ def verificar(pecas, fant, info, P):
     print("── Paleta girando de 0° a 90° (fechada → aberta)")
     _, eixo = geometria_trava(P)
     colisoes = set()
-    for ang in range(0, 91, 10):
+    for ang in (range(0, 91, 10) if "paleta" in pecas else []):
         pal = cad.girar(pecas["paleta"], ang, (0, 0, 1), (*eixo, 0))
         for n in ("prateleira", "disco", "suporte_servo", "calha", "frente"):
             if cad.interferencia(pal, pecas[n]) > 1.0:
@@ -477,13 +548,33 @@ def verificar(pecas, fant, info, P):
         for n in ("motor",):
             if cad.interferencia(pal, fant[n]) > 1.0:
                 colisoes.add("[" + n + "]")
-    print("  sem colisão" if not colisoes else f"  ✗ bate em: {sorted(colisoes)}")
+    print(("  sem colisão" if "paleta" in pecas else "  trava desligada (sem paleta)") if not colisoes
+          else f"  ✗ bate em: {sorted(colisoes)}")
     ok &= not colisoes
+
+    print("── Caminho da dose (bolso → saída → calha → bandeja)")
+    rb = P["bolso_diametro"] / 2
+    rbb = rb + P["bolso_alivio"] / 2
+    rs = P["saida_diametro"] / 2
+    passo = 2 * P["raio_bolsos"] * math.sin(math.pi / P["compartimentos"])
+    folga_saida = rs - rbb
+    cobre_vizinho = passo - rbb - rs        # quanto da prateleira separa a saída do bolso vizinho
+    xa, xb = P["calha_x"]
+    sx, sy = info["saida"]
+    na_calha = (xa + P["calha_parede"] <= sx - rs and sx + rs <= xb - P["calha_parede"]
+                and 6 <= sy - rs and sy + rs <= 70)
+    print(f"  bolso Ø {2 * rb:.0f} em cima / Ø {2 * rbb:.1f} embaixo, saída Ø {2 * rs:.0f}: "
+          f"{folga_saida:.2f} mm de sobra em volta")
+    print(f"  prateleira entre a saída e o bolso vizinho: {cobre_vizinho:.1f} mm (parado, o vizinho não cai)")
+    print(f"  queda inteira dentro da calha: {'sim' if na_calha else '✗ NÃO'}; rampa a {P['calha_angulo']:.0f}°")
+    print(f"  disco {P['disco_folga']:.1f} mm acima da prateleira (apoiado pelo cubo no ressalto do motor)")
+    bom = folga_saida >= 1.0 and cobre_vizinho >= 2.0 and na_calha and P["calha_angulo"] >= 45
+    ok &= bom
 
     print("── Peças que entram pela boca de cima (prateleira, disco, calha)")
     corpo = cad.unir([pecas["tras"], pecas["frente"]])
     boca = cad.boca(corpo, 150, 279.9, CONTORNO)
-    for n in ("prateleira", "disco", "calha", "suporte_servo"):
+    for n in [k for k in ("prateleira", "disco", "calha", "suporte_servo") if k in pecas]:
         pegada = (cad.secao(pecas[n], "z", PARAMETROS["prateleira_topo"] - 2.5) if n == "prateleira"
                   else _sombra_xy(pecas[n]))
         cabe = boca.buffer(0.01).contains(pegada)
@@ -522,7 +613,8 @@ ORIENTACAO = {
     "corpo_parte_da_frente": (0, 0, -1),  # de pé
     "tampa": (0, 0, 1),                   # de cabeça para baixo (aba para cima)
     "prateleira": (0, 0, 1),              # de cabeça para baixo (lisa na mesa)
-    "disco": (0, 0, -1),
+    "disco": (0, 0, 1),                   # de cabeça para baixo: o cubo fica para cima
+    "portinha": (0, 0, 1),                # face de cima na mesa (o cone de 45° sobe sem suporte)
     "paleta": (0, 0, -1),
     "suporte_servo": (0, 0, -1),
     "calha": (0, 0, -1),
@@ -532,9 +624,13 @@ ORIENTACAO = {
 
 def salvar(pecas, P):
     saida = AQUI / "saida"
+    for pasta in ("montagem", "imprimir_inteiro", "imprimir_dividido", "corpo_de_prova"):
+        for velho in (saida / pasta).glob("*.stl"):      # nada de peça antiga no pacote
+            velho.unlink()
     nomes = {"tras": "corpo_parte_de_tras", "frente": "corpo_parte_da_frente", "tampa": "tampa",
-             "prateleira": "prateleira", "disco": "disco", "paleta": "paleta",
+             "portinha": "portinha", "prateleira": "prateleira", "disco": "disco", "paleta": "paleta",
              "suporte_servo": "suporte_servo", "calha": "calha"}
+    nomes = {k: v for k, v in nomes.items() if k in pecas}
     for k, nome in nomes.items():
         cad.salvar_stl(pecas[k], saida / "montagem" / f"{nome}.stl")
         cad.salvar_stl(cad.para_impressao(pecas[k], ORIENTACAO[nome]), saida / "imprimir_inteiro" / f"{nome}.stl")
@@ -545,7 +641,8 @@ def salvar(pecas, P):
 
     # versão dividida: corpo em 4; o resto igual
     div = saida / "imprimir_dividido"
-    for k in ("tampa", "prateleira", "disco", "paleta", "suporte_servo", "calha"):
+    for k in [k for k in ("tampa", "portinha", "prateleira", "disco", "paleta", "suporte_servo", "calha")
+              if k in pecas]:
         cad.salvar_stl(cad.para_impressao(pecas[k], ORIENTACAO[nomes[k]]), div / f"{nomes[k]}.stl")
     cad.salvar_stl(painel, div / "painel_eletronica_x2.stl")
     for k, baixo in [("tras_baixo", (0, 1, 0)), ("tras_cima", (0, 1, 0)),
@@ -554,33 +651,42 @@ def salvar(pecas, P):
         cad.salvar_stl(cad.para_impressao(pecas[k], baixo), div / f"{nome}.stl")
 
     for nome, m in corpos_de_prova(pecas, P).items():
-        baixo = (0, 0, 1) if nome.startswith("2_tampa") else (0, 0, -1)
+        baixo = (0, 0, 1) if nome.startswith(("2_tampa", "4_disco", "5_")) else (0, 0, -1)
         cad.salvar_stl(cad.para_impressao(m, baixo), saida / "corpo_de_prova" / f"{nome}.stl")
     return saida
 
 
 def previas(pecas, fant, P, pasta):
     pasta.mkdir(parents=True, exist_ok=True)
-    casca = [pecas["tras"], pecas["frente"], pecas["tampa"]]
+    casca = [pecas["tras"], pecas["frente"], pecas["tampa"], pecas["portinha"]]
     render.renderizar(casca, pasta / "montagem.png", vistas=("iso", "frente", "iso_tras", "direita"),
                       titulos=["isométrica", "frente", "traseira", "lateral direita"])
     # por dentro: sem a tampa e sem a metade da frente
-    interno = [pecas["tras"], pecas["prateleira"], pecas["disco"], pecas["paleta"], pecas["suporte_servo"],
-               pecas["calha"], pecas["painel_esq"], pecas["painel_dir"], fant["motor"], fant["servo"]]
-    render.renderizar(interno, pasta / "interior.png", vistas=("iso", (-20, 55), "frente"),
+    cor = {"tras": "#7fa7d9", "prateleira": "#e6d36f", "disco": "#e0a96d", "paleta": "#d98fb5",
+           "suporte_servo": "#c9c9c9", "calha": "#9fd39a", "painel_esq": "#b0b0b0", "painel_dir": "#b0b0b0",
+           "[motor]": "#555555", "[servo]": "#3a6ea5"}
+
+    def lista(nomes):
+        ms, cs = [], []
+        for n in nomes:
+            m = fant.get(n[1:-1]) if n.startswith("[") else pecas.get(n)
+            if m is not None:
+                ms.append(m); cs.append(cor[n])
+        return ms, cs
+    ms, cs = lista(["tras", "prateleira", "disco", "paleta", "suporte_servo", "calha", "painel_esq",
+                    "painel_dir", "[motor]", "[servo]"])
+    render.renderizar(ms, pasta / "interior.png", vistas=("iso", (-20, 55), "frente"),
                       titulos=["interior (sem frente e tampa)", "interior visto de cima", "interior de frente"],
-                      cores=["#7fa7d9", "#e6d36f", "#e0a96d", "#d98fb5", "#c9c9c9", "#9fd39a",
-                             "#b0b0b0", "#b0b0b0", "#555555", "#3a6ea5"])
-    mec = [pecas["prateleira"], pecas["disco"], pecas["paleta"], pecas["suporte_servo"], fant["motor"], fant["servo"]]
-    render.renderizar(mec, pasta / "mecanismo.png", vistas=("iso", (-35, -30), "topo"),
-                      titulos=["mecanismo", "mecanismo por baixo", "de cima"],
-                      cores=["#e6d36f", "#e0a96d", "#d98fb5", "#c9c9c9", "#555555", "#3a6ea5"])
+                      cores=cs)
+    ms, cs = lista(["prateleira", "disco", "paleta", "suporte_servo", "calha", "[motor]", "[servo]"])
+    render.renderizar(ms, pasta / "mecanismo.png", vistas=("iso", (-35, -30), "topo"),
+                      titulos=["mecanismo", "mecanismo por baixo", "de cima"], cores=cs)
     exp = []
-    for k, d in [("tras", (0, 60, 0)), ("frente", (0, -60, 0)), ("tampa", (0, 0, 120)),
+    for k, d in [("tras", (0, 60, 0)), ("frente", (0, -60, 0)), ("tampa", (0, 0, 120)), ("portinha", (0, 0, 160)),
                  ("prateleira", (0, 0, 40)), ("disco", (0, 0, 80)), ("calha", (0, -30, -10))]:
         m = pecas[k].copy(); m.apply_translation(d); exp.append(m)
     render.renderizar(exp, pasta / "explodida.png", vistas=("iso",), titulos=["vista explodida"],
-                      cores=["#7fa7d9", "#e0a96d", "#9fd39a", "#e6d36f", "#d98fb5", "#c9c9c9"])
+                      cores=["#7fa7d9", "#e0a96d", "#9fd39a", "#f2c879", "#e6d36f", "#d98fb5", "#c9c9c9"])
     div = [pecas["tras_baixo"], pecas["tras_cima"], pecas["frente_baixo"], pecas["frente_cima"]]
     exp_div = []
     for m, d in zip(div, [(0, 30, 0), (0, 30, 40), (0, -30, 0), (0, -30, 40)]):
@@ -611,8 +717,9 @@ def cortes_folgas(pecas, saida):
         desenha(axs[1], cad.secao(pecas[n], "x", 30).intersection(box(-12, 262, 18, 302)), c)
     axs[1].set_title("Tampa sobre a frente (corte X=30)")
     for n, c in [("prateleira", "#e6d36f"), ("disco", "#e0a96d"), ("paleta", "#d98fb5")]:
-        desenha(axs[2], cad.secao(pecas[n], "x", 100).intersection(box(25, 110, 75, 150)), c)
-    axs[2].set_title("Saída: disco, lábio e paleta (corte X=100)")
+        if n in pecas:
+            desenha(axs[2], cad.secao(pecas[n], "x", 100).intersection(box(15, 110, 110, 152)), c)
+    axs[2].set_title("Saída e disco (corte X=100)")
     for ax in axs:
         ax.set_aspect("equal"); ax.grid(alpha=0.3); ax.set_xlabel("mm"); ax.set_ylabel("mm")
     plt.tight_layout(); plt.savefig(saida, dpi=100); plt.close(fig)

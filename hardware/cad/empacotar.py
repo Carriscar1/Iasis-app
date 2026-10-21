@@ -27,8 +27,9 @@ PECAS = {
     "corpo_tras_baixo":      (1, 0.10, "não", "", 1),
     "corpo_tras_cima":       (1, 0.10, "não", "", 1),
     "tampa":                 (1, 0.10, "não", "de cabeça para baixo", 1),
+    "portinha":              (1, 0.15, "não", "tampinha de abastecer; face de cima na mesa", 1),
     "prateleira":            (1, 0.15, "não", "", 2),
-    "disco":                 (1, 0.15, "não", "números para cima", 2),
+    "disco":                 (1, 0.20, "não", "de cabeça para baixo (cubo para cima)", 2),
     "calha":                 (1, 0.10, "não", "", 2),
     "suporte_servo":         (1, 0.30, "não", "", 2),
     "paleta":                (1, 1.00, "não", "peça fina, 100 % de preenchimento", 2),
@@ -73,6 +74,20 @@ Todos os STL estão em MILÍMETROS e JÁ DEITADOS NA POSIÇÃO DE IMPRESSÃO
 (é só abrir no fatiador, sem girar nem escalar).
 
 
+CAMINHO DA DOSE (versão 3)
+--------------------------
+  - Disco com 7 bolsos de Ø 30 mm x 22 mm (cabe bala e bala de goma), mais
+    largos embaixo (Ø 31,5) para nada encunhar.
+  - A posição com o CORAÇÃO gravado é a de descanso: monte o disco com o
+    coração sobre a saída. Assim nada cai antes da hora.
+  - Saída da prateleira com Ø 34 mm (maior que o bolso) e calha a 50°.
+  - O disco não arrasta na prateleira: o cubo de baixo apoia no motor e o
+    disco fica 0,8 mm acima.
+  - PORTINHA na tampa (120 x 120 mm): sai puxando pelo furo, para abastecer
+    e mexer lá dentro sem tirar os parafusos.
+  - A trava com servo saiu: a dose cai sozinha quando o bolso chega na saída.
+
+
 QUAL PASTA IMPRIMIR
 -------------------
   imprimir_dividido/  RECOMENDADO. Corpo em 4 peças que cabem em qualquer
@@ -102,7 +117,7 @@ CONFIGURAÇÃO (perfil rápido)
 ORDEM DE PRIORIDADE (coluna "P")
 --------------------------------
   1 = corpo e tampa (o dispensador montado)          IMPRIMIR PRIMEIRO
-  2 = mecanismo (prateleira, disco, calha, trava)     em seguida
+  2 = mecanismo (prateleira, disco, calha)           em seguida
   3 = painéis de eletrônica                          opcional (dá para usar fita dupla face)
 
 
@@ -122,7 +137,7 @@ PEÇAS — VERSÃO INTEIRA (imprimir_inteiro/)
 
 CORPOS DE PROVA (corpo_de_prova/) — SÓ SE SOBRAR TEMPO
 ------------------------------------------------------
-Pedaços pequenos para testar encaixes. Com a feira amanhã, pode pular:
+Pedaços pequenos para testar encaixes. Com pressa, pode pular:
 as folgas já foram deixadas maiores para impressão rápida.
 
 
