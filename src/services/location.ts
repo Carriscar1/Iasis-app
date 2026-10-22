@@ -87,6 +87,33 @@ export function distanceMeters(
  * não como exceção. Numa tela de emergência, travar é o pior desfecho
  * possível.
  */
+/**
+ * Última posição que o aparelho já conhece, sem ligar o GPS e sem pedir
+ * permissão (no máximo 1,5 s). É o que o pedido de socorro usa: o aviso não
+ * pode esperar o GPS — uma posição de minutos atrás já ajuda quem vai socorrer.
+ */
+export async function getLastKnownFix(): Promise<Fix | null> {
+  try {
+    const perm = await Location.getForegroundPermissionsAsync();
+    if (!perm.granted) return null;
+    const position = await Promise.race([
+      Location.getLastKnownPositionAsync({ maxAge: 15 * 60_000 }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+    ]);
+    if (!position) return null;
+    const meters = position.coords.accuracy ?? null;
+    return {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+      accuracyMeters: meters,
+      accuracy: classifyAccuracy(meters),
+      at: new Date(position.timestamp).toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentFix(
   current?: ExpoPermission | null,
   timeoutMs = 12_000,

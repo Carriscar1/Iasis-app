@@ -21,7 +21,7 @@ import { useStore } from '../store';
 import { useElderlyMode } from '../hooks/useElderly';
 import Avatar from '../components/Avatar';
 import {
-  getCurrentFix, classifyAccuracy, accuracyLabel, prettyCoords, type Fix,
+  getCurrentFix, getLastKnownFix, classifyAccuracy, accuracyLabel, prettyCoords, type Fix,
 } from '../services/location';
 import { motionSupported, IMPACT_THRESHOLD_G } from '../services/motion';
 import { raiseEmergency, alertByWhatsApp } from '../services/emergency';
@@ -102,13 +102,9 @@ export default function EmergencyScreen() {
     const first = team.find((m) => m.phone);
     if (first) void callPerson(first.name, first.phone);
 
-    // Uma última tentativa de posição, caso a tela tenha aberto sem sinal.
-    let current = fix;
-    if (!current) {
-      const { fix: got } = await getCurrentFix(permission, 6000);
-      current = got;
-      if (mounted.current && got) setFix(got);
-    }
+    // Sem posição ainda: usa a última que o aparelho conhece (instantânea).
+    // Esperar o GPS aqui segurava o pedido de socorro por vários segundos.
+    const current = fix ?? (await getLastKnownFix());
 
     const { notified, error } = await raiseEmergency(current, 'emergency');
     if (!mounted.current) return;

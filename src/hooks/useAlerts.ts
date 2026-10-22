@@ -10,7 +10,7 @@
 //  Montado uma única vez no layout das abas.
 // ─────────────────────────────────────────────
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useStore } from '../store';
 import {
@@ -22,6 +22,9 @@ import { sendLocalNotification, sendEmergencyNotification, requestPermission } f
 
 // Reconferência periódica: cobre o caso do app ficar aberto por horas.
 const RESYNC_MS = 15 * 60 * 1000;
+// Rede de segurança do tempo real para queda/socorro: se o evento não
+// chegar (app em segundo plano, conexão caiu), a consulta acha.
+const EMERGENCY_POLL_MS = 15 * 1000;
 
 export const useAlerts = () => {
   const userId = useStore((s) => s.user?.id);
@@ -35,9 +38,24 @@ export const useAlerts = () => {
     // Sem permissão o Android não mostra o aviso fora do app — pede logo.
     requestPermission().catch(() => {});
 
-    // Emergência que chegou com o app fechado (ou antes de abrir esta tela).
-    findOpenEmergency(userId).then((a) => {
-      if (!cancelled && a && !useStore.getState().urgentAlert) setUrgentAlert(a);
+    // Emergência que chegou com o app fechado, em segundo plano ou com o
+    // tempo real fora: confere ao abrir, ao voltar para o app e a cada 15 s.
+    const seen = new Set<string>();
+    const checkEmergency = () => {
+      findOpenEmergency(userId).then((a) => {
+        if (cancelled || !a || seen.has(a.id)) return;
+        seen.add(a.id);
+        if (useStore.getState().urgentAlert?.id === a.id) return;
+        setUrgentAlert(a);
+        sendEmergencyNotification(`🚨 ${a.title}`, a.body);
+      });
+    };
+    checkEmergency();
+    const emergencyTimer = setInterval(() => {
+      if (AppState.currentState === 'active') checkEmergency();
+    }, EMERGENCY_POLL_MS);
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state === 'active') { checkEmergency(); refresh(); }
     });
 
     const refresh = async () => {
@@ -65,6 +83,7 @@ export const useAlerts = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       }
       if (isUrgent(alert)) {
+        seen.add(alert.id);
         setUrgentAlert(alert);
         sendEmergencyNotification(`🚨 ${alert.title}`, alert.body);
       } else {
@@ -88,6 +107,8 @@ export const useAlerts = () => {
     return () => {
       cancelled = true;
       clearInterval(timer);
+      clearInterval(emergencyTimer);
+      appState.remove();
       unsubscribe();
       supabase.removeChannel(msgChannel);
     };

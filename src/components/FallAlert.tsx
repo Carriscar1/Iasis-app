@@ -15,14 +15,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Modal, Vibration, AppState,
-  ScrollView,
+  ScrollView, ActivityIndicator,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { Radius, Shadows, useTheme, type ThemeColors } from '../theme';
 import { useStore } from '../store';
 import { startFallMonitor, type FallEvent } from '../services/motion';
-import { getCurrentFix } from '../services/location';
+import { getLastKnownFix } from '../services/location';
+import * as Location from 'expo-location';
 import { raiseEmergency } from '../services/emergency';
 import { listCareTeam, type CareMember } from '../services/careTeam';
 import { sendMessage } from '../services/chat';
@@ -41,6 +42,8 @@ export default function FallAlert() {
   const [sent, setSent]     = useState<number | null>(null);
   const [team, setTeam]     = useState<CareMember[]>([]);
   const [calling, setCalling] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [hadFix, setHadFix]   = useState(false);
   const fallTestAt = useStore((s) => s.fallTestAt);
 
   // Guarda o evento em ref para o timer não depender do estado do React.
@@ -67,8 +70,13 @@ export default function FallAlert() {
   // Permissão de telefone pedida já ao entrar (não na hora da queda): assim a
   // ligação de emergência sai direto, sem pergunta no meio.
   const role = useStore((s) => s.user?.role);
+  // A localização também: pedir no meio da emergência travava a tela.
   useEffect(() => {
-    if (loggedIn && role && role !== 'caregiver') void ensureCallPermission();
+    if (!loggedIn || !role || role === 'caregiver') return;
+    void (async () => {
+      await ensureCallPermission();
+      await Location.requestForegroundPermissionsAsync().catch(() => null);
+    })();
   }, [loggedIn, role]);
 
   // ── Monitor do acelerômetro ──
@@ -110,22 +118,27 @@ export default function FallAlert() {
 
   const notifyTeam = async () => {
     Vibration.cancel();
+    // A tela muda na hora: a pessoa precisa ver que o pedido está saindo.
+    setSending(true);
 
     // Primeiro a ligação: liga na hora para o primeiro cuidador com telefone,
     // sem esperar GPS nem servidor. Sem cuidador com telefone, a tela mostra
     // SAMU, Polícia e Bombeiros como última instância.
     const caregivers = team.length ? team : (await listCareTeam()).data.filter((m) => m.side === 'caregiver');
+    if (!team.length) setTeam(caregivers);
     const first = caregivers.find((m) => m.phone);
     if (first) {
       setCalling(first.name);
       void callPerson(first.name, first.phone);
     }
 
-    // Em paralelo, o aviso no app de toda a equipe, com a posição se o GPS
-    // responder em até 8 s (a contagem já consumiu o tempo de espera).
-    const { fix } = await getCurrentFix(undefined, 8000);
+    // Junto, o aviso no app de toda a equipe — com a última posição que o
+    // aparelho conhece (instantânea), sem esperar o GPS.
+    const fix = await getLastKnownFix();
+    setHadFix(!!fix);
     const { notified } = await raiseEmergency(fix, 'fall');
     setSent(notified);
+    setSending(false);
   };
 
   // "Estou bem": o cuidador fica sabendo do susto, sem alarme.
@@ -144,6 +157,7 @@ export default function FallAlert() {
     firing.current = false;
     setEvent(null);
     setSent(null);
+    setSending(false);
   };
 
   const sendNow = () => {
@@ -160,7 +174,26 @@ export default function FallAlert() {
         contentContainerStyle={styles.backdropContent}
       >
         <View style={styles.card}>
-          {sent === null ? (
+          {sending && sent === null ? (
+            <>
+              <View style={styles.iconRing}>
+                <ActivityIndicator size="large" color={C.red} />
+              </View>
+              <Text style={styles.title}>Pedindo ajuda…</Text>
+              <Text style={styles.body}>
+                {calling
+                  ? `Ligando para ${calling} e avisando sua equipe de cuidado.`
+                  : 'Avisando sua equipe de cuidado. Se precisar, ligue para um dos números abaixo.'}
+              </Text>
+              <View style={styles.sosRow}>
+                {EMERGENCY_NUMBERS.map((e) => (
+                  <TouchableOpacity key={e.number} style={styles.sosBtn} onPress={() => callEmergencyService(e.label, e.number)} activeOpacity={0.85}>
+                    <Text style={styles.sosText}>{e.label} {e.number}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </>
+          ) : sent === null ? (
             <>
               <View style={styles.iconRing}>
                 <Text style={styles.count}>{left}</Text>
@@ -195,8 +228,8 @@ export default function FallAlert() {
               <Text style={styles.body}>
                 {sent > 0
                   ? sent === 1
-                    ? 'Seu cuidador foi avisado com a sua localização.'
-                    : `Seus ${sent} cuidadores foram avisados com a sua localização.`
+                    ? `Seu cuidador foi avisado${hadFix ? ' com a sua localização' : ''}.`
+                    : `Seus ${sent} cuidadores foram avisados${hadFix ? ' com a sua localização' : ''}.`
                   : 'Você ainda não tem cuidadores cadastrados, então o aviso não ' +
                     'chegou a ninguém. Monte sua equipe de cuidado no perfil.'}
               </Text>
