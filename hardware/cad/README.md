@@ -24,6 +24,11 @@ abrir no fatiador.
 
 ## 1. Qual pasta usar
 
+**Bambu Lab A1 (256 × 256 × 256 mm):** rode `python hardware/cad/pacote_a1.py`. Ele gera
+`IASIS_Bambu_A1.zip`, só com as peças que cabem, numeradas por mesa (`mesa1_…` a `mesa8_…`),
+e um LEIA-ME com a configuração. O corpo inteiro (280 mm) não cabe na A1.
+
+
 | Sua impressora | Use |
 |---|---|
 | Mesa ≥ 280 × 200 mm **e** altura ≥ 280 mm | `saida/imprimir_inteiro/` |
