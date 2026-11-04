@@ -74,6 +74,9 @@ PARAMETROS = dict(
 
     # ── Calha ──────────────────────────────────────────────────────────────
     calha_x=(76.0, 124.0), calha_angulo=50.0, calha_parede=2.5, calha_topo=112.0,
+    # v4: pés laterais para colar no fundo (a calha não tomba) e lingueta que passa
+    # pela janela e deita na bandeja (trava a calha no lugar e leva a dose até fora)
+    calha_pe=12.0, calha_ponta_z=7.5, calha_lingueta=-8.0,
 
     # ── Portinha de abastecimento na tampa (encaixe cônico, sai com o dedo) ─
     portinha=(40.0, 160.0, 35.0, 155.0),   # abertura embaixo da tampa: x0, x1, y0, y1
@@ -413,17 +416,32 @@ def mecanismo(P, carcaca_pecas):
     pc, ct = P["calha_parede"], P["calha_topo"]
     tg = math.tan(math.radians(P["calha_angulo"]))
     y_fim = 70.0
-    z_fim = 6.5 + (y_fim - 6) * tg
+    zp = P["calha_ponta_z"]                                         # topo da rampa na ponta da frente
+    z_fim = zp + (y_fim - 6) * tg
     grossura = 3.0 / math.cos(math.radians(P["calha_angulo"]))     # chapa de 3 mm
-    rampa2d = Polygon([(6, 5.5), (6 + (grossura - 1) / tg, 5.5), (y_fim, z_fim - grossura),
-                       (y_fim, z_fim), (6, 6.5)])
+    rampa2d = Polygon([(6, 5.5), (6 + (grossura - (zp - 5.5)) / tg, 5.5), (y_fim, z_fim - grossura),
+                       (y_fim, z_fim), (6, zp)])
     lado = Polygon([(6, 5.5), (y_fim + pc, 5.5), (y_fim + pc, ct), (30, ct), (6, 30)])
-    calha = cad.unir([
-        cad.extrudar_no_plano(rampa2d, "YZ", xa + pc - 0.5, xb - pc + 0.5),
+    ri0, ri1 = xa + pc - 0.5, xb - pc + 0.5                         # largura da rampa
+    pe_l, yt = P["calha_pe"], y_fim + pc
+    partes = [
+        cad.extrudar_no_plano(rampa2d, "YZ", ri0, ri1),
         cad.extrudar_no_plano(lado, "YZ", xa, xa + pc),
         cad.extrudar_no_plano(lado, "YZ", xb - pc, xb),
-        cad.caixa(xa, xb, y_fim, y_fim + pc, 5.5, ct),
-    ])
+        cad.caixa(xa, xb, y_fim, yt, 5.5, ct),
+        # lingueta: mesma altura da ponta da rampa, atravessa a janela e deita na bandeja
+        cad.caixa(ri0, ri1, P["calha_lingueta"], 6.5, 5.5, zp),
+        # pés para colar no fundo; começam em Y 18 para passar pelo apoio da prateleira
+        cad.caixa(xa - pe_l, xa + 0.5, 18, yt + 8, 5.5, 7.5),
+        cad.caixa(xb - 0.5, xb + pe_l, 18, yt + 8, 5.5, 7.5),
+        cad.caixa(xa - pe_l, xb + pe_l, yt - 0.5, yt + 8, 5.5, 7.5),
+    ]
+    for y in (28.0, 48.0, 66.0):                                    # reforços entre pé e parede
+        for x0, x1 in ((xa - pe_l + 1, xa + 0.5), (xb - 0.5, xb + pe_l - 1)):
+            dentro, fora = (x1, x0) if x0 < xa else (x0, x1)
+            tri = Polygon([(fora, 7.4), (dentro, 7.4), (dentro, 30)])
+            partes.append(cad.extrudar_no_plano(tri, "XZ", y, y + 2.5))
+    calha = cad.unir(partes)
 
     # ── Painéis de eletrônica (2 iguais): grade de furos para M3 ou abraçadeira
     pw, ph = P["painel_tamanho"]
@@ -571,15 +589,24 @@ def verificar(pecas, fant, info, P):
     bom = folga_saida >= 1.0 and cobre_vizinho >= 2.0 and na_calha and P["calha_angulo"] >= 45
     ok &= bom
 
-    print("── Peças que entram pela boca de cima (prateleira, disco, calha)")
+    print("── Peças que entram pela boca de cima (prateleira, disco)")
     corpo = cad.unir([pecas["tras"], pecas["frente"]])
     boca = cad.boca(corpo, 150, 279.9, CONTORNO)
-    for n in [k for k in ("prateleira", "disco", "calha", "suporte_servo") if k in pecas]:
+    for n in [k for k in ("prateleira", "disco", "suporte_servo") if k in pecas]:   # calha: logo abaixo
         pegada = (cad.secao(pecas[n], "z", PARAMETROS["prateleira_topo"] - 2.5) if n == "prateleira"
                   else _sombra_xy(pecas[n]))
         cabe = boca.buffer(0.01).contains(pegada)
         print(f"  {n}: {'passa' if cabe else '✗ NÃO passa'}")
         ok &= cabe
+
+    print("── Calha desce afastada 13 mm da frente e passa pelo apoio da prateleira")
+    afastada = pecas["calha"].copy()
+    afastada.apply_translation([0, 13, 0])
+    sombra = cad.sombra_xy(afastada)
+    for z0, z1 in ((107.5, 118.5), (150, 279.9)):
+        livre = cad.boca(corpo, z0, z1, CONTORNO).buffer(0.01).contains(sombra)
+        print(f"  Z {z0:.0f}–{z1:.0f}: {'passa' if livre else '✗ NÃO passa'}")
+        ok &= livre
 
     print("── Furos-guia dos parafusos da tampa com plástico em volta (≥ 1,5 mm)")
     for (x, y) in P["tampa_parafusos"]:

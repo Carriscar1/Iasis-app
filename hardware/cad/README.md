@@ -17,7 +17,7 @@ abrir no fatiador.
 | Posição de descanso | a 8ª posição não tem bolso, tem um **coração gravado**. Monte o disco com o coração sobre a saída: parado em casa, nada cai |
 | Sem atrito | o disco não arrasta na prateleira: um cubo por baixo apoia no ressalto do motor e o disco fica 0,8 mm acima. Furo do eixo com 0,25 mm de folga |
 | Saída | Ø 34 com chanfro de 2 mm (maior que o bolso). Entre a saída e o bolso vizinho sobram 4 mm de prateleira |
-| Calha | rampa de chapa a 50°, 43 mm de largura por dentro e paredes até Z 112 |
+| Calha | rampa de chapa a 50°, 43 mm de largura por dentro e paredes até Z 112; pés de 12 mm para colar no fundo e lingueta que atravessa a janela até a bandeja (v4) |
 | Portinha | abertura de 120 × 120 mm na tampa com uma tampinha cônica (45°, folga de 0,4 mm). Sai puxando pelo furo de Ø 24 |
 | Trava | **desligada** (`trava=False`): o firmware atual não move o servo e a paleta fechada seguraria a dose |
 
@@ -87,8 +87,10 @@ Os furos para parafuso no plástico têm 2,5 mm: o M3 entra rosqueando.
 1. **Corpo:** encaixe a parte de trás na da frente pelo macho-fêmea, com uma
    linha de cola. Na versão dividida, monte primeiro as duas de baixo e depois
    as duas de cima.
-2. **Calha:** desça pela abertura de cima até o fundo da parte da frente, com a
-   rampa virada para a janela da bandeja.
+2. **Calha:** desça pela abertura de cima uns 2 cm afastada da frente, apoie no
+   fundo e empurre para a frente até a **lingueta** passar pela janela de baixo e
+   deitar na bandeja. Ela fica centrada na janela. Depois cole os **pés** no fundo
+   (cola quente ou fita dupla face). Veja `saida/previas/guia_montagem.png`.
 3. **Prateleira:**
    - parafuse o NEMA 17 por baixo (4 × M3 × 8 escareados);
    - desça o conjunto pela abertura de cima até assentar no apoio das paredes.
