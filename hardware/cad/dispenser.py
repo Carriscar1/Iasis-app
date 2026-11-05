@@ -78,6 +78,14 @@ PARAMETROS = dict(
     # pela janela e deita na bandeja (trava a calha no lugar e leva a dose até fora)
     calha_pe=12.0, calha_ponta_z=7.5, calha_lingueta=-8.0,
 
+    # ── Trava v5: portinha no fim da calha, girada por um SG90 preso na calha ─
+    # A dose desce e espera atrás da portinha; o servo abre depois da pulseira.
+    # Fica longe do motor e nunca segura dose entre o disco e a prateleira.
+    trava_calha=True,
+    porta_eixo=(20.0, 45.0),          # (Y, Z) do eixo da portinha
+    porta_espessura=2.0, porta_folga_rampa=1.0, porta_cubo_raio=4.0, porta_furo_parede=4.4,
+    porta_chave=5.6, porta_flange_raio=10.0, porta_flange_espessura=3.0,
+
     # ── Portinha de abastecimento na tampa (encaixe cônico, sai com o dedo) ─
     portinha=(40.0, 160.0, 35.0, 155.0),   # abertura embaixo da tampa: x0, x1, y0, y1
     portinha_raio=18.0, portinha_folga=0.4, portinha_furo_dedo=24.0,
@@ -438,10 +446,15 @@ def mecanismo(P, carcaca_pecas):
     ]
     for y in (28.0, 48.0, 66.0):                                    # reforços entre pé e parede
         for x0, x1 in ((xa - pe_l + 1, xa + 0.5), (xb - 0.5, xb + pe_l - 1)):
+            if P["trava_calha"] and x0 > xa and y < 40:             # ali gira o braço do servo
+                continue
             dentro, fora = (x1, x0) if x0 < xa else (x0, x1)
             tri = Polygon([(fora, 7.4), (dentro, 7.4), (dentro, 30)])
             partes.append(cad.extrudar_no_plano(tri, "XZ", y, y + 2.5))
     calha = cad.unir(partes)
+    porta = cubo_porta = servo_trava = None
+    if P["trava_calha"]:
+        calha, porta, cubo_porta, servo_trava = trava_na_calha(P, calha, zp, tg)
 
     # ── Painéis de eletrônica (2 iguais): grade de furos para M3 ou abraçadeira
     pw, ph = P["painel_tamanho"]
@@ -481,9 +494,73 @@ def mecanismo(P, carcaca_pecas):
         for k in ("paleta", "suporte_servo"):
             pecas.pop(k)
         fant.pop("servo")
+    if P["trava_calha"]:
+        pecas.update(porta_trava=porta, cubo_trava=cubo_porta)
+        fant["servo_trava"] = servo_trava
     info = dict(saida=saida, eixo=eixo, contorno_prateleira=contorno, furos_suporte=furos_suporte)
     return pecas, fant, info
 
+
+
+def trava_na_calha(P, calha, zp, tg):
+    """Portinha que fecha o fim da calha, girada por um SG90 preso do lado de fora da parede direita.
+
+    Fechada, a chapa fica em pé atrás da ponta da rampa (a dose para nela). Aberta, gira 90° para a
+    frente e para cima, saindo pela janela de baixo. O eixo é o próprio servo na direita e um
+    parafuso M3 na esquerda (passa folgado na parede e rosqueia na portinha)."""
+    xa, xb = P["calha_x"]
+    pc = P["calha_parede"]
+    ye, ze = P["porta_eixo"]
+    rampa = lambda y: zp + (y - 6) * tg
+    xi0, xi1 = xa + pc, xb - pc                         # vão interno da calha
+    t, rc = P["porta_espessura"], P["porta_cubo_raio"]
+    k = P["porta_chave"] / 2
+    fz = P["porta_folga_rampa"]
+
+    # portinha: chapa com a borda de baixo paralela à rampa, cubo no eixo e chave na ponta. A face de
+    # trás da chapa, o cubo e a chave tangenciam o mesmo plano (Y = ye + rc): imprime deitada nele.
+    y0, y1 = ye + rc - t, ye + rc
+    perfil = Polygon([(y0, rampa(y0) + fz), (y1, rampa(y1) + fz), (y1, ze), (y0, ze)])
+    xf0 = xb + 1.0                                      # flange 1 mm fora da parede
+    xf1 = xf0 + P["porta_flange_espessura"]
+    porta = cad.unir([
+        cad.extrudar_no_plano(perfil, "YZ", xi0 + 0.5, xi1 - 0.5),
+        cad.cilindro(rc, (xi0 + 0.5, ye, ze), (xb + 0.5, ye, ze)),
+        cad.caixa(xb + 0.3, xf1, ye - k, y1, ze - k, ze + k),
+    ])
+    porta = cad.subtrair(porta, cad.cilindro(P["furo_guia_m3"] / 2, (xi0 - 0.5, ye, ze), (xi0 + 9, ye, ze)))
+    cubo = cad.subtrair(cad.cilindro(P["porta_flange_raio"], (xf0, ye, ze), (xf1, ye, ze)),
+                        cad.caixa(xf0 - 1, xf1 + 1, ye - k - 0.2, y1 + 0.2, ze - k - 0.2, ze + k + 0.2))
+
+    # servo deitado com o eixo para −X: o braço é colado na face de fora do cubo
+    cl, cw, ch = P["sg90_corpo"]
+    x_topo = xf1 + P["sg90_braco_acima_do_topo"]
+    z0 = ze - P["sg90_eixo_da_ponta"]
+    zc = z0 + cl / 2
+    x_aba = x_topo + P["sg90_aba_do_topo"]
+    servo = cad.unir([cad.caixa(x_topo, x_topo + ch, ye - cw / 2, ye + cw / 2, z0, z0 + cl),
+                      cad.caixa(x_aba, x_aba + P["sg90_aba_espessura"], ye - cw / 2, ye + cw / 2,
+                                zc - 16.2, zc + 16.2)])
+
+    # suporte: placa em pé que segura as abas, ligada à calha pelo pé e por uma travessa em cima
+    px0, px1 = x_aba - 3.0, x_aba
+    py0, py1 = ye - cw / 2 - 4, ye + cw / 2 + 5
+    pz1 = zc + 16.2 + 3
+    placa = cad.caixa(px0, px1, py0, py1, 5.5, pz1)
+    placa = cad.subtrair(placa, [
+        cad.caixa(px0 - 1, px1 + 1, ye - cw / 2 - 0.3, ye + cw / 2 + 0.3, z0 - 0.3, z0 + cl + 0.3),
+        *[cad.cilindro(0.9, (px0 - 1, ye, z), (px1 + 1, ye, z)) for z in (zc - P["sg90_furos"] / 2,
+                                                                         zc + P["sg90_furos"] / 2)],
+    ])
+    calha = cad.unir([calha, placa,
+                      cad.caixa(xb - 0.5, px1, py0, 18.5, 5.5, 7.5),                  # pé embaixo da placa
+                      cad.caixa(xb - 0.5, px0 + 0.5, max(py0, 22.0), py1, pz1 - 3, pz1)])  # travessa
+    # furos do eixo: folgado na direita (cubo da portinha) e M3 passante na esquerda
+    calha = cad.subtrair(calha, [
+        cad.cilindro(P["porta_furo_parede"], (xi1 - 1, ye, ze), (xb + 1, ye, ze)),
+        cad.cilindro(P["furo_passante_m3"] / 2, (xa - 1, ye, ze), (xi0 + 1, ye, ze)),
+    ])
+    return calha, porta, cubo, servo
 
 def prof_lcd(P):
     return P["lcd_moldura_profundidade"]
@@ -599,8 +676,25 @@ def verificar(pecas, fant, info, P):
         print(f"  {n}: {'passa' if cabe else '✗ NÃO passa'}")
         ok &= cabe
 
+    if "porta_trava" in pecas:
+        print("── Portinha da trava girando de 0° a 90° (fechada → aberta, para a frente)")
+        ye, ze = P["porta_eixo"]
+        bate = set()
+        for ang in range(0, 91, 10):
+            for n in ("porta_trava", "cubo_trava"):
+                m = cad.girar(pecas[n], -ang, (1, 0, 0), (0, ye, ze))
+                for alvo in ("calha", "frente"):
+                    if cad.interferencia(m, pecas[alvo]) > 1.0:
+                        bate.add(f"{n} × {alvo} em {ang}°")
+                if cad.interferencia(m, fant["servo_trava"]) > 1.0:
+                    bate.add(f"{n} × [servo] em {ang}°")
+        print("  sem colisão" if not bate else f"  ✗ {sorted(bate)}")
+        ok &= not bate
+
     print("── Calha desce afastada 13 mm da frente e passa pelo apoio da prateleira")
-    afastada = pecas["calha"].copy()
+    conjunto = [pecas["calha"]] + [pecas[k] for k in ("porta_trava", "cubo_trava") if k in pecas]
+    conjunto += [fant["servo_trava"]] if "servo_trava" in fant else []
+    afastada = cad.unir(conjunto)
     afastada.apply_translation([0, 13, 0])
     sombra = cad.sombra_xy(afastada)
     for z0, z1 in ((107.5, 118.5), (150, 279.9)):
@@ -645,6 +739,8 @@ ORIENTACAO = {
     "paleta": (0, 0, -1),
     "suporte_servo": (0, 0, -1),
     "calha": (0, 0, -1),
+    "porta_trava": (0, 1, 0),             # deitada na face de trás (chapa, cubo e chave no mesmo plano)
+    "cubo_trava": (1, 0, 0),              # deitado
     "painel_eletronica": (-1, 0, 0),      # deitado
 }
 
@@ -656,7 +752,8 @@ def salvar(pecas, P):
             velho.unlink()
     nomes = {"tras": "corpo_parte_de_tras", "frente": "corpo_parte_da_frente", "tampa": "tampa",
              "portinha": "portinha", "prateleira": "prateleira", "disco": "disco", "paleta": "paleta",
-             "suporte_servo": "suporte_servo", "calha": "calha"}
+             "suporte_servo": "suporte_servo", "calha": "calha",
+             "porta_trava": "porta_trava", "cubo_trava": "cubo_trava"}
     nomes = {k: v for k, v in nomes.items() if k in pecas}
     for k, nome in nomes.items():
         cad.salvar_stl(pecas[k], saida / "montagem" / f"{nome}.stl")
@@ -668,8 +765,8 @@ def salvar(pecas, P):
 
     # versão dividida: corpo em 4; o resto igual
     div = saida / "imprimir_dividido"
-    for k in [k for k in ("tampa", "portinha", "prateleira", "disco", "paleta", "suporte_servo", "calha")
-              if k in pecas]:
+    for k in [k for k in ("tampa", "portinha", "prateleira", "disco", "paleta", "suporte_servo", "calha",
+                          "porta_trava", "cubo_trava") if k in pecas]:
         cad.salvar_stl(cad.para_impressao(pecas[k], ORIENTACAO[nomes[k]]), div / f"{nomes[k]}.stl")
     cad.salvar_stl(painel, div / "painel_eletronica_x2.stl")
     for k, baixo in [("tras_baixo", (0, 1, 0)), ("tras_cima", (0, 1, 0)),

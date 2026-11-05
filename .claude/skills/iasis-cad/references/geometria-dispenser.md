@@ -65,6 +65,7 @@ respiros continuam do lado direito de quem olha a frente.
 | Saída (v3) | (100, 47), Ø 34 com chanfro de 2 | sem rebaixo: a trava está desligada (`trava=False`) |
 | Paleta e servo | só com `trava=True` (geometria da v2, não conferida com a saída de Ø 34) | com Ø 34, a paleta girando 90° bate na parede da frente; precisa de outro eixo |
 | Calha (v4) | X 64–136 (com pés), Y −8–80,5, Z 5,5–112 | chapa de 3 mm a 50°; a queda inteira da saída (Y 30–64) cai nela; pés começam em Y 18 (passam pelo apoio); lingueta Z 5,5–7,5 passa pela janela; desce 13 mm afastada da frente |
+| Trava na calha (v5) | eixo da portinha em Y 20 / Z 45, ao longo de X; servo X 132,5–155,2, Y 13,9–26,1, Z 39,1–61,9 (eixo para −X) | chapa tangente ao plano Y = 24 com o cubo (imprime deitada); abre −90° em X, para a frente, pela janela de baixo |
 | Portinha (v3) | abertura X 40–160, Y 35–155 embaixo da tampa, R 18, 45° até o topo | tampinha cônica com folga de 0,4 e furo de dedo Ø 24 |
 | LCD | 4 pinos Ø 6 em (100 ± 37,5, Z 257,5 ± 15,5), saindo 7 mm da parede da frente | aba da tampa aberta em X 55–145 por causa da placa |
 | RC522 | trilhos com canal em X 100 ± 30, Z 148–195, placa a 4 mm da parede | atrás do coração da logo |

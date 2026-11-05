@@ -115,5 +115,33 @@ def main():
     print(destino)
 
 
+def trava():
+    """trava_calha.png: a portinha da trava fechada e aberta, vista pela frente (sem o corpo)."""
+    import iasis_cad as cad
+    pecas, fant, _ = dispenser.construir()
+    ye, ze = dispenser.PARAMETROS["porta_eixo"]
+    ims = []
+    for ang, tit in ((0, "FECHADA: a dose para atrás da portinha"), (90, "ABERTA: a portinha sobe e a dose sai")):
+        porta = cad.girar(pecas["porta_trava"], -ang, (1, 0, 0), (0, ye, ze))
+        cubo = cad.girar(pecas["cubo_trava"], -ang, (1, 0, 0), (0, ye, ze))
+        itens = [r.item(pecas["calha"], "#7fc27a", 1), r.item(porta, "#e0905a", 2),
+                 r.item(cubo, "#f2c879", 3), r.item(fant["servo_trava"], "#3a6ea5", 4)]
+        alvo = np.array([112, 25, 52])
+        olho = r.orbita(alvo, -38, 22, 400)
+        im = Image.fromarray(r.para_u8(r.renderizar(itens, olho, alvo, W=1200, H=900, ss=2)))
+        d = ImageDraw.Draw(im)
+        d.text((30, 25), tit, font=r.fonte(34), fill=CAFE)
+        d.text((30, 840), "laranja: portinha · amarelo: cubo do braço · azul: servo SG90", font=r.fonte(24, False),
+               fill=(95, 75, 60))
+        ims.append(im)
+    out = Image.new("RGB", (2400, 900))
+    out.paste(ims[0], (0, 0))
+    out.paste(ims[1], (1200, 0))
+    destino = AQUI / "saida" / "previas" / "trava_calha.png"
+    out.save(destino)
+    print(destino)
+
+
 if __name__ == "__main__":
     main()
+    trava()

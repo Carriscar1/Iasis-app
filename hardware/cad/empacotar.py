@@ -31,6 +31,8 @@ PECAS = {
     "prateleira":            (1, 0.15, "não", "", 2),
     "disco":                 (1, 0.20, "não", "de cabeça para baixo (cubo para cima)", 2),
     "calha":                 (1, 0.10, "não", "", 2),
+    "porta_trava":           (1, 0.30, "não", "portinha da trava; eixo deitado na mesa", 2),
+    "cubo_trava":            (1, 1.00, "não", "o braço do servo é colado nele", 2),
     "suporte_servo":         (1, 0.30, "não", "", 2),
     "paleta":                (1, 1.00, "não", "peça fina, 100 % de preenchimento", 2),
     "painel_eletronica_x2":  (2, 0.15, "não", "imprimir 2 cópias (opcional)", 3),
