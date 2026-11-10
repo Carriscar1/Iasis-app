@@ -26,8 +26,9 @@ MESAS = [
     ("mecanismo: disco e calha", [("disco", 1, 0.20, 3, 0.20, "não"),
                                   ("calha", 1, 0.20, 3, 0.10, "não")]),
     ("mecanismo: prateleira e trava", [("prateleira", 1, 0.20, 3, 0.15, "não"),
-                                       ("porta_trava", 1, 0.20, 3, 0.30, "não"),
-                                       ("cubo_trava", 1, 0.20, 3, 1.00, "não")]),
+                                       ("paleta", 1, 0.20, 3, 1.00, "não"),
+                                       ("suporte_servo", 1, 0.20, 3, 0.30, "não"),
+                                       ("gabarito_trava", 1, 0.20, 2, 0.15, "não")]),
     ("portinha e painéis", [("portinha", 1, 0.20, 3, 0.15, "não"),
                             ("painel_eletronica_x2", 2, 0.20, 2, 0.15, "não")]),
     ("tampa", [("tampa", 1, 0.20, 3, 0.10, "não")]),
@@ -157,48 +158,50 @@ Vistas da montagem, do interior e da versão dividida, para referência.
 
 
 # Pacote pequeno só com o que mudou depois da primeira impressão (calha com a trava e o 2º painel)
-REIMPRIMIR = [("calha", "calha_v5.stl"), ("porta_trava", "porta_trava.stl"), ("cubo_trava", "cubo_trava.stl"),
-              ("painel_eletronica_x2", "painel_eletronica.stl")]
-LEIA_ME_REIMPRIMIR = """IASIS — PEÇAS PARA IMPRIMIR AGORA (Bambu Lab A1)
-================================================
+REIMPRIMIR = [("paleta", "paleta_trava.stl"), ("suporte_servo", "suporte_servo.stl"),
+              ("gabarito_trava", "gabarito_trava.stl")]
+LEIA_ME_REIMPRIMIR = """IASIS — TRAVA DO SERVO (a "moedinha" do vídeo) — Bambu Lab A1
+==============================================================
+
+Só as peças da trava que faltavam. A prateleira, o disco e a calha que
+vocês já imprimiram continuam valendo (calha v4; se imprimiram a v5,
+ela também serve, é só não usar a portinha).
 
 Configuração de sempre: PLA, bico 220 °C, mesa 60 °C, escala 100 %,
 camada 0,20 mm, SEM suporte, sem girar nada.
 
-1. calha_v5.stl   (~75 g, 3 paredes, 10 %)
-   A calha nova já vem com tudo:
-   - PÉS dos dois lados para colar no fundo (não tomba).
-   - LINGUETA na frente que passa pela janela de baixo e deita na bandeja.
-   - SUPORTE DO SERVO (a plaquinha em pé do lado direito).
-   A calha v4 não precisa mais.
+1. paleta_trava.stl    (~4 g, 100 % de preenchimento)  a "moedinha"
+2. suporte_servo.stl   (~8 g, 3 paredes, 30 %)         segura o SG90
+3. gabarito_trava.stl  (~12 g, 15 %)                   só para colar o suporte no lugar
 
-2. porta_trava.stl  (~5 g, 30 %)  a portinha da trava
-3. cubo_trava.stl   (~1 g, 100 %) a rodinha onde o braço do servo é colado
+COMO FUNCIONA
+-------------
+A paleta fica logo abaixo da prateleira, tampando a saída. O disco gira e
+a dose do compartimento cai no furo da saída e fica em cima da paleta.
+Depois da pulseira, o servo gira 80° (sentido horário visto de cima) e a
+paleta sai de baixo do furo: a dose cai na calha. Veja trava_paleta.png.
 
-4. painel_eletronica.stl  (~11 g) só se vocês imprimiram 1 painel (são 2 iguais)
+MONTAGEM (prateleira de cabeça para baixo na mesa)
+--------------------------------------------------
+1. Coloque o gabarito: o pino redondo entra no furo da saída e a
+   bordinha encosta na frente da prateleira.
+2. Encaixe as abas de cima do suporte nos recortes do gabarito e cole
+   na prateleira (cola instantânea ou epóxi). Espere secar e tire o
+   gabarito. Opcional: fure a prateleira com broca de 3 mm pelos 2
+   furinhos das abas e prenda com 2 parafusos M3 x 10 por cima
+   (eles ficam fora do disco).
+3. Deslize o SG90 no suporte por trás (o suporte é aberto atrás), com o
+   eixo para cima e perto do lado direito. Parafuse as 2 abas.
+4. Prenda o braço do servo embaixo da paleta: o parafuso do eixo entra no
+   rebaixo redondo e os 2 furinhos servem para amarrar ou colar o braço.
+   Monte com o servo em 0° e a paleta tampando a saída.
+5. Teste: em 80°, a saída tem que ficar livre (a paleta vai para a direita).
 
-COMO A TRAVA FUNCIONA
----------------------
-A portinha fica em pé no fim da calha. O disco gira, a dose desce a rampa e
-PARA atrás da portinha. Depois da pulseira, o servo gira 90° e a portinha
-sobe: a dose escorrega para a bandeja. Veja trava_calha.png.
-
-MONTAGEM DA TRAVA (antes de pôr a calha no corpo)
--------------------------------------------------
-1. Passe o SG90 pela janela da plaquinha, de fora para dentro, com o eixo
-   virado para a calha. Parafuse as abas com os 2 parafusos do servo.
-2. Coloque a portinha dentro da calha: o cilindro dela entra no furo grande
-   da parede direita (a chave fica para fora).
-3. Do lado esquerdo, passe um parafuso M3 x 10 pelo furo da parede e
-   rosqueie na portinha. Ele é o eixo: não aperte demais, a portinha tem que
-   girar solta.
-4. Encaixe o cubo (rodinha) na chave e cole.
-5. Com o servo em 0° (fechado), cole o braço do servo no cubo com a
-   portinha EM PÉ. Teste: girando o servo para 90°, a portinha tem que subir
-   para a frente. Se subir para trás, troque os ângulos no firmware.
-
-FIRMWARE: o Teste 6 atual não mexe no servo. Peça a versão com a trava
-(o servo precisa de outro pino, porque o pino 4 já é da vibração).
+FIRMWARE: o Teste 6 atual não mexe no servo, e o pino 4 já é da vibração.
+Ordem certa a cada dose: girar o disco -> esperar a pulseira -> abrir a
+paleta -> fechar. Nunca girar o disco com uma dose parada em cima da
+paleta (ela prenderia entre o disco e a prateleira). Na volta inteira de
+demonstração, deixe a paleta aberta enquanto o disco gira.
 
 guia_montagem.png: onde vai cada peça e o que entra em cada furo.
 """
@@ -210,7 +213,7 @@ def reimprimir(destino=AQUI / "IASIS_A1_reimprimir.zip"):
         z.writestr("IASIS_A1_reimprimir/LEIA-ME.txt", LEIA_ME_REIMPRIMIR)
         for nome, arq in REIMPRIMIR:
             z.write(origem / f"{nome}.stl", f"IASIS_A1_reimprimir/{arq}")
-        for img in ("guia_montagem.png", "trava_calha.png"):
+        for img in ("guia_montagem.png", "trava_paleta.png"):
             z.write(SAIDA / "previas" / img, f"IASIS_A1_reimprimir/{img}")
     print(destino)
 

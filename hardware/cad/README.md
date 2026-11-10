@@ -19,7 +19,7 @@ abrir no fatiador.
 | Saída | Ø 34 com chanfro de 2 mm (maior que o bolso). Entre a saída e o bolso vizinho sobram 4 mm de prateleira |
 | Calha | rampa de chapa a 50°, 43 mm de largura por dentro e paredes até Z 112; pés de 12 mm para colar no fundo e lingueta que atravessa a janela até a bandeja (v4) |
 | Portinha | abertura de 120 × 120 mm na tampa com uma tampinha cônica (45°, folga de 0,4 mm). Sai puxando pelo furo de Ø 24 |
-| Trava (v5) | **portinha no fim da calha**, girada por um SG90 preso na própria calha (`trava_calha=True`). A dose desce e para atrás dela; o servo abre 90° para a frente depois da pulseira. Eixo: o servo na direita e um M3 × 10 na esquerda. A paleta embaixo da prateleira (v2) continua desligada: com a saída de Ø 34 ela bateria no motor |
+| Trava (v6) | a **paleta** ("moedinha") embaixo da saída, como no vídeo: Ø 39, 0,5 mm abaixo da prateleira, eixo do SG90 em X 114 / Y 20, na frente da saída. Abre girando 80° no sentido horário (visto de cima), contornando o motor. O suporte é **colado** embaixo da prateleira já impressa, na posição dada pelo `gabarito_trava` (pino na saída, borda na frente) |
 
 
 ## 1. Qual pasta usar
@@ -91,11 +91,10 @@ Os furos para parafuso no plástico têm 2,5 mm: o M3 entra rosqueando.
    fundo e empurre para a frente até a **lingueta** passar pela janela de baixo e
    deitar na bandeja. Ela fica centrada na janela. Depois cole os **pés** no fundo
    (cola quente ou fita dupla face). Veja `saida/previas/guia_montagem.png`.
-   Antes de descer a calha, monte a **trava**: SG90 na plaquinha da direita (2
-   parafusos do servo), portinha dentro da calha com o cilindro no furo grande, um
-   M3 × 10 como eixo pelo furo da esquerda (sem apertar), cubo colado na chave e o
-   braço do servo colado no cubo com a portinha em pé e o servo em 0°
-   (`saida/previas/trava_calha.png`).
+3a. **Trava** (prateleira de cabeça para baixo): gabarito com o pino na saída e a
+   borda na frente; cole o `suporte_servo` nos recortes, tire o gabarito, deslize o
+   SG90 por trás e parafuse as abas; braço do servo preso embaixo da paleta com o servo
+   em 0° e a saída tampada (`saida/previas/trava_paleta.png`).
 3. **Prateleira:**
    - parafuse o NEMA 17 por baixo (4 × M3 × 8 escareados);
    - desça o conjunto pela abertura de cima até assentar no apoio das paredes.
