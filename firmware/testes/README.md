@@ -13,6 +13,7 @@ por vez. Cada etapa tem um código próprio nesta pasta:
 | 5 | `etapa5_motor_passo` | Motor de passo sozinho: 180° a cada 8 s |
 | 6 | `etapa6_integrado` | Tudo junto, falando o protocolo do app |
 | 6b | `etapa6_vibracao_disco` | Módulo de vibração + pulseira + disco; responde o DISPENSE do app em `.../dispense` (`DISPENSE_ACK` com o mesmo `slot` e `doseId`) |
+| 6c | `etapa6_trava` | O 6b + **trava com servo** (a paleta embaixo da saída do disco, servo no GPIO 17): gira com a trava fechada, abre, fecha. Compila no core 2.0.17; ainda não rodou numa placa |
 
 > **Situação dos códigos:** todos compilam sem erro e sem aviso no core ESP32
 > 2.0.17 e 3.0.7. **Nenhum foi rodado numa placa ainda**: o primeiro teste real
@@ -428,6 +429,33 @@ usuário `iasis_app` e o ID `01`. O fluxo fechado passa a usar o hardware real.
 
 ---
 
+## 11c. Teste 6 com a trava (`etapa6_trava`)
+
+O mesmo fluxo do 6b, com a trava de servo embaixo da saída do disco (a paleta
+redonda do vídeo; peças em `hardware/cad`, `paleta`, `suporte_servo` e
+`gabarito_trava`).
+
+**Ligação do SG90:** sinal (laranja) no **GPIO 17**, vermelho no **5 V do
+regulador** (não no 3V3 do ESP32: o servo puxa corrente demais), marrom no GND
+comum. O GPIO 4 continua sendo do módulo de vibração.
+
+**O que acontece em cada `DISPENSE`:**
+- `MODO_DEMO 0`: trava fechada → o disco gira 1 compartimento (a dose cai no
+  furo e fica em cima da paleta) → espera 0,4 s → a trava abre 80° por 1,5 s →
+  fecha → `DISPENSE_ACK`.
+- `MODO_DEMO 1` (volta inteira): a trava abre, o disco dá a volta parando 0,6 s
+  em cada compartimento (cada dose cai parada) e a trava fecha.
+
+O disco **nunca gira com a trava fechada e uma dose em cima dela**: a dose
+prenderia entre o disco e a prateleira.
+
+**Ajuste na montagem (Monitor Serial a 115200, "Nova linha"):** `a` abre, `f`
+fecha, `+`/`-` mexe 5° no ângulo fechado. Monte o braço do servo com a placa
+ligada (o servo vai para `SERVO_FECHADO`) e a paleta tampando a saída. Se ao
+abrir a paleta for para a esquerda/frente, troque `SENTIDO_TRAVA` para `-1`.
+
+---
+
 ## 12. Bibliotecas (Arduino IDE → Gerenciar bibliotecas)
 
 | Biblioteca | Autor | Etapas |
@@ -436,6 +464,6 @@ usuário `iasis_app` e o ID `01`. O fluxo fechado passa a usar o hardware real.
 | LiquidCrystal | Arduino | 2, 3, 4, 6 |
 | PubSubClient | Nick O'Leary | 3, 4, 6 |
 | ArduinoJson (7.x) | Benoit Blanchon | 3, 4, 6 |
-| ESP32Servo | Kevin Harrington | 4, 6 |
+| ESP32Servo | Kevin Harrington | 4, 6, 6c |
 
 Placa: **ESP32 Dev Module** (pacote *esp32 by Espressif*, 2.x ou 3.x).
