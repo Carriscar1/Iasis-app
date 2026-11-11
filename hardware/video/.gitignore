@@ -5,3 +5,5 @@ saida_loop/
 saida_slides/
 midia_app/
 .cache_pratica.pkl
+saida_manual/
+.cache_montagem.pkl
