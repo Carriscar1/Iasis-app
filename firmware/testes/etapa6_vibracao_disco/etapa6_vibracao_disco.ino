@@ -7,7 +7,8 @@
  *   2. Pulseira lida → ESP32 publica em .../rfid e para de vibrar se for a certa
  *      (pulseira errada continua vibrando)
  *   3. App manda {"type":"CMD","command":"DISPENSE","slot":N,"doseId":"..."}
- *      → gira o disco (MODO_DEMO 1: uma volta inteira, 360°; 0: um compartimento)
+ *      → gira o disco (MODO_DEMO 1: uma volta inteira, parando em cada compartimento
+ *        para a dose cair parada; 0: um compartimento)
  *      → responde em iasis/dispenser/01/dispense:
  *        {"type":"DISPENSE_ACK","slot":N,"doseId":"...","success":true}
  *      (slot e doseId voltam iguais aos do comando: é assim que o app sabe
@@ -70,6 +71,7 @@
 #define PASSOS_POR_DOSE  (PASSOS_POR_VOLTA / COMPARTIMENTOS)   // 25 = 45°, um compartimento
 #endif
 #define MEIO_PERIODO_US 8000      // o valor que funcionou no teste 5
+#define PAUSA_COMPARTIMENTO_MS 600   // volta inteira: parada em cada compartimento (a dose cai parada)
 #define SENTIDO_HORARIO true
 
 // Cole aqui o MESMO bloco ROOT_CA do teste 4, sem mudar nada:
@@ -217,8 +219,17 @@ void liberarDose(int slot, const String& doseId) {
   vibra(false);
   estado = ESPERA;
   tela("Liberando dose", "");
-  Serial.printf("[Motor] Girando %d passos (app pediu o compartimento %d)\n", PASSOS_POR_DOSE, slot);
+#if MODO_DEMO
+  // Volta inteira em 8 paradas: cada compartimento para em cima da saída e a dose cai parada
+  Serial.println("[Motor] Volta inteira, parando em cada compartimento");
+  for (int i = 0; i < COMPARTIMENTOS; i++) {
+    girar(PASSOS_POR_VOLTA / COMPARTIMENTOS);
+    delay(PAUSA_COMPARTIMENTO_MS);
+  }
+#else
+  Serial.printf("[Motor] Girando 1 compartimento (app pediu o %d)\n", slot);
   girar(PASSOS_POR_DOSE);
+#endif
   doses++;
   responderDispense(slot, doseId, true);
   publicarEvento("DOSE_RELEASED");
