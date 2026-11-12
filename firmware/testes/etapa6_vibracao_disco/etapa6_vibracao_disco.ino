@@ -7,8 +7,8 @@
  *   2. Pulseira lida → ESP32 publica em .../rfid e para de vibrar se for a certa
  *      (pulseira errada continua vibrando)
  *   3. App manda {"type":"CMD","command":"DISPENSE","slot":N,"doseId":"..."}
- *      → gira o disco (MODO_DEMO 1: uma volta inteira, parando em cada compartimento
- *        para a dose cair parada; 0: um compartimento)
+ *      → gira o disco SEMPRE o mesmo tanto (PASSOS_POR_DOSE), qualquer que seja
+ *        o compartimento pedido; devagar e com rampa, para ter o máximo de força
  *      → responde em iasis/dispenser/01/dispense:
  *        {"type":"DISPENSE_ACK","slot":N,"doseId":"...","success":true}
  *      (slot e doseId voltam iguais aos do comando: é assim que o app sabe
@@ -22,7 +22,8 @@
  *          VDD → 5 V, A → resistor 220 Ω → 5 V, VSS e K → GND
  *   Vibração: IN/SIG → GPIO 4, VCC → 5 V, GND
  *   A4988: STEP 26, DIR 27, EN 21, VDD → 3V3, VMOT → 12 V (+ capacitor 100 µF),
- *          SLEEP ligado no RESET, MS1/MS2/MS3 soltos (passo inteiro: 200 passos = 1 volta)
+ *          SLEEP ligado no RESET, MS1/MS2/MS3 TODOS no 3V3 (micropasso 1/16: 3200 = 1 volta)
+ *          → micropasso tira a vibração e o tranco do passo inteiro: o disco gira liso
  *   Energia: fonte 12 V → LM2596 (5,3 V) → diodo 1N5819 → VIN; todos os GND juntos
  *
  * ⚠️ Repositório PÚBLICO: não faça commit com as senhas preenchidas.
@@ -65,16 +66,19 @@
 #define PIN_STEP 26
 #define PIN_DIR  27
 #define PIN_EN   21
-#define COMPARTIMENTOS   8
-#define PASSOS_POR_VOLTA 200      // passo inteiro (MS1-3 soltos); com micropasso 1/4 seria 800
-#define MODO_DEMO        1        // 1 = volta inteira por dose (demonstração); 0 = só um compartimento
-#if MODO_DEMO
-#define PASSOS_POR_DOSE  PASSOS_POR_VOLTA                       // 200 = 360°, o disco dá a volta completa
-#else
-#define PASSOS_POR_DOSE  (PASSOS_POR_VOLTA / COMPARTIMENTOS)   // 25 = 45°, um compartimento
-#endif
-#define MEIO_PERIODO_US 8000      // o valor que funcionou no teste 5
-#define PAUSA_COMPARTIMENTO_MS 600   // volta inteira: parada em cada compartimento (a dose cai parada)
+// Micropasso do A4988: MS1, MS2 e MS3 no 3V3 = 16. Se deixar os três soltos, troque para 1.
+#define MICROPASSO       16
+// Quanto o disco gira a cada DISPENSE: sempre o mesmo, não importa o compartimento pedido.
+// Em passos inteiros: 200 = 1 volta · 100 = meia volta · 25 = 1 compartimento (de 8)
+#define VOLTA_DOSE       200
+#define PASSOS_POR_DOSE  (VOLTA_DOSE * MICROPASSO)
+// Velocidade (meio período de cada micropasso). Mesma velocidade que funcionou (8000 em passo inteiro):
+#define MEIO_PERIODO_US        (8000 / MICROPASSO)    // 500 µs: ~0,3 volta por segundo
+#define MEIO_PERIODO_INICIO_US (16000 / MICROPASSO)   // arrancada com metade da velocidade
+#define PASSOS_RAMPA           (40 * MICROPASSO)      // acelera e freia suave (40 passos inteiros)
+#define ENERGIZAR_ANTES_MS     1000   // 1 s com as bobinas firmes antes de girar (foi o que funcionou)
+#define SEGURAR_DEPOIS_MS      500    // segura no fim para o peso não passar do ponto
+#define PASSOS_DESCOLAR        (2 * MICROPASSO)       // vai e vem antes do giro para soltar o disco
 #define SENTIDO_HORARIO true
 
 // Cole aqui o MESMO bloco ROOT_CA do teste 4, sem mudar nada:
@@ -144,16 +148,32 @@ void vibra(bool ligado) {
   digitalWrite(PIN_VIBRA, ligado ? VIBRA_LIGADO : !VIBRA_LIGADO);
 }
 
-void girar(int passos) {
-  digitalWrite(PIN_DIR, SENTIDO_HORARIO ? HIGH : LOW);
-  digitalWrite(PIN_EN, LOW);          // liga o driver
-  delay(5);
-  for (int i = 0; i < passos; i++) {
-    digitalWrite(PIN_STEP, HIGH); delayMicroseconds(MEIO_PERIODO_US);
-    digitalWrite(PIN_STEP, LOW);  delayMicroseconds(MEIO_PERIODO_US);
+void pulsos(int n, unsigned long meio) {
+  for (int i = 0; i < n; i++) {
+    digitalWrite(PIN_STEP, HIGH); delayMicroseconds(meio);
+    digitalWrite(PIN_STEP, LOW);  delayMicroseconds(meio);
   }
-  delay(50);
-  digitalWrite(PIN_EN, HIGH);         // desliga: não esquenta parado
+}
+
+void girar(int passos) {
+  digitalWrite(PIN_EN, LOW);                 // liga o driver
+  delay(ENERGIZAR_ANTES_MS);
+  // Descolar: um pequeno vai e vem, devagar, para vencer o atrito parado
+  digitalWrite(PIN_DIR, SENTIDO_HORARIO ? LOW : HIGH);
+  pulsos(PASSOS_DESCOLAR, MEIO_PERIODO_INICIO_US);
+  digitalWrite(PIN_DIR, SENTIDO_HORARIO ? HIGH : LOW);
+  pulsos(PASSOS_DESCOLAR, MEIO_PERIODO_INICIO_US);
+  // Giro com rampa: acelera no começo e freia no fim
+  int rampa = min(PASSOS_RAMPA, passos / 2);
+  for (int i = 0; i < passos; i++) {
+    unsigned long meio = MEIO_PERIODO_US;
+    int dist = min(i, passos - 1 - i);       // distância até o começo ou o fim do giro
+    if (dist < rampa)
+      meio = MEIO_PERIODO_INICIO_US - (unsigned long)(MEIO_PERIODO_INICIO_US - MEIO_PERIODO_US) * dist / rampa;
+    pulsos(1, meio);
+  }
+  delay(SEGURAR_DEPOIS_MS);
+  digitalWrite(PIN_EN, HIGH);                // desliga: não esquenta parado
 }
 
 // ─── Nuvem ───────────────────────────────────
@@ -214,25 +234,13 @@ void encerrarAlerta(const char* motivo) {
 }
 
 // Só acontece quando o APP manda DISPENSE
+// O compartimento pedido (slot) não muda o giro: só volta igual na resposta para o app.
 void liberarDose(int slot, const String& doseId) {
-  if (slot < 1 || slot > COMPARTIMENTOS) {
-    responderDispense(slot, doseId, false, "INVALID_SLOT");
-    return;
-  }
   vibra(false);
   estado = ESPERA;
   tela("Liberando dose", "");
-#if MODO_DEMO
-  // Volta inteira em 8 paradas: cada compartimento para em cima da saída e a dose cai parada
-  Serial.println("[Motor] Volta inteira, parando em cada compartimento");
-  for (int i = 0; i < COMPARTIMENTOS; i++) {
-    girar(PASSOS_POR_VOLTA / COMPARTIMENTOS);
-    delay(PAUSA_COMPARTIMENTO_MS);
-  }
-#else
-  Serial.printf("[Motor] Girando 1 compartimento (app pediu o %d)\n", slot);
+  Serial.printf("[Motor] Girando %d passos (sempre o mesmo; app pediu o compartimento %d)\n", PASSOS_POR_DOSE, slot);
   girar(PASSOS_POR_DOSE);
-#endif
   doses++;
   responderDispense(slot, doseId, true);
   publicarEvento("DOSE_RELEASED");
@@ -261,7 +269,7 @@ void aoReceber(char* topico, byte* payload, unsigned int tamanho) {
   } else if (comando == "VIBRATE_OFF" || comando == "STOP") {
     if (estado == ALERTA) { encerrarAlerta("ALERT_CANCELLED"); telaEspera(); }
   } else if (comando == "DISPENSE") {
-    // sem slot (teste manual pelo painel do HiveMQ) vale o compartimento 1
+    // sem slot (teste manual pelo painel do HiveMQ) a resposta volta com slot 1
     liberarDose(doc["slot"] | 1, String(doc["doseId"] | ""));
   } else if (comando == "STATUS_REQ") {
     publicarStatus();
@@ -346,6 +354,7 @@ void setup() {
   mqtt.setServer(MQTT_HOST, MQTT_PORT);
   mqtt.setCallback(aoReceber);
   mqtt.setBufferSize(512);
+  mqtt.setKeepAlive(60);   // o giro lento demora: a nuvem não derruba a conexão
 
   tela("Conectando WiFi", WIFI_SSID);
   WiFi.mode(WIFI_STA);
