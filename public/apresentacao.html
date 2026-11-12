@@ -6,8 +6,9 @@
 <title>IASIS — Apresentação do app</title>
 <link rel="icon" href="/favicon.ico">
 <style>
-  /* Página de apresentação: o app de verdade (mesmo endereço) dentro de um
-     celular na tela, ampliado para caber no monitor sem perder nitidez. */
+  /* Página de apresentação: o app de verdade (mesmo endereço), em modo
+     demonstração, dentro de um celular ampliado para caber no monitor. A
+     lateral troca de tela com um clique — sem login, sem procurar menu. */
   :root {
     --bg-1: #0f1c32;
     --bg-2: #1c2b4b;
@@ -25,36 +26,49 @@
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     overflow: hidden;
   }
-  .stage { height: 100%; display: flex; align-items: center; justify-content: center; gap: 72px; padding: 24px; }
+  .stage { height: 100%; display: flex; align-items: center; justify-content: center; gap: 64px; padding: 24px; }
 
-  /* Painel lateral (some em telas estreitas) */
-  .side { width: 340px; display: flex; flex-direction: column; gap: 22px; }
+  /* Lateral com as telas */
+  .side { width: 360px; max-height: 100%; display: flex; flex-direction: column; gap: 18px; }
   .brand { display: flex; align-items: center; gap: 14px; }
-  .brand h1 { margin: 0; font-size: 44px; letter-spacing: -1.5px; font-weight: 800; }
+  .brand h1 { margin: 0; font-size: 40px; letter-spacing: -1.5px; font-weight: 800; }
   .brand p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
-  .lead { color: var(--muted); font-size: 16px; line-height: 1.55; margin: 0; }
-  .group { display: flex; flex-direction: column; gap: 10px; }
-  .group span { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
-  .btn {
-    appearance: none; border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text);
-    border-radius: 14px; padding: 13px 16px; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer;
-    display: flex; align-items: center; gap: 10px; transition: background .15s, border-color .15s;
+  .lead { color: var(--muted); font-size: 14.5px; line-height: 1.5; margin: 0; }
+  .screens { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; padding-right: 4px; }
+  .screens::-webkit-scrollbar { width: 6px; }
+  .screens::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
+  .group { display: flex; flex-direction: column; gap: 6px; }
+  .group > span { font-size: 12px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .screen {
+    appearance: none; border: 1px solid var(--line); background: rgba(255, 255, 255, .05); color: var(--text);
+    border-radius: 12px; padding: 10px 14px; text-align: left; cursor: pointer; font: inherit;
+    display: flex; flex-direction: column; gap: 2px;
+    transition: background-color .2s ease-out, border-color .2s ease-out, transform .2s ease-out;
   }
-  .btn:hover { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .25); }
-  .btn.primary { background: var(--green); border-color: var(--green); }
-  .btn.primary:hover { background: #22b386; }
-  .keys { font-size: 13px; color: var(--muted); line-height: 1.7; }
-  kbd { background: rgba(255, 255, 255, .1); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; font-family: inherit; font-size: 12px; color: var(--text); }
+  .screen strong { font-size: 15px; font-weight: 700; }
+  .screen small { font-size: 12.5px; color: var(--muted); }
+  .screen:hover { background: rgba(255, 255, 255, .11); border-color: rgba(255, 255, 255, .24); }
+  .screen:active { transform: scale(.98); }
+  .screen.active { background: var(--green); border-color: var(--green); }
+  .screen.active small { color: rgba(255, 255, 255, .85); }
+  .tools { display: flex; gap: 8px; }
+  .tool {
+    flex: 1; appearance: none; border: 1px solid var(--line); background: rgba(255, 255, 255, .06); color: var(--text);
+    border-radius: 12px; padding: 10px; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .tool:hover { background: rgba(255, 255, 255, .12); }
+  .keys { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+  kbd { background: rgba(255, 255, 255, .1); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; font-family: inherit; font-size: 11.5px; color: var(--text); }
 
-  /* Celular: a tela tem 390 x 844 pontos, como um Android/iPhone comum.
-     O tamanho real na tela vem do "zoom" calculado no script — o zoom
-     redesenha o conteúdo maior em vez de esticar uma imagem, por isso fica nítido. */
+  /* Celular: tela de 390 x 844 pontos. O tamanho na tela vem do "zoom" do
+     script — o zoom redesenha o conteúdo maior em vez de esticar uma imagem,
+     por isso fica nítido. */
   .phone {
     width: 418px; height: 872px; padding: 14px; border-radius: 62px; position: relative; flex: none;
     background: linear-gradient(145deg, #2b2f36, #0b0d10);
     box-shadow: 0 0 0 2px #3a3f47, 0 40px 90px rgba(0, 0, 0, .55), inset 0 0 0 2px #000;
   }
-  .screen { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; background: #1c2b4b; position: relative; }
+  .screen-area { width: 390px; height: 844px; border-radius: 48px; overflow: hidden; background: #1c2b4b; position: relative; }
   .status {
     height: 44px; background: #1c2b4b; color: #fff; display: flex; align-items: center; justify-content: space-between;
     padding: 0 30px 0 34px; font-size: 15px; font-weight: 600; position: relative; z-index: 2;
@@ -65,37 +79,35 @@
   .btn-side { position: absolute; right: -4px; width: 4px; border-radius: 0 3px 3px 0; background: #2b2f36; }
 
   @media (max-width: 900px) { .side { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .screen { transition: none; } .screen:active { transform: none; } }
 </style>
 </head>
 <body>
 <div class="stage">
   <aside class="side">
     <div class="brand">
-      <svg width="64" height="62" viewBox="0 0 120 116" aria-hidden="true">
+      <svg width="58" height="56" viewBox="0 0 120 116" aria-hidden="true">
         <defs><linearGradient id="h" x1="60" y1="12" x2="60" y2="104" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#AFD0EE"/><stop offset="1" stop-color="#5B93CF"/></linearGradient></defs>
         <path d="M60 102C26 76 12 57 12 39 12 25 23 15 35 15 45 15 54 21 60 31 66 21 75 15 85 15 97 15 108 25 108 39 108 57 94 76 60 102Z" fill="url(#h)"/>
         <path d="M27 60H49l5-11 7 24 8-31 6 18h13" stroke="#101d33" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
       </svg>
       <div><h1>Iasis</h1><p>Sua saúde em dia</p></div>
     </div>
-    <p class="lead">O aplicativo de verdade, rodando ao vivo. Use o mouse como se fosse o dedo: clique para tocar e use a rodinha para rolar.</p>
-    <div class="group">
-      <span>Entrar sem conta</span>
-      <button class="btn primary" data-demo="patient">Ver como paciente</button>
-      <button class="btn" data-demo="caregiver">Ver como cuidador</button>
-      <button class="btn" data-demo="">Voltar para o login</button>
+    <p class="lead">O app de verdade, com dados de demonstração. Escolha uma tela ao lado — e use o mouse no celular como se fosse o dedo.</p>
+
+    <div class="screens" id="screens"></div>
+
+    <div class="tools">
+      <button class="tool" id="fs">Tela cheia</button>
+      <button class="tool" id="reset">Recomeçar demo</button>
     </div>
-    <div class="group">
-      <span>Tela</span>
-      <button class="btn" id="fs">Tela cheia</button>
-    </div>
-    <div class="keys"><kbd>F</kbd> tela cheia &nbsp; <kbd>P</kbd> paciente &nbsp; <kbd>C</kbd> cuidador &nbsp; <kbd>L</kbd> login</div>
+    <div class="keys"><kbd>↑</kbd> <kbd>↓</kbd> trocam de tela &nbsp; <kbd>F</kbd> tela cheia</div>
   </aside>
 
   <div class="phone" id="phone">
     <span class="btn-side" style="top:170px;height:64px"></span>
     <span class="btn-side" style="top:250px;height:64px"></span>
-    <div class="screen">
+    <div class="screen-area">
       <div class="island"></div>
       <div class="status">
         <span id="clock">9:41</span>
@@ -105,14 +117,68 @@
           <svg width="26" height="12" viewBox="0 0 26 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2" y="2" width="17" height="8" rx="2" fill="#fff"/><rect x="23.5" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg>
         </span>
       </div>
-      <iframe id="app" src="/" title="Aplicativo IASIS"></iframe>
+      <iframe id="app" title="Aplicativo IASIS"></iframe>
     </div>
   </div>
 </div>
 
 <script>
+  // Telas do app em modo demonstração. role = quem está usando; path = rota.
+  const SCREENS = [
+    { group: 'Paciente', items: [
+      { role: 'patient', path: '/home',      name: 'Início',      desc: 'Próximo remédio e resumo do dia' },
+      { role: 'patient', path: '/schedule',  name: 'Agenda',      desc: 'Horários de cada remédio' },
+      { role: 'patient', path: '/device',    name: 'Dispensador', desc: 'A pulseira RFID libera a dose' },
+      { role: 'patient', path: '/history',   name: 'Histórico',   desc: 'Adesão e linha do tempo das doses' },
+      { role: 'patient', path: '/reports',   name: 'Relatórios',  desc: 'Gráficos de adesão por período' },
+      { role: 'patient', path: '/stock',     name: 'Estoque',     desc: 'Quanto ainda tem de cada remédio' },
+      { role: 'patient', path: '/emergency', name: 'Emergência',  desc: 'Pedir socorro e testar aviso de queda' },
+      { role: 'patient', path: '/profile',   name: 'Perfil',      desc: 'Dados, aparência e acessibilidade' },
+    ] },
+    { group: 'Cuidador', items: [
+      { role: 'caregiver', path: '/home',     name: 'Painel do cuidador', desc: 'Quem você cuida e os avisos' },
+      { role: 'caregiver', path: '/patients', name: 'Meus pacientes',     desc: 'Doses de hoje e adesão de cada um' },
+      { role: 'caregiver', path: '/alerts',   name: 'Alertas',            desc: 'Quedas, doses perdidas e estoque' },
+      { role: 'caregiver', path: '/chat',     name: 'Conversas',          desc: 'Mensagens com o paciente' },
+    ] },
+  ];
+  const FLAT = SCREENS.flatMap((g) => g.items);
+
   const phone = document.getElementById('phone');
   const app = document.getElementById('app');
+  const list = document.getElementById('screens');
+  let current = 0;
+
+  // Monta a lista da lateral.
+  for (const g of SCREENS) {
+    const box = document.createElement('div');
+    box.className = 'group';
+    const title = document.createElement('span');
+    title.textContent = g.group;
+    box.appendChild(title);
+    for (const s of g.items) {
+      const b = document.createElement('button');
+      b.className = 'screen';
+      b.dataset.i = String(FLAT.indexOf(s));
+      const strong = document.createElement('strong'); strong.textContent = s.name;
+      const small = document.createElement('small'); small.textContent = s.desc;
+      b.append(strong, small);
+      b.addEventListener('click', () => show(Number(b.dataset.i)));
+      box.appendChild(b);
+    }
+    list.appendChild(box);
+  }
+
+  // O app guarda o papel da demo no armazenamento do navegador (mesmo
+  // endereço desta página). Grava o papel e abre direto na tela pedida.
+  function show(i) {
+    current = (i + FLAT.length) % FLAT.length;
+    const s = FLAT[current];
+    try { localStorage.setItem('iasis:demo-role', s.role); } catch (e) {}
+    app.src = '/?go=' + encodeURIComponent(s.path) + '&t=' + Date.now();
+    document.querySelectorAll('.screen').forEach((b) => b.classList.toggle('active', Number(b.dataset.i) === current));
+    document.querySelector('.screen.active')?.scrollIntoView({ block: 'nearest' });
+  }
 
   // Ajusta o celular para ocupar a altura da tela (com folga).
   function fit() {
@@ -122,7 +188,6 @@
   addEventListener('resize', fit);
   fit();
 
-  // Relógio da barra de status.
   function tick() {
     const d = new Date();
     document.getElementById('clock').textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
@@ -132,37 +197,27 @@
   // Esconde as barras de rolagem dentro do app (no celular elas não aparecem).
   app.addEventListener('load', () => {
     try {
-      const s = app.contentDocument.createElement('style');
-      s.textContent = '*::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}';
-      app.contentDocument.head.appendChild(s);
+      const st = app.contentDocument.createElement('style');
+      st.textContent = '*::-webkit-scrollbar{display:none!important}*{scrollbar-width:none!important}';
+      app.contentDocument.head.appendChild(st);
     } catch (e) { /* outra origem: ignora */ }
   });
-
-  // Demonstração: o app guarda o papel da demo no armazenamento do navegador
-  // (mesmo endereço desta página). Gravar e recarregar abre direto na tela.
-  function demo(role) {
-    try {
-      if (role) localStorage.setItem('iasis:demo-role', role);
-      else localStorage.removeItem('iasis:demo-role');
-    } catch (e) {}
-    app.src = '/?t=' + Date.now();
-  }
-  document.querySelectorAll('[data-demo]').forEach((b) => b.addEventListener('click', () => demo(b.dataset.demo)));
 
   function fullscreen() {
     if (document.fullscreenElement) document.exitFullscreen();
     else document.documentElement.requestFullscreen().catch(() => {});
   }
   document.getElementById('fs').addEventListener('click', fullscreen);
+  // "Recomeçar demo": recarrega a página, e os dados de demonstração voltam ao início.
+  document.getElementById('reset').addEventListener('click', () => show(current));
 
-  // Atalhos de teclado (só quando o foco está fora do app).
   addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    if (k === 'f') fullscreen();
-    if (k === 'p') demo('patient');
-    if (k === 'c') demo('caregiver');
-    if (k === 'l') demo('');
+    if (e.key === 'ArrowDown') { e.preventDefault(); show(current + 1); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); show(current - 1); }
+    if (e.key.toLowerCase() === 'f') fullscreen();
   });
+
+  show(0);
 </script>
 </body>
 </html>
