@@ -35,7 +35,10 @@ from gerar_video import pecas, mover, girar_z, lerp   # noqa: E402
 W, H, FPS = 1920, 1080, 30
 # IASIS_LIMPO=1: sem legenda nem título (as animações viram slides, quem explica é o apresentador)
 LIMPO = os.environ.get("IASIS_LIMPO") == "1"
-SAIDA = AQUI / ("saida_slides" if LIMPO else "saida_v2")
+# IASIS_AZUL=1: peças impressas em azul, como o dispensador foi impresso de verdade
+AZUL = os.environ.get("IASIS_AZUL") == "1"
+SAIDA = AQUI / ("saida_slides" if LIMPO else "saida_azul" if AZUL else "saida_v2")
+NOME_VIDEO = "IASIS_video_stand_azul.mp4" if AZUL else "IASIS_video_stand_v2.mp4"
 
 r.tema("#1f1611", "#3a2a20", "#4a3a30", contraluz=[1.0, 0.85, 0.6], brilho=[0.9, 0.7, 0.45])
 
@@ -49,6 +52,16 @@ CORES = dict(
     rc522=("#2e5fa8", None), comprimido=("#e8504e", None), pulseira=("#5b93cf", "#afd0ee"),
 )
 FOCO = "#7cc4ff"
+if AZUL:
+    # todas as peças impressas em azul; a logo (relevo) num azul um pouco mais claro para dar leitura
+    CORES.update(
+        tras=("#2a5fa8", "#4f86cc"), frente=("#3068b3", "#5b93d6"), tampa=("#234f8f", "#3d72b8"),
+        coracao=("#4f86cc", "#8ab4e8"), nome=("#5b93d6", None),   # a logo é do mesmo azul (relevo da peça)
+        prateleira=("#2a5aa0", "#4a7fc2"), disco=("#1f4d94", "#3c73bd"), paleta=("#2b62ad", None),
+        suporte_servo=("#24508f", None), calha=("#3a72bb", "#6a9ad6"), painel=("#1d3f73", None),
+        servo=("#3a3d44", "#5d6169"),   # servo escuro para não sumir no meio do azul
+    )
+    FOCO = "#ffc46b"                    # destaque âmbar: azul sobre azul não apareceria
 
 
 def cena(nomes, M):
@@ -618,7 +631,7 @@ def montar():
         arqs += sorted(f for f in (SAIDA / "partes").glob(f"{nome}_*.mp4") if ".tmp" not in f.name)
     lista.write_text("".join(f"file '{f.resolve()}'\n" for f in arqs))
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lista),
-                    "-c", "copy", "-movflags", "+faststart", str(SAIDA / "IASIS_video_stand_v2.mp4")], check=True)
+                    "-c", "copy", "-movflags", "+faststart", str(SAIDA / NOME_VIDEO)], check=True)
     lista.unlink()
 
 
@@ -631,4 +644,4 @@ if __name__ == "__main__":
             print("pronto:", feito, flush=True)
     montar()
     srt_e_roteiro()
-    print("vídeo:", SAIDA / "IASIS_video_stand_v2.mp4", flush=True)
+    print("vídeo:", SAIDA / NOME_VIDEO, flush=True)
