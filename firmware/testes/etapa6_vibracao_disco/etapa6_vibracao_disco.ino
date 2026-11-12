@@ -16,11 +16,14 @@
  *   4. App manda {"command":"VIBRATE_OFF"} → para de vibrar
  *   5. Sem resposta em 5 min → para sozinho e avisa a nuvem (ALERT_TIMEOUT)
  *
- * Ligações:
- *   RC522 e LCD iguais ao teste 4
- *   Módulo de vibração: VCC → 5 V   GND → GND   IN/SIG → GPIO 4
- *   A4988: STEP 26, DIR 27, EN 21 (igual ao teste 5), VMOT 12 V, VDD 5 V
- *          MS1, MS2, MS3 soltos (passo inteiro: 200 passos = 1 volta)
+ * Ligações (iguais ao manual de montagem, sem o servo: o GPIO 17 fica livre):
+ *   RC522: SDA 5, SCK 18, MOSI 23, MISO 19, RST 22, 3.3V → 3V3, GND, IRQ solto
+ *   LCD:   RS 13, E 15, D4 14, D5 25, D6 33, D7 32, RW → GND, V0 → meio do potenciômetro,
+ *          VDD → 5 V, A → resistor 220 Ω → 5 V, VSS e K → GND
+ *   Vibração: IN/SIG → GPIO 4, VCC → 5 V, GND
+ *   A4988: STEP 26, DIR 27, EN 21, VDD → 3V3, VMOT → 12 V (+ capacitor 100 µF),
+ *          SLEEP ligado no RESET, MS1/MS2/MS3 soltos (passo inteiro: 200 passos = 1 volta)
+ *   Energia: fonte 12 V → LM2596 (5,3 V) → diodo 1N5819 → VIN; todos os GND juntos
  *
  * ⚠️ Repositório PÚBLICO: não faça commit com as senhas preenchidas.
  * Bibliotecas: MFRC522, LiquidCrystal, PubSubClient (Nick O'Leary),
