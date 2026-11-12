@@ -1,0 +1,107 @@
+1
+00:00:00,600 --> 00:00:07,600
+Oi! Eu sou o Iasinho. Vem comigo conhecer o IASIS!
+
+2
+00:00:08,400 --> 00:00:13,400
+Sabia que metade dos pacientes com doenças crônicas
+
+3
+00:00:13,400 --> 00:00:17,600
+esquece ou erra o horário dos remédios?
+
+4
+00:00:18,500 --> 00:00:22,600
+O IASIS junta três partes:
+
+5
+00:00:22,600 --> 00:00:26,400
+um dispensador, uma pulseira e um aplicativo.
+
+6
+00:00:26,600 --> 00:00:31,600
+E a dose só sai quando o paciente encosta a pulseira no aparelho.
+
+7
+00:00:32,400 --> 00:00:38,600
+Esse é o dispensador do IASIS, impresso em 3D pela nossa equipe.
+
+8
+00:00:39,000 --> 00:00:45,600
+Na frente: a telinha, a nossa logo e a bandeja onde o remédio chega.
+
+9
+00:00:46,400 --> 00:00:50,000
+Visto de cima: a tampa é presa por quatro parafusos.
+
+10
+00:00:50,600 --> 00:00:54,800
+Tirando a tampa, aparecem os oito compartimentos do disco.
+
+11
+00:00:55,400 --> 00:00:58,600
+Agora, vamos desmontar a caixa!
+
+12
+00:01:00,200 --> 00:01:05,600
+São onze peças impressas, mais o motor, o servo, o leitor e a tela.
+
+13
+00:01:06,200 --> 00:01:10,600
+E tudo volta pro lugar com encaixes.
+
+14
+00:01:12,000 --> 00:01:19,600
+Esse é o disco: oito compartimentos, um para cada horário de remédio.
+
+15
+00:01:21,000 --> 00:01:28,600
+Embaixo dele, o motor de passo gira o disco certinho até a dose da vez.
+
+16
+00:01:30,000 --> 00:01:37,600
+Essa é a trava: o servo só abre a saída depois que a pulseira é validada.
+
+17
+00:01:39,000 --> 00:01:46,600
+A calha leva o remédio até a bandeja, direto para a mão do paciente.
+
+18
+00:01:48,000 --> 00:01:55,600
+Atrás do coração da logo fica o leitor da pulseira. É só encostar!
+
+19
+00:01:57,000 --> 00:02:04,600
+E aqui a tela mostra o horário e o que está acontecendo.
+
+20
+00:02:05,300 --> 00:02:08,000
+Chegou a hora do remédio: a tela avisa, e o celular também.
+
+21
+00:02:08,200 --> 00:02:11,300
+O paciente encosta a pulseira no coração da logo…
+
+22
+00:02:11,500 --> 00:02:15,000
+…o disco gira até o compartimento certo…
+
+23
+00:02:15,200 --> 00:02:17,800
+…a trava abre…
+
+24
+00:02:18,000 --> 00:02:22,600
+…e a dose escorrega pela calha até a bandeja!
+
+25
+00:02:22,800 --> 00:02:26,600
+Pronto! Fica tudo registrado no app, e o cuidador acompanha.
+
+26
+00:02:27,600 --> 00:02:32,600
+Esse é o IASIS: sua saúde em dia.
+
+27
+00:02:33,000 --> 00:02:38,400
+Vem testar com a gente aqui no stand!

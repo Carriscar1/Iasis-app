@@ -1,0 +1,31 @@
+ROTEIRO DO LOCUTOR — IASIS (Iasinho)
+Leia no ritmo dos tempos abaixo, em tom animado e acolhedor, falando com quem assiste.
+Grave por cena e cole no vídeo nos tempos indicados (ou use o recurso de voz do Motion).
+
+[00:00:00]  Oi! Eu sou o Iasinho. Vem comigo conhecer o IASIS!
+[00:00:08]  Sabia que metade dos pacientes com doenças crônicas
+[00:00:13]  esquece ou erra o horário dos remédios?
+[00:00:18]  O IASIS junta três partes:
+[00:00:22]  um dispensador, uma pulseira e um aplicativo.
+[00:00:26]  E a dose só sai quando o paciente encosta a pulseira no aparelho.
+[00:00:32]  Esse é o dispensador do IASIS, impresso em 3D pela nossa equipe.
+[00:00:39]  Na frente: a telinha, a nossa logo e a bandeja onde o remédio chega.
+[00:00:46]  Visto de cima: a tampa é presa por quatro parafusos.
+[00:00:50]  Tirando a tampa, aparecem os oito compartimentos do disco.
+[00:00:55]  Agora, vamos desmontar a caixa!
+[00:01:00]  São onze peças impressas, mais o motor, o servo, o leitor e a tela.
+[00:01:06]  E tudo volta pro lugar com encaixes.
+[00:01:12]  Esse é o disco: oito compartimentos, um para cada horário de remédio.
+[00:01:21]  Embaixo dele, o motor de passo gira o disco certinho até a dose da vez.
+[00:01:30]  Essa é a trava: o servo só abre a saída depois que a pulseira é validada.
+[00:01:39]  A calha leva o remédio até a bandeja, direto para a mão do paciente.
+[00:01:48]  Atrás do coração da logo fica o leitor da pulseira. É só encostar!
+[00:01:57]  E aqui a tela mostra o horário e o que está acontecendo.
+[00:02:05]  Chegou a hora do remédio: a tela avisa, e o celular também.
+[00:02:08]  O paciente encosta a pulseira no coração da logo…
+[00:02:11]  …o disco gira até o compartimento certo…
+[00:02:15]  …a trava abre…
+[00:02:18]  …e a dose escorrega pela calha até a bandeja!
+[00:02:22]  Pronto! Fica tudo registrado no app, e o cuidador acompanha.
+[00:02:27]  Esse é o IASIS: sua saúde em dia.
+[00:02:33]  Vem testar com a gente aqui no stand!

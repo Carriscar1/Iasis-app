@@ -1,0 +1,28 @@
+IASIS — vídeos, apresentação e arquivos do projeto
+==================================================
+
+1_apresentacao/
+  IASIS_Banner_BENTOTEC.pdf / .pptx   banner da BentoTec
+  IASIS_apresentacao.pptx             slides da apresentação (com vídeos dentro)
+  IASIS_video_dos_slides.mp4          vídeo usado nos slides
+  IASIS_clipes_slides.zip             clipes soltos dos slides
+
+2_videos_stand/   (vídeo de abertura do stand)
+  IASIS_video_stand_v2.mp4            versão final, sem narração
+  IASIS_video_stand_v2_narrado.mp4    versão final com narração
+  IASIS_video_stand_v2_rapido*.mp4    versão mais curta (com e sem narração)
+  IASIS_video_stand.mp4               primeira versão
+  legendas.srt / roteiro_narracao.txt texto da narração
+
+3_intervalo_e_loop/   (para deixar rodando na TV)
+  IASIS_voltamos_em_breve.mp4         "Voltamos em breve" (loop curto)
+  IASIS_voltamos_em_breve_10min.mp4   o mesmo, já com 10 minutos
+  IASIS_loop_completo.mp4 (+ 1.25x)   loop do projeto
+  IASIS_loop_3D.mp4                   loop do dispensador em 3D
+  IASIS_pratica.mp4                   demonstração da parte prática
+
+4_manual_de_montagem/
+  vídeo, PDF e diagrama de fiação
+
+5_impressao_3D/
+  peças para a Bambu A1, reimpressão, kit da trava e chaveiro NFC
